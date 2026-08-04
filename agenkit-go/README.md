@@ -2,21 +2,25 @@
 
 **Production-grade AI agent toolkit for Go 1.25.12+**
 
-The Go implementation of Agenkit provides exceptional performance (18x faster than Python) while maintaining 100% behavioral parity with the reference Python implementation.
+The Go implementation of Agenkit maintains 100% behavioral parity with the reference
+Python implementation, with true parallelism and single-binary deployment.
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/scttfrdmn/agenkit/agenkit-go.svg)](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go)
 [![Go 1.25+](https://img.shields.io/badge/go-1.25+-00ADD8.svg)](https://golang.org/)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
-[![Cross-Language Parity](https://img.shields.io/badge/parity-100%25-success.svg)](../../tests/cross_language/)
+[![Cross-Language Parity](https://img.shields.io/badge/parity-100%25-success.svg)](https://github.com/scttfrdmn/agenkit/tree/main/tests/cross_language)
 
 ## Why Go?
 
-**18x Performance Improvement** over Python with the same developer experience:
-
 - **Concurrency**: Goroutines for true parallel agent execution
-- **Performance**: Sub-millisecond agent orchestration
+- **Performance**: Microsecond-scale pattern orchestration
 - **Deployment**: Single binary, no runtime dependencies
-- **Scale**: Handle 100K+ requests/second per instance
+
+On the [measured pattern benchmarks](https://github.com/scttfrdmn/agenkit/blob/main/docs/PERFORMANCE_COMPARISON.md)
+Go beats Python on 8 of 9 patterns — by 56x on Supervisor, 35x on Parallel and 17x on
+ReAct — but is **slower on Reflection** (100 μs vs Python's 16 μs), which is enough to
+put Go behind Python on the unweighted average. Pick Go for concurrency and deployment
+shape, and check the numbers for your pattern rather than assuming a blanket speedup.
 
 **Perfect for**:
 - Production workloads requiring high throughput
@@ -36,12 +40,16 @@ Full documentation is available in [agenkit-go/docs/](docs/):
 
 - [Getting Started](docs/GETTING_STARTED.md) — Installation, first agent, goroutine safety, testing
 - [API Reference](docs/API.md) — Complete Go API documentation
-- [Patterns](docs/PATTERNS.md) — All 11 agent patterns with Go examples
+- [Patterns](docs/PATTERNS.md) — 11 of the 14 agent patterns, with Go examples
 - [Migration Guide](docs/MIGRATION.md) — Migrating to/from Go for 5 languages
 - [Observability](docs/OBSERVABILITY.md) — Tracing, metrics, structured logging
 - [Testing Framework](docs/TESTING_FRAMEWORK.md) — go test patterns, rapid property tests
 
 ## Quick Start
+
+> Every snippet below is copied from [`examples/readme/main.go`](examples/readme/main.go),
+> which is compiled by `go build ./...`. If a snippet here references an API that
+> doesn't exist, CI fails.
 
 ### Basic Agent
 
@@ -66,7 +74,8 @@ func (a *EchoAgent) Capabilities() []string {
 }
 
 func (a *EchoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
-	return agenkit.NewMessage("assistant", fmt.Sprintf("Echo: %s", message.Content)), nil
+	// Content is `any` — read it through ContentString().
+	return agenkit.NewMessage("assistant", fmt.Sprintf("Echo: %s", message.ContentString())), nil
 }
 
 func (a *EchoAgent) Introspect() *agenkit.IntrospectionResult {
@@ -83,7 +92,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(response.Content) // "Echo: Hello!"
+	fmt.Println(response.ContentString()) // "Echo: Hello!"
 }
 ```
 
@@ -96,21 +105,22 @@ import (
 )
 
 func main() {
-	// Create agent
-	agent := &MyAgent{}
+	// Declare as the interface so the decorators can be composed by reassignment
+	var agent agenkit.Agent = &MyAgent{}
 
-	// Add resilience middleware
-	agent = middleware.NewRetryMiddleware(agent, &middleware.RetryConfig{
-		MaxRetries:    3,
-		BackoffFactor: 2.0,
+	// Add resilience decorators — config is passed by value
+	agent = middleware.NewRetryDecorator(agent, middleware.RetryConfig{
+		MaxRetries:        3,
+		InitialRetryDelay: 100 * time.Millisecond,
+		RetryMultiplier:   2.0,
 	})
 
-	agent = middleware.NewCircuitBreakerMiddleware(agent, &middleware.CircuitBreakerConfig{
+	agent = middleware.NewCircuitBreakerDecorator(agent, middleware.CircuitBreakerConfig{
 		FailureThreshold: 5,
-		RecoveryTimeout:  60.0,
+		RecoveryTimeout:  60 * time.Second,
 	})
 
-	agent = middleware.NewTimeoutMiddleware(agent, &middleware.TimeoutConfig{
+	agent = middleware.NewTimeoutDecorator(agent, middleware.TimeoutConfig{
 		Timeout: 30 * time.Second,
 	})
 
@@ -127,11 +137,14 @@ func main() {
 import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 
 // Data flows: Agent1 → Agent2 → Agent3
-pipeline := patterns.NewSequentialAgent([]agenkit.Agent{
+pipeline, err := patterns.NewSequentialAgent([]agenkit.Agent{
 	&DataExtractionAgent{},
 	&AnalysisAgent{},
 	&ReportGenerationAgent{},
 })
+if err != nil {
+	return err
+}
 
 result, err := pipeline.Process(ctx, message)
 ```
@@ -141,12 +154,18 @@ result, err := pipeline.Process(ctx, message)
 ```go
 import "github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 
-// Execute multiple agents concurrently using goroutines
-parallel := patterns.NewParallelAgent([]agenkit.Agent{
+// Execute multiple agents concurrently using goroutines.
+//
+// The aggregator is required — passing nil returns an error. Choose one of
+// patterns.DefaultAggregators (First, Concatenate, MajorityVote) or write your own.
+parallel, err := patterns.NewParallelAgent([]agenkit.Agent{
 	&SentimentAnalysisAgent{},
 	&EntityExtractionAgent{},
 	&TopicClassificationAgent{},
-}, nil) // Uses default aggregator
+}, patterns.DefaultAggregators.Concatenate)
+if err != nil {
+	return err
+}
 
 result, err := parallel.Process(ctx, message)
 ```
@@ -155,16 +174,22 @@ result, err := parallel.Process(ctx, message)
 
 ```go
 import (
+	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/llm"
 	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
-	"github.com/scttfrdmn/agenkit/agenkit-go/adapter"
 )
 
-// Maintains conversation history
-agent := patterns.NewConversationalAgent(&patterns.ConversationalConfig{
-	LLM:          adapter.NewAnthropicAdapter(apiKey),
+// Maintains conversation history.
+//
+// LLMClient accepts anything implementing Complete(ctx, messages, ...opts) —
+// every shipped adapter satisfies that structurally, so no wrapper is needed.
+agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+	LLMClient:    llm.NewAnthropicLLM(apiKey, "claude-sonnet-4-5"),
 	SystemPrompt: "You are a helpful assistant.",
 	MaxHistory:   10,
 })
+if err != nil {
+	return err
+}
 
 response1, _ := agent.Process(ctx, agenkit.NewMessage("user", "What's the capital of France?"))
 response2, _ := agent.Process(ctx, agenkit.NewMessage("user", "What's its population?"))
@@ -191,12 +216,18 @@ func (t *CalculatorTool) Execute(ctx context.Context, params map[string]interfac
 	return agenkit.NewToolResult(result), nil
 }
 
-// ReAct agent with tools
-agent := patterns.NewReActAgent(&patterns.ReActConfig{
-	LLM:           myLLM,
-	Tools:         []agenkit.Tool{&CalculatorTool{}, &WebSearchTool{}},
-	MaxIterations: 5,
+// ReAct agent with tools.
+//
+// The reasoning backend is an Agent (field `Agent`), and the step budget is
+// `MaxSteps`.
+agent, err := patterns.NewReActAgent(&patterns.ReActConfig{
+	Agent:    myReasoningAgent,
+	Tools:    []agenkit.Tool{&CalculatorTool{}, &WebSearchTool{}},
+	MaxSteps: 5,
 })
+if err != nil {
+	return err
+}
 
 result, err := agent.Process(ctx, message)
 ```
@@ -208,17 +239,25 @@ result, err := agent.Process(ctx, message)
 ```go
 import "github.com/scttfrdmn/agenkit/agenkit-go/techniques/reasoning"
 
-// Step-by-step reasoning
-cot := reasoning.NewChainOfThought(myLLM, &reasoning.ChainOfThoughtConfig{
-	PromptTemplate: "Let's solve this step by step:\n{query}",
-	MaxSteps:       5,
-	ParseSteps:     true,
-})
+// Step-by-step reasoning.
+//
+// The techniques take an Agent plus functional options — there is no config struct.
+cot := reasoning.NewChainOfThought(
+	myAgent,
+	reasoning.WithMaxSteps(5),
+)
 
 result, err := cot.Process(ctx, agenkit.NewMessage("user", "What is 15 * 24?"))
-steps := result.Metadata["reasoning_steps"].([]string)
-fmt.Println(steps)
-// ["1. Multiply 15 by 20: 300", "2. Multiply 15 by 4: 60", "3. Add: 360"]
+if err != nil {
+	return err
+}
+
+// reasoning_steps is only present when steps were parsed from the response,
+// so comma-ok rather than a bare assertion.
+if steps, ok := result.Metadata["reasoning_steps"].([]string); ok {
+	fmt.Println(steps)
+	// ["1. Multiply 15 by 20: 300", "2. Multiply 15 by 4: 60", "3. Add: 360"]
+}
 ```
 
 #### Tree-of-Thought (ToT)
@@ -227,17 +266,23 @@ fmt.Println(steps)
 import "github.com/scttfrdmn/agenkit/agenkit-go/techniques/reasoning"
 
 // Multi-path exploration with backtracking
-tot := reasoning.NewTreeOfThought(myAgent, &reasoning.TreeOfThoughtConfig{
-	BranchingFactor: 3,
-	MaxDepth:        4,
-	Strategy:        reasoning.SearchStrategyBestFirst,
-	Evaluator:       customEvaluator,
-})
+tot := reasoning.NewTreeOfThought(
+	myAgent,
+	reasoning.WithBranchingFactor(3),
+	reasoning.WithMaxDepth(4),
+	reasoning.WithStrategy(reasoning.SearchStrategyBestFirst),
+	reasoning.WithEvaluator(customEvaluator),
+)
 
 result, err := tot.Process(ctx, message)
-path := result.Metadata["reasoning_path"].([]string)
-score := result.Metadata["best_score"].(float64)
-fmt.Printf("Best path: %v (score: %.2f)\n", path, score)
+if err != nil {
+	return err
+}
+
+if path, ok := result.Metadata["reasoning_path"].([]string); ok {
+	score, _ := result.Metadata["best_score"].(float64)
+	fmt.Printf("Best path: %v (score: %.2f)\n", path, score)
+}
 ```
 
 #### Self-Consistency
@@ -246,68 +291,69 @@ fmt.Printf("Best path: %v (score: %.2f)\n", path, score)
 import "github.com/scttfrdmn/agenkit/agenkit-go/techniques/reasoning"
 
 // Generate multiple reasoning paths and vote
-sc := reasoning.NewSelfConsistency(myCOTAgent, &reasoning.SelfConsistencyConfig{
-	NumSamples:     7,
-	VotingStrategy: reasoning.VotingStrategyMajority,
-})
+sc := reasoning.NewSelfConsistency(
+	myCOTAgent,
+	reasoning.WithNumSamples(7),
+	reasoning.WithVotingStrategy(reasoning.VotingStrategyMajority),
+)
 
 result, err := sc.Process(ctx, message)
-consistency := result.Metadata["consistency_score"].(float64)
-counts := result.Metadata["answer_counts"].(map[string]int)
+if err != nil {
+	return err
+}
+
+consistency, _ := result.Metadata["consistency_score"].(float64)
+counts, _ := result.Metadata["answer_counts"].(map[string]int)
 fmt.Printf("Consistency: %.2f, Answers: %v\n", consistency, counts)
 ```
 
 ### Observability
 
 ```go
-import (
-	"github.com/scttfrdmn/agenkit/agenkit-go/observability"
-	"go.opentelemetry.io/otel"
-)
+import "github.com/scttfrdmn/agenkit/agenkit-go/observability"
 
-// Enable distributed tracing
-tracer := otel.Tracer("my-service")
-agent = observability.NewTracingMiddleware(agent, tracer)
+// Enable distributed tracing.
+//
+// The second argument is the span *name*, not a tracer — the middleware resolves
+// the tracer itself. Passing "" derives "agent.<name>.process".
+agent = observability.NewTracingMiddleware(agent, "process_request")
 
 // Now all agent calls are traced
-ctx, span := tracer.Start(ctx, "process_request")
-defer span.End()
-
 result, err := agent.Process(ctx, message)
 ```
 
 ### HTTP Server
 
 ```go
-import (
-	"github.com/scttfrdmn/agenkit/agenkit-go/transport/http"
-	"net/http"
-)
+import "github.com/scttfrdmn/agenkit/agenkit-go/adapter/http"
 
 // Expose agent as HTTP endpoint
 server := http.NewHTTPAgent(agent, ":8080")
 
-// Start server
-if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+// Start server — the lifecycle is Start(ctx)/Stop()
+if err := server.Start(ctx); err != nil {
 	log.Fatal(err)
 }
+defer func() { _ = server.Stop() }()
 ```
 
 ### gRPC Server
 
 ```go
-import (
-	"github.com/scttfrdmn/agenkit/agenkit-go/transport/grpc"
-	"google.golang.org/grpc"
-)
+import "github.com/scttfrdmn/agenkit/agenkit-go/adapter/grpc"
 
 // Expose agent as gRPC service
-server := grpc.NewGRPCAgent(agent, ":50051")
-
-// Start server
-if err := server.Serve(); err != nil {
+server, err := grpc.NewGRPCServer(agent, ":50051")
+if err != nil {
 	log.Fatal(err)
 }
+
+// Start server. Note Start() takes no context here, unlike HTTPAgent.Start(ctx)
+// above — see issue #844.
+if err := server.Start(); err != nil {
+	log.Fatal(err)
+}
+defer func() { _ = server.Stop() }()
 ```
 
 ## Package Structure
@@ -316,9 +362,8 @@ if err := server.Serve(); err != nil {
 agenkit-go/
 ├── agenkit/                 # Core package
 │   ├── interfaces.go        # Agent, Message, Tool interfaces
-│   ├── introspection.go     # Introspection utilities
-│   └── message.go           # Message types
-├── patterns/                # 32 agent patterns
+│   └── introspection.go     # Introspection utilities
+├── patterns/                # 14 agent patterns
 │   ├── sequential.go        # Pipeline execution
 │   ├── parallel.go          # Concurrent execution
 │   ├── router.go            # Conditional routing
@@ -327,8 +372,12 @@ agenkit-go/
 │   ├── reflection.go        # Self-critique loop
 │   ├── planning.go          # Task decomposition
 │   ├── autonomous.go        # Goal-driven agents
-│   ├── memory.go            # Memory hierarchy
-│   └── ... [23 more patterns]
+│   ├── supervisor.go        # Planner + specialists
+│   ├── collaborative.go     # Peer collaboration
+│   ├── consensus.go         # Multi-agent agreement
+│   ├── fallback.go          # Ordered degradation
+│   ├── human_in_loop.go     # Approval gates
+│   └── reasoning_with_tools.go
 ├── techniques/              # Reasoning techniques
 │   └── reasoning/
 │       ├── chain_of_thought.go     # CoT prompting
@@ -336,7 +385,7 @@ agenkit-go/
 │       ├── self_consistency.go     # Voting strategy
 │       ├── graph_of_thought.go     # Graph reasoning
 │       └── reasoning_tree.go       # Tree utilities
-├── middleware/              # Production middleware
+├── middleware/              # Production middleware (all *Decorator)
 │   ├── retry.go             # Automatic retries
 │   ├── circuit_breaker.go   # Circuit breaker pattern
 │   ├── timeout.go           # Timeout handling
@@ -344,25 +393,28 @@ agenkit-go/
 │   ├── caching.go           # Response caching
 │   ├── batching.go          # Request batching
 │   └── metrics.go           # Metrics collection
-├── adapter/                 # LLM adapters
-│   ├── anthropic.go         # Claude API
-│   ├── openai.go            # OpenAI API
-│   ├── openai_compatible.go # OpenAI-compatible services (vLLM, llama.cpp, etc.)
-│   ├── bedrock.go           # AWS Bedrock
-│   └── gemini.go            # Google Gemini
-├── transport/               # Communication protocols
-│   ├── http/                # HTTP/REST server & client
-│   ├── grpc/                # gRPC server & client
-│   └── websocket/           # WebSocket support
+├── adapter/                 # Adapters — LLM providers and transports
+│   ├── llm/                 # Anthropic, OpenAI, Bedrock, Gemini, Ollama,
+│   │                        #   vLLM, SGLang, LiteLLM, OpenAI-compatible
+│   ├── http/                # HTTP/REST server
+│   ├── grpc/                # gRPC server
+│   ├── remote/              # Remote agent client (cross-language)
+│   ├── transport/           # Transport plumbing
+│   ├── codec/               # Wire encoding
+│   ├── local/               # In-process adapter
+│   ├── registry/            # Adapter registry
+│   └── errors/              # Adapter error types
+├── protocols/               # MCP, AG-UI, A2A
+├── memory/                  # Memory stores
+├── safety/                  # Guardrails
+├── skills/                  # Agent skills
+├── composition/             # Pattern composition
+├── checkpointing/           # Durable state
 ├── observability/           # Tracing and metrics
 │   ├── tracing.go           # OpenTelemetry integration
 │   └── metrics.go           # Prometheus metrics
 ├── evaluation/              # Testing and optimization
-│   ├── recorder.go          # Session recording
-│   ├── benchmarks.go        # Performance benchmarks
-│   └── optimizer.go         # Hyperparameter optimization
 └── budget/                  # Token and cost management
-    └── limiter.go           # Budget limiting
 ```
 
 ## API Reference
@@ -373,23 +425,33 @@ See [GoDoc](https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go) for comp
 
 Comprehensive examples are available in [examples/](examples/):
 
+Examples are packages, so pass the directory rather than a file:
+
 ```bash
-# Run basic examples
-go run examples/basic/echo_agent.go
-go run examples/basic/sequential_pattern.go
+# Every snippet in this README, compiled
+go run ./examples/readme
 
-# Run pattern examples
-go run examples/patterns/react_example.go
-go run examples/patterns/planning_example.go
+# Pattern examples
+go run ./examples/patterns/react
+go run ./examples/patterns/planning
+go run ./examples/patterns/router
+go run ./examples/patterns/conversational
 
-# Run reasoning examples
-go run examples/techniques/reasoning/cot_example.go
-go run examples/techniques/reasoning/tot_example.go
-
-# Run production examples
-go run examples/production/http_server.go
-go run examples/production/grpc_server.go
+# Reasoning examples
+go run ./examples/techniques/graph_of_thought
 ```
+
+Some examples carry a `//go:build ignore` tag, which excludes them from `go build ./...`.
+Run those by naming the file directly:
+
+```bash
+go run examples/middleware/retry_example.go
+go run examples/frameworks/minicrew/main.go
+```
+
+Because the build tag opts them out of `go build ./...`, `go vet ./...` and CI, eight of
+them do not currently compile — tracked in
+[#843](https://github.com/scttfrdmn/agenkit/issues/843).
 
 ## Testing
 
@@ -410,39 +472,66 @@ go test -bench=. ./benchmarks/
 
 ## Performance Benchmarks
 
-```bash
-# Run pattern benchmarks
-cd benchmarks && go test -bench=BenchmarkPatterns -benchtime=10s
+Each pattern has its own benchmark — there is no umbrella `BenchmarkPatterns`. Select
+the ones you care about by name:
 
-# Results (Apple M1 Pro):
-# Sequential:     2000 ns/op   (500K ops/sec)
-# Parallel:       5000 ns/op   (200K ops/sec)
-# ReAct:         10000 ns/op   (100K ops/sec)
+```bash
+# One pattern
+go test -bench='^BenchmarkSequential$' -run='^$' ./benchmarks/
+
+# Several
+go test -bench='^Benchmark(Sequential|Parallel|ReAct|Router|Reflection)$' \
+    -run='^$' -benchtime=10s ./benchmarks/
+
+# Everything, including middleware and transport overhead
+go test -bench=. -run='^$' ./benchmarks/
 ```
 
-See [../docs/PERFORMANCE_COMPARISON.md](../docs/PERFORMANCE_COMPARISON.md) for detailed benchmarks.
+`-run='^$'` matches no tests, so only the benchmarks execute.
+
+Measured on an Apple M4 Pro (`goarch=arm64`, `-benchtime=1s`), orchestration overhead
+with stub agents — no LLM calls:
+
+```
+BenchmarkRouter-12         176.9 ns/op
+BenchmarkSequential-12     683.4 ns/op
+BenchmarkReAct-12          688.3 ns/op
+BenchmarkParallel-12      2170   ns/op
+BenchmarkReflection-12  100503   ns/op
+```
+
+Reflection is three orders of magnitude slower than the rest because it runs a
+critique-and-revise loop; it is the one pattern where Go loses to Python. Re-measure on
+your own hardware before quoting any of these.
+
+See [docs/PERFORMANCE_COMPARISON.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/PERFORMANCE_COMPARISON.md)
+for the cross-language comparison.
 
 ## Cross-Language Compatibility
 
 Go agents maintain 100% behavioral parity with Python:
 
-```bash
-# Run cross-language equivalence tests
-go run tests/cross_language_harness
+`tests/cross_language_harness.go` is a stdin/stdout harness driven by the
+cross-language test runner, not a standalone suite — it reads one JSON request per
+invocation and writes one JSON response. Run the equivalence tests from the
+repository root:
 
-# Results:
-# Chain-of-Thought: 9/9 scenarios passing (100%)
-# Tree-of-Thought: 11/11 scenarios passing (100%)
-# Self-Consistency: 7/7 scenarios passing (100%)
+```bash
+./scripts/test-parity.sh
 ```
 
 ### Calling Python Agents from Go
 
 ```go
-import "github.com/scttfrdmn/agenkit/agenkit-go/transport/http"
+import "github.com/scttfrdmn/agenkit/agenkit-go/adapter/remote"
 
-// Call Python agent over HTTP
-pythonAgent := http.NewHTTPClient("http://localhost:8000")
+// A remote agent satisfies agenkit.Agent, so it's a drop-in for a local one
+pythonAgent, err := remote.NewRemoteAgent("python-agent", "http://localhost:8000", 30*time.Second)
+if err != nil {
+	log.Fatal(err)
+}
+defer func() { _ = pythonAgent.Close() }()
+
 result, err := pythonAgent.Process(ctx, message)
 ```
 
@@ -461,7 +550,7 @@ result = await go_agent.process(message)
 ### Docker
 
 ```dockerfile
-FROM golang:1.21-alpine AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
@@ -514,25 +603,25 @@ Choose your source language for detailed migration guide:
 
 | From | Guide | Key Benefits |
 |------|-------|-------------|
-| **Python** | [MIGRATE_PYTHON_TO_GO.md](../docs/MIGRATE_PYTHON_TO_GO.md) | 5-20x faster, true parallelism, single binary |
-| **TypeScript** | [MIGRATE_TYPESCRIPT_TO_GO.md](../docs/MIGRATE_TYPESCRIPT_TO_GO.md) | Multi-threaded, better concurrency, backend services |
-| **Rust** | [MIGRATE_RUST_TO_GO.md](../docs/MIGRATE_RUST_TO_GO.md) | Simpler deployment, faster iteration, GC simplification |
-| **C++** | [MIGRATE_CPP_TO_GO.md](../docs/MIGRATE_CPP_TO_GO.md) | Simpler memory, better concurrency, faster compilation |
-| **Zig** | [MIGRATE_ZIG_TO_GO.md](../docs/MIGRATE_ZIG_TO_GO.md) | GC simplification, goroutines, better concurrency |
+| **Python** | [MIGRATE_PYTHON_TO_GO.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_PYTHON_TO_GO.md) | 5-20x faster, true parallelism, single binary |
+| **TypeScript** | [MIGRATE_TYPESCRIPT_TO_GO.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_TYPESCRIPT_TO_GO.md) | Multi-threaded, better concurrency, backend services |
+| **Rust** | [MIGRATE_RUST_TO_GO.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_RUST_TO_GO.md) | Simpler deployment, faster iteration, GC simplification |
+| **C++** | [MIGRATE_CPP_TO_GO.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_CPP_TO_GO.md) | Simpler memory, better concurrency, faster compilation |
+| **Zig** | [MIGRATE_ZIG_TO_GO.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_ZIG_TO_GO.md) | GC simplification, goroutines, better concurrency |
 
 ### Migrating from Go
 
 | To | Guide | Primary Use Case |
 |----|-------|-----------------|
-| **Python** | [MIGRATE_GO_TO_PYTHON.md](../docs/MIGRATE_GO_TO_PYTHON.md) | Prototyping, ML integration, rapid development |
-| **TypeScript** | [MIGRATE_GO_TO_TYPESCRIPT.md](../docs/MIGRATE_GO_TO_TYPESCRIPT.md) | Web frontend, universal deployment, browser support |
-| **Rust** | [MIGRATE_GO_TO_RUST.md](../docs/MIGRATE_GO_TO_RUST.md) | Memory safety, WASM, zero-cost abstractions |
-| **C++** | [MIGRATE_GO_TO_CPP.md](../docs/MIGRATE_GO_TO_CPP.md) | Performance tuning, legacy integration, C ABI |
-| **Zig** | [MIGRATE_GO_TO_ZIG.md](../docs/MIGRATE_GO_TO_ZIG.md) | Embedded systems, minimal runtime, explicit control |
+| **Python** | [MIGRATE_GO_TO_PYTHON.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_GO_TO_PYTHON.md) | Prototyping, ML integration, rapid development |
+| **TypeScript** | [MIGRATE_GO_TO_TYPESCRIPT.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_GO_TO_TYPESCRIPT.md) | Web frontend, universal deployment, browser support |
+| **Rust** | [MIGRATE_GO_TO_RUST.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_GO_TO_RUST.md) | Memory safety, WASM, zero-cost abstractions |
+| **C++** | [MIGRATE_GO_TO_CPP.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_GO_TO_CPP.md) | Performance tuning, legacy integration, C ABI |
+| **Zig** | [MIGRATE_GO_TO_ZIG.md](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATE_GO_TO_ZIG.md) | Embedded systems, minimal runtime, explicit control |
 
 **See also:**
-- [Language Profile: Go](../docs/LANGUAGE_PROFILE_GO.md) - Deep dive into Go idioms and patterns
-- [Migration Index](../docs/MIGRATION_INDEX.md) - Complete migration documentation hub
+- [Language Profile: Go](https://github.com/scttfrdmn/agenkit/blob/main/docs/LANGUAGE_PROFILE_GO.md) - Deep dive into Go idioms and patterns
+- [Migration Index](https://github.com/scttfrdmn/agenkit/blob/main/docs/MIGRATION_INDEX.md) - Complete migration documentation hub
 
 ## Development
 
@@ -552,19 +641,19 @@ protoc --go_out=. --go-grpc_out=. proto/*.proto
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+Contributions are welcome! See [CONTRIBUTING.md](https://github.com/scttfrdmn/agenkit/blob/main/.github/CONTRIBUTING.md) for guidelines.
 
 ## License
 
-Apache 2.0 - See [LICENSE](../LICENSE) for details.
+Apache 2.0 - See [LICENSE](https://github.com/scttfrdmn/agenkit/blob/main/LICENSE) for details.
 
 ## Links
 
 - **Documentation**: https://agenkit.dev
 - **GoDoc**: https://pkg.go.dev/github.com/scttfrdmn/agenkit/agenkit-go
 - **GitHub**: https://github.com/scttfrdmn/agenkit
-- **Python**: [../agenkit/](../agenkit/)
-- **TypeScript**: [../agenkit-ts/](../agenkit-ts/)
+- **Python**: [../agenkit/](https://github.com/scttfrdmn/agenkit/tree/main/agenkit)
+- **TypeScript**: [../agenkit-ts/](https://github.com/scttfrdmn/agenkit/tree/main/agenkit-ts)
 
 ## Support
 

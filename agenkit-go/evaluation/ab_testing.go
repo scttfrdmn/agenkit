@@ -293,20 +293,26 @@ func (t *ABTest) evaluateVariant(ctx context.Context, variant *ABVariant, testCa
 		response, err := variant.Agent.Process(ctx, message)
 		latencyMs := float64(time.Since(startTime).Milliseconds())
 
-		var accuracy float64
-		if err != nil {
-			accuracy = 0.0
-		} else {
-			// Simple accuracy check (contains expected)
-			actual := response.ContentString()
-			if expected != "" {
-				if stringContainsIgnoreCase(actual, expected) {
-					accuracy = 1.0
-				} else {
-					accuracy = 0.0
-				}
-			} else {
-				accuracy = 1.0 // No expected value means success
+		// Read the response only after checking err: Process returns (nil, err) on
+		// failure, and ContentString dereferences its receiver. Calling it
+		// unconditionally in the map literal below panicked with SIGSEGV on any
+		// erroring agent — the one case an A/B test most needs to survive (#822).
+		actual := ""
+		if err == nil {
+			actual = response.ContentString()
+		}
+
+		// Accuracy delegates to TestCase.Validate so this scoring site cannot drift
+		// from checkTest, AccuracyMetric or the docs/DEFAULTS.md contract. It used to
+		// use a hand-rolled stringToLower that sized its rune buffer by *byte* length,
+		// so every multi-byte rune left NUL padding ("ПАРИЖ" -> "П\x00А\x00Р\x00И\x00Ж\x00")
+		// and a Cyrillic or umlauted expected scored 0.0 for *both* arms — which
+		// reports "inconclusive" with nothing to show the scoring never ran (#822).
+		accuracy := 0.0
+		if err == nil {
+			tc := &TestCase{Expected: expected}
+			if tc.Validate(actual) {
+				accuracy = 1.0
 			}
 		}
 
@@ -315,7 +321,7 @@ func (t *ABTest) evaluateVariant(ctx context.Context, variant *ABVariant, testCa
 			"latency_ms": latencyMs,
 			"input":      input,
 			"expected":   expected,
-			"actual":     response.ContentString(),
+			"actual":     actual,
 		})
 	}
 
@@ -423,38 +429,6 @@ func CalculateSampleSize(baselineMean, minimumDetectableEffect, alpha, power flo
 }
 
 // Helper functions
-
-// stringContainsIgnoreCase checks if s contains substr (case-insensitive).
-func stringContainsIgnoreCase(s, substr string) bool {
-	s = stringToLower(s)
-	substr = stringToLower(substr)
-	return stringContains(s, substr)
-}
-
-func stringToLower(s string) string {
-	result := make([]rune, len(s))
-	for i, r := range s {
-		if r >= 'A' && r <= 'Z' {
-			result[i] = r + ('a' - 'A')
-		} else {
-			result[i] = r
-		}
-	}
-	return string(result)
-}
-
-func stringContains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 || indexOfSubstring(s, substr) >= 0)
-}
-
-func indexOfSubstring(s, substr string) int {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return i
-		}
-	}
-	return -1
-}
 
 // tTest performs independent samples t-test (simplified).
 func tTest(sample1, sample2 []float64) float64 {

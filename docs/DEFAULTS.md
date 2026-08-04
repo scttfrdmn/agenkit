@@ -251,9 +251,42 @@ three-way divergence in #820 and the ASCII-vs-Unicode split in #823 arose.
   - **Go's `checkTest` lowered ASCII `A-Z` only**, via a hand-rolled helper, while
     `AccuracyMetric` used `strings.ToLower`. A Greek, Cyrillic or umlauted `expected`
     therefore failed the pass count and scored `1.0` on the metric in the same run.
-- **Not covered by this contract:** Rust's `ab_testing.rs` scores with trimmed
-  case-sensitive equality (tracked in #822). C++ has no `Evaluator`, so it has no
-  runner-side check to align; Zig validates directly via `TestCase.validate`.
+- C++ has no `Evaluator`, so it has no runner-side check to align; Zig validates
+  directly via `TestCase.validate`.
+
+### A/B testing scores by the same contract
+
+`ABTest` is a third scoring site, and it is bound by the table above: `expected` is
+a fragment, matched case-insensitively. Go and Rust now delegate to
+`TestCase.Validate` / a `Metric` rather than open-coding a comparison (#822).
+
+| Core | A/B accuracy | Notes |
+|------|--------------|-------|
+| Python | `expected.lower() in actual.lower()` | inline |
+| Go | `TestCase.Validate` | delegates (#822) |
+| TypeScript | `actual.toLowerCase().includes(expected.toLowerCase())` | inline |
+| Rust | `AccuracyMetric` via `metric_for(metric_name)` | delegates (#822) |
+| C++ | reads response **metadata**, never `expected` | divergent — #829 |
+
+- **Rust's `ab_testing.rs` used trimmed, case-sensitive, whole-string equality** — a
+  third semantics, distinct from both the table above and this core's own
+  `AccuracyMetric`. Since `expected` holds a fragment, a correct agent answering in
+  prose scored `0.0` — for *both* arms, reporting `winner = "inconclusive"` with a
+  p-value and effect size attached, so nothing indicated the scoring never worked. It
+  also ignored its `metric_name` argument outright. Fixed in #822.
+- **Go's A/B site had its own hand-rolled lowering**, distinct from the one #823
+  removed from `checkTest`: it sized the rune buffer by *byte* length
+  (`make([]rune, len(s))`) while ranging by byte offset, so every multi-byte rune left
+  NUL padding — `"ПАРИЖ"` became `"П\x00А\x00Р\x00И\x00Ж\x00"`. That is worse than
+  ASCII-only lowering, which at least leaves non-`A-Z` input intact. Fixed in #822.
+- **`metric_name` in Rust's `ABTest::run` selects the metric.** `"accuracy"`,
+  `"quality"`, `"latency"` and `"context_length"` resolve to the corresponding
+  `Metric`; an unrecognised name is an `AgentError::InvalidInput`, not a silent
+  fallback to accuracy.
+- **An absent `expected` key is not yet consistent across the A/B sites.** Python and
+  Go score it `1.0` (consistent with "an empty `expected` matches everything" above);
+  TypeScript's `expected && ...` short-circuits to `0.0`. Tracked in #827 along with
+  the same question for `Metric` implementations generally.
 
 ## Related Documentation
 

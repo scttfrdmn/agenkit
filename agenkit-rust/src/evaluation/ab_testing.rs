@@ -41,11 +41,16 @@
 //! ```
 
 use crate::core::{Agent, AgentError, Message};
+use crate::evaluation::context_metrics::{ContextMetrics, LatencyMetric};
+use crate::evaluation::core::Metric;
+use crate::evaluation::quality_metrics::{AccuracyMetric, QualityMetrics};
 use rand::RngExt;
 use serde::{Deserialize, Serialize};
 use statrs::distribution::{ContinuousCDF, Normal, StudentsT};
 use statrs::statistics::Statistics;
+use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Instant;
 
 /// Statistical test types for A/B testing
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -224,7 +229,9 @@ impl ABTest {
     /// * `control` - Control (baseline) agent
     /// * `treatment` - Treatment (improved) agent
     /// * `test_cases` - Test cases to evaluate
-    /// * `metric_name` - Metric to compare (e.g., "accuracy")
+    /// * `metric_name` - Metric to compare: `"accuracy"`, `"quality"`, `"latency"` or
+    ///   `"context_length"`. An unrecognised name is an
+    ///   [`AgentError::InvalidInput`], not a silent fallback to accuracy.
     pub async fn run(
         &self,
         control: Arc<dyn Agent>,
@@ -323,30 +330,66 @@ impl ABTest {
         n.ceil() as usize
     }
 
+    /// Resolves a metric name to the [`Metric`] implementation that computes it.
+    ///
+    /// `None` for an unknown name, which [`ABTest::run`] turns into an error rather
+    /// than silently scoring something else — see [`ABTest::evaluate_agent`].
+    fn metric_for(metric_name: &str) -> Option<Box<dyn Metric>> {
+        match metric_name {
+            "accuracy" => Some(Box::new(AccuracyMetric::new(None, false))),
+            "quality" => Some(Box::new(QualityMetrics::new(false, None, None))),
+            "latency" => Some(Box::new(LatencyMetric::new())),
+            "context_length" => Some(Box::new(ContextMetrics::new())),
+            _ => None,
+        }
+    }
+
     /// Evaluate agent on a single test case
+    ///
+    /// Scores by delegating to the [`Metric`] named by `metric_name`, so an A/B test
+    /// measures the same thing an [`Evaluator`](super::core::Evaluator) run would.
+    ///
+    /// This used to open-code `response.trim() == expected.trim()` — trimmed,
+    /// case-sensitive, whole-string equality, a third semantics distinct both from the
+    /// substring contract in `docs/DEFAULTS.md` and from this core's own
+    /// `AccuracyMetric`. Since `expected` holds a *fragment*
+    /// (`SimpleQABenchmark` uses `"4"`, `"Paris"`; needle-in-haystack uses
+    /// `ALPHA-0000-OMEGA`), a correct agent answering in prose scored `0.0` — for both
+    /// arms, which reports `winner = "inconclusive"` with nothing to indicate the
+    /// scoring never worked (#822).
+    ///
+    /// It also ignored `metric_name` outright (the parameter was `_metric_name`): the
+    /// caller named a metric and got hardcoded accuracy regardless.
     async fn evaluate_agent(
         &self,
         agent: Arc<dyn Agent>,
         test_case: &TestCase,
-        _metric_name: &str,
+        metric_name: &str,
     ) -> Result<f64, AgentError> {
-        // Create message
-        let message = Message::with_text("user", test_case.input.clone());
+        let metric = Self::metric_for(metric_name).ok_or_else(|| {
+            AgentError::InvalidInput(format!(
+                "unknown metric {metric_name:?}; expected one of \
+                 \"accuracy\", \"quality\", \"latency\", \"context_length\""
+            ))
+        })?;
 
-        // Process with agent
-        let response = agent.process(message).await?;
+        let input = Message::with_text("user", test_case.input.clone());
 
-        // Simple accuracy: 1.0 if matches expected, 0.0 otherwise
-        let response_content = response.content.as_str().unwrap_or("").trim();
-        let expected_content = test_case.expected.trim();
+        let started = Instant::now();
+        let output = agent.process(input.clone()).await?;
+        let latency_ms = started.elapsed().as_secs_f64() * 1000.0;
 
-        let score = if response_content == expected_content {
-            1.0
-        } else {
-            0.0
-        };
+        // `expected` reaches AccuracyMetric through the context map, which is also how
+        // `Evaluator` passes it. `latency_ms` is what LatencyMetric reads; supplying it
+        // unconditionally keeps `metric_name = "latency"` from silently measuring 0.0.
+        let mut ctx: HashMap<String, serde_json::Value> = test_case.metadata.clone();
+        ctx.insert(
+            "expected".to_string(),
+            serde_json::json!(test_case.expected),
+        );
+        ctx.insert("latency_ms".to_string(), serde_json::json!(latency_ms));
 
-        Ok(score)
+        metric.measure(agent, &input, &output, &ctx).await
     }
 
     /// Run the appropriate statistical test
@@ -372,6 +415,22 @@ impl ABTest {
 
         // Welch's t-test (unequal variances)
         let se = ((var1 / n1) + (var2 / n2)).sqrt();
+
+        // A degenerate sample has no t-statistic to speak of. Two ordinary cases reach
+        // here: both arms scoring identically (`se == 0.0` — and since accuracy samples
+        // are 0.0/1.0, ties are common, not exotic), and a single test case per arm
+        // (`statrs` returns NaN variance for n = 1, so `se` is NaN). Either way the
+        // Welch-Satterthwaite `df` comes out NaN, `StudentsT::new` rejects it, and the
+        // whole run used to fail with "Degrees of freedom are NaN". Report "no
+        // detectable difference" instead, matching the `se == 0` and `n == 0` guards
+        // Go's `tTest` already has.
+        //
+        // `!se.is_finite()` covers the n = 1 case via that NaN variance, so there is no
+        // separate `n < 2` check — adding one would be unreachable.
+        if se == 0.0 || !se.is_finite() {
+            return Ok(1.0);
+        }
+
         let t_stat = (mean1 - mean2) / se;
 
         // Welch-Satterthwaite degrees of freedom
@@ -560,6 +619,7 @@ impl ABTest {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Duration;
 
     #[test]
     fn test_significance_levels() {
@@ -586,5 +646,233 @@ mod tests {
         let n = ABTest::calculate_sample_size(0.75, 0.05, 0.05, 0.80, 0.05);
         assert!(n > 0);
         assert!(n < 1000); // Sanity check
+    }
+
+    /// Answers every prompt with the same canned reply.
+    struct CannedAgent(&'static str);
+
+    #[async_trait::async_trait]
+    impl Agent for CannedAgent {
+        fn name(&self) -> &str {
+            "canned"
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            Ok(Message::with_text("assistant", self.0))
+        }
+    }
+
+    /// Sleeps before answering, so a latency measurement has something to measure.
+    struct SlowAgent(Duration);
+
+    #[async_trait::async_trait]
+    impl Agent for SlowAgent {
+        fn name(&self) -> &str {
+            "slow"
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            tokio::time::sleep(self.0).await;
+            Ok(Message::with_text("assistant", "4"))
+        }
+    }
+
+    struct FailingAgent;
+
+    #[async_trait::async_trait]
+    impl Agent for FailingAgent {
+        fn name(&self) -> &str {
+            "failing"
+        }
+
+        async fn process(&self, _message: Message) -> Result<Message, AgentError> {
+            Err(AgentError::ProcessingError("upstream is down".to_string()))
+        }
+    }
+
+    fn ab_test() -> ABTest {
+        ABTest::new(StatisticalTestType::TTest, SignificanceLevel::P005)
+    }
+
+    #[tokio::test]
+    async fn test_scores_a_correct_but_verbose_agent() {
+        // The bug this replaces: scoring was `response.trim() == expected.trim()`, so an
+        // agent answering in prose scored 0.0 against a fragment `expected`. Every
+        // benchmark in this crate stores fragments ("4", "Paris", ALPHA-0000-OMEGA), so
+        // A/B tests over this crate's own data never measured anything (#822).
+        let cases = vec![
+            TestCase::new("What is 2+2?", "4"),
+            TestCase::new("Capital of France?", "4"),
+        ];
+
+        let verbose: Arc<dyn Agent> = Arc::new(CannedAgent("Well, the answer is 4, I think."));
+        let wrong: Arc<dyn Agent> = Arc::new(CannedAgent("I really could not say."));
+
+        let result = ab_test()
+            .run(verbose, wrong, &cases, "accuracy")
+            .await
+            .unwrap();
+
+        assert_eq!(
+            result.control.mean, 1.0,
+            "verbose-but-correct must score 1.0"
+        );
+        assert_eq!(result.treatment.mean, 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_scoring_is_case_insensitive_and_unicode_aware() {
+        // `to_lowercase` is Unicode-aware, unlike the ASCII-only hand-rolled helpers
+        // that produced the divergences in #820 and #823.
+        let cases = vec![
+            TestCase::new("Capital of France?", "paris"),
+            TestCase::new("Capital of Russia?", "москва"),
+            TestCase::new("Wie ist es?", "ähnlich"),
+        ];
+
+        for case in &cases {
+            let shouty = case.expected.to_uppercase();
+            let agent: Arc<dyn Agent> = Arc::new(CannedAgent(Box::leak(
+                format!("Naturally, {shouty}.").into_boxed_str(),
+            )));
+
+            let result = ab_test()
+                .run(agent.clone(), agent, std::slice::from_ref(case), "accuracy")
+                .await
+                .unwrap();
+
+            assert_eq!(
+                result.control.mean, 1.0,
+                "expected {:?} should match its own uppercasing",
+                case.expected
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_scoring_agrees_with_the_accuracy_metric() {
+        // The two comparison paths must not drift: this site now *is* AccuracyMetric,
+        // and this test fails if it is ever open-coded again.
+        let case = TestCase::new("What is 2+2?", "4");
+        let output = Message::with_text("assistant", "Roughly 4, give or take.");
+        let agent: Arc<dyn Agent> = Arc::new(CannedAgent("Roughly 4, give or take."));
+
+        let mut ctx = HashMap::new();
+        ctx.insert("expected".to_string(), serde_json::json!(case.expected));
+        let direct = AccuracyMetric::new(None, false)
+            .measure(
+                agent.clone(),
+                &Message::with_text("user", case.input.clone()),
+                &output,
+                &ctx,
+            )
+            .await
+            .unwrap();
+
+        let via_ab = ab_test()
+            .run(agent.clone(), agent, &[case], "accuracy")
+            .await
+            .unwrap();
+
+        assert_eq!(via_ab.control.mean, direct);
+    }
+
+    #[tokio::test]
+    async fn test_metric_name_selects_the_metric() {
+        // `metric_name` used to be `_metric_name` — the caller named a metric and got
+        // hardcoded accuracy regardless. "latency" must not return accuracy's 0.0/1.0.
+        let cases = vec![TestCase::new("What is 2+2?", "definitely not this")];
+        let agent: Arc<dyn Agent> = Arc::new(CannedAgent("4"));
+
+        let accuracy = ab_test()
+            .run(agent.clone(), agent.clone(), &cases, "accuracy")
+            .await
+            .unwrap();
+        assert_eq!(accuracy.control.mean, 0.0, "the answer really is wrong");
+
+        // A deliberately slow agent gives the latency assertion something to bite on.
+        // `mean >= 0.0` would be vacuous: dropping `latency_ms` from the context makes
+        // LatencyMetric return its 0.0 fallback, which satisfies it.
+        let slow: Arc<dyn Agent> = Arc::new(SlowAgent(Duration::from_millis(25)));
+        let latency = ab_test()
+            .run(slow.clone(), slow, &cases, "latency")
+            .await
+            .unwrap();
+        assert_eq!(latency.control.samples.len(), 1);
+        assert!(
+            latency.control.mean >= 20.0,
+            "latency must be the measured elapsed time, got {} ms",
+            latency.control.mean
+        );
+    }
+
+    #[tokio::test]
+    async fn test_unknown_metric_is_an_error_not_a_silent_fallback() {
+        let cases = vec![TestCase::new("What is 2+2?", "4")];
+        let agent: Arc<dyn Agent> = Arc::new(CannedAgent("4"));
+
+        let err = ab_test()
+            .run(agent.clone(), agent, &cases, "f1_score")
+            .await
+            .expect_err("an unrecognised metric name must not silently score accuracy");
+
+        assert!(
+            matches!(err, AgentError::InvalidInput(ref m) if m.contains("f1_score")),
+            "error should name the metric, got {err:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_two_identical_agents_are_inconclusive_not_an_error() {
+        // Zero variance in both arms makes the Welch-Satterthwaite `df` NaN, and
+        // `StudentsT::new` rejects NaN — so comparing two agents that score the same
+        // used to fail the entire run with "Degrees of freedom are NaN". Accuracy
+        // samples are 0.0/1.0, so ties are the common case, not an edge case.
+        let cases = vec![
+            TestCase::new("What is 2+2?", "4"),
+            TestCase::new("What is 3+1?", "4"),
+        ];
+        let agent: Arc<dyn Agent> = Arc::new(CannedAgent("The answer is 4."));
+
+        let result = ab_test()
+            .run(agent.clone(), agent, &cases, "accuracy")
+            .await
+            .expect("identical agents must be reportable, not an error");
+
+        assert_eq!(result.control.mean, result.treatment.mean);
+        assert_eq!(result.p_value, 1.0, "no difference to detect");
+        assert!(!result.is_significant);
+        assert_eq!(result.winner, "inconclusive");
+        assert_eq!(result.effect_size, 0.0);
+    }
+
+    #[tokio::test]
+    async fn test_a_single_test_case_is_inconclusive_not_an_error() {
+        // n = 1 per arm divides by `n - 1` in the df denominator. One test case is a
+        // perfectly ordinary way to call this API.
+        let cases = vec![TestCase::new("What is 2+2?", "4")];
+        let good: Arc<dyn Agent> = Arc::new(CannedAgent("The answer is 4."));
+        let bad: Arc<dyn Agent> = Arc::new(CannedAgent("No idea."));
+
+        let result = ab_test().run(good, bad, &cases, "accuracy").await.unwrap();
+
+        assert_eq!(result.control.mean, 1.0);
+        assert_eq!(result.treatment.mean, 0.0);
+        assert_eq!(result.p_value, 1.0, "n=1 cannot establish significance");
+        assert_eq!(result.winner, "inconclusive");
+    }
+
+    #[tokio::test]
+    async fn test_an_erroring_agent_propagates_rather_than_scoring_zero() {
+        let cases = vec![TestCase::new("What is 2+2?", "4")];
+        let ok: Arc<dyn Agent> = Arc::new(CannedAgent("4"));
+        let bad: Arc<dyn Agent> = Arc::new(FailingAgent);
+
+        let err = ab_test()
+            .run(ok, bad, &cases, "accuracy")
+            .await
+            .expect_err("a broken agent must surface, not silently sample 0.0");
+
+        assert!(matches!(err, AgentError::ProcessingError(_)), "got {err:?}");
     }
 }

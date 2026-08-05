@@ -88,12 +88,19 @@ lint: ## Run linters only (no tests)
 # `| grep -v "^examples/" || echo "✓ Go code formatted"`, which printed the
 # offending files and then reported success regardless — grep's non-zero exit on
 # no-match triggered the "✓", and a match exited 0, so neither path ever failed
-# the target. Mirrors the CI gate in lint.yml (#849).
-	@UNFORMATTED=$$(gofmt -s -l $$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$$') 2>/dev/null); \
+# the target. The 300-file floor guards the guard: `gofmt -s -l` with no arguments
+# reads stdin and exits 0, so an empty list would report success on nothing.
+# Mirrors the CI gate in lint.yml (#849).
+	@FILES=$$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$$'); \
+	 COUNT=$$(printf '%s\n' "$$FILES" | grep -c . || true); \
+	 if [ "$$COUNT" -lt 300 ]; then \
+	   echo "❌ gofmt check found only $$COUNT Go files (expected 300+); fix this check"; exit 1; \
+	 fi; \
+	 UNFORMATTED=$$(gofmt -s -l $$FILES); \
 	 if [ -n "$$UNFORMATTED" ]; then \
 	   echo "❌ Go code not formatted. Run 'make format' to fix:"; \
 	   echo "$$UNFORMATTED"; exit 1; \
-	 else echo "✓ Go code formatted"; fi
+	 else echo "✓ Go code formatted ($$COUNT files)"; fi
 	@echo "Running go vet..."
 	@cd agenkit-go && go vet $$(go list ./... | grep -v /examples/)
 	@echo "✓ All linters passed"

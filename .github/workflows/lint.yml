@@ -60,6 +60,17 @@ jobs:
       - name: Check Go formatting (gofmt)
         run: |
           FILES=$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$')
+          # Fail loudly if the file list is empty rather than reporting success on
+          # nothing. `gofmt -s -l` with no arguments reads stdin and exits 0, so a
+          # layout change that broke this glob would turn the gate into a silent
+          # no-op — the same vacuous-check bug this commit fixes in `make lint`.
+          COUNT=$(printf '%s\n' "$FILES" | grep -c . || true)
+          if [ "$COUNT" -lt 300 ]; then
+            echo "❌ gofmt gate found only $COUNT Go files (expected 300+)."
+            echo "   The file list is wrong; fix this gate rather than trusting it."
+            exit 1
+          fi
+          echo "Checking $COUNT Go files"
           UNFORMATTED=$(gofmt -s -l $FILES)
           if [ -n "$UNFORMATTED" ]; then
             echo "❌ Go code not formatted. Run 'make format' to fix:"

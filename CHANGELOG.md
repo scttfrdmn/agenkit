@@ -27,7 +27,7 @@ for compatibility was told the wrong thing by a v0.87.0 client. Distinct from th
 *spec* revision tracked in #781 — this is our product version.
 
 Now: a committed root `VERSION` file is the single source of truth, and `scripts/version.py`
-propagates it to all 17 sites. **`VERSION` rather than `git describe`**, which the issue
+propagates it to all 19 sites. **`VERSION` rather than `git describe`**, which the issue
 originally suggested: the tag is correct but unreadable where it's needed — sdists and
 `zig fetch` tarballs have no `.git`, `actions/checkout` is shallow by default, and
 `build.zig.zon` is a static data literal that cannot compute anything. A committed file is
@@ -40,15 +40,23 @@ source tree. That removes the file from the sync list permanently instead of add
 the list of things to keep in step. `CLAUDE.md`'s "Current: v0.73.0" line was deleted
 rather than corrected: it is unverifiable prose that had already rotted 14 releases.
 
-New `version-guard` CI job (blocking, toolchain-free) asserts all 17 agree, and on a tag
+New `version-guard` CI job (blocking, toolchain-free) asserts all 19 agree, and on a tag
 push additionally that `VERSION` equals the tag — the only check that can catch a release
 tagged off an unsynced tree. `make check-version` / `make sync-version` locally.
 
+Two of the 19 are `Cargo.lock` files that record the core's version through a path
+dependency. Those are not cosmetic: the Rust cross-language harness builds with
+`cargo build --locked`, which *fails* rather than self-healing when its lock is stale, so
+the first version bump broke CI's `Harness Build (rust)` job. They are patched surgically
+rather than with `cargo update -p agenkit`, which also downgraded 30+ unrelated transitive
+dependencies.
+
 Negative verification: setting `pom.xml` to `0.86.0` was caught with an exact diagnostic.
-Separately, re-indenting `build.sbt` so its anchored pattern stopped matching failed
-**loudly** (`pattern matched 0 times, expected exactly 1`) rather than silently passing —
-a guard that degrades into a no-op when a manifest is reformatted would reintroduce the
-very defect it exists to prevent.
+Re-indenting `build.sbt` so its anchored pattern stopped matching failed **loudly**
+(`pattern matched 0 times, expected exactly 1`) rather than silently passing — a guard that
+degrades into a no-op when a manifest is reformatted would reintroduce the very defect it
+exists to prevent. Reverting the harness lockfile to `0.83.0` reproduced the CI failure and
+was caught, and `sync` restored it byte-identically.
 
 ### Fixed — `HTTPAgent.Start(ctx)` accepted a context and ignored it; `GRPCServer.Start` took none (Issue #844)
 

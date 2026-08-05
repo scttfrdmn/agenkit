@@ -382,8 +382,9 @@ jobs:
         run: ./scripts/check-tracked-artifacts.sh
 
   # The root VERSION file is the single source of truth for the release version.
-  # 17 places declare it — 8 language manifests, 9 MCP `clientInfo.version` wire
-  # constants — and before #842 no two agreed: they spanned 0.10.0 (Python's
+  # 19 places declare it — 8 language manifests, 9 MCP `clientInfo.version` wire
+  # constants, and 2 Cargo.lock files that record it via a path dependency. Before
+  # #842 no two agreed: they spanned 0.10.0 (Python's
   # __version__) to v0.87.0 (the newest tag), a 77-minor-version gap. It
   # accumulated silently because release.sh rewrote exactly one of them and
   # nothing ever compared them.

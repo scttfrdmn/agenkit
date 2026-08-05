@@ -105,6 +105,25 @@ MANIFESTS = [
     Declaration("agenkit-scala/build.sbt", r'^    version      := "([^"]+)"', "Scala (sbt)"),
 ]
 
+# Lockfiles that record the core's own version because they depend on it by path.
+# These are not free to omit: the Rust cross-language harness is built with
+# `cargo build --locked`, which *fails* rather than self-heals when its lock is
+# stale, so bumping agenkit-rust without updating this file breaks CI. Patched
+# surgically rather than by `cargo update -p agenkit`, which also downgraded 30+
+# unrelated transitive dependencies.
+LOCKFILES = [
+    Declaration(
+        "tests/cross_language/harness_rust/Cargo.lock",
+        r'\[\[package\]\]\nname = "agenkit"\nversion = "([^"]+)"',
+        "Rust harness lock",
+    ),
+    Declaration(
+        "agenkit-rust/Cargo.lock",
+        r'\[\[package\]\]\nname = "agenkit"\nversion = "([^"]+)"',
+        "Rust core lock",
+    ),
+]
+
 # MCP protocol clientInfo.version — transmitted to remote peers on handshake.
 # These are not build metadata: a peer logging client versions for compatibility
 # is told whatever is hardcoded here. Distinct from the MCP *spec* revision
@@ -159,7 +178,7 @@ MCP_CONSTANTS = [
     ),
 ]
 
-ALL_DECLARATIONS = MANIFESTS + MCP_CONSTANTS
+ALL_DECLARATIONS = MANIFESTS + MCP_CONSTANTS + LOCKFILES
 
 
 def read_version() -> str:

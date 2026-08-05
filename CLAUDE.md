@@ -35,7 +35,7 @@
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
 - **Languages**: Python, Go, TypeScript, Rust, C++, Zig, C#, Java, Scala (100% feature parity achieved!)
 - **Version**: read the root `VERSION` file — the single source of truth (`make check-version`
-  asserts all 17 declarations agree). Never hardcode a version in prose here: this line
+  asserts all 19 declarations agree). Never hardcode a version in prose here: this line
   used to name one and was 14 releases stale (#842).
 - **Tests**: `make test` (15-30s locally, 100% pass required)
 

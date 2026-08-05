@@ -192,8 +192,11 @@ After publication, monitor:
 
 For future releases (0.9.1, 0.10.0, etc.):
 
-1. Update version in `pyproject.toml`
-2. Update `agenkit/__init__.py` version string
+1. Set the version once: `scripts/version.py set X.Y.Z` (writes the root `VERSION`
+   file and propagates it to `pyproject.toml` and 18 other declarations — #842).
+   Do not hand-edit `pyproject.toml`; `make check-version` and CI will reject it.
+2. `agenkit/__init__.py` needs no edit — `__version__` is read from installed
+   distribution metadata, so it follows `pyproject.toml` automatically.
 3. Update CHANGELOG.md
 4. Git commit and tag
 5. Rebuild package: `rm -rf dist/ && uv run python -m build`

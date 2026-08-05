@@ -337,17 +337,15 @@ func httpServer(ctx context.Context) error {
 	return nil
 }
 
-// grpcServer exposes an agent over gRPC.
-//
-// Note that GRPCServer.Start takes no context, unlike HTTPAgent.Start(ctx) above.
-// That asymmetry is real; see #844.
-func grpcServer() error {
+// grpcServer exposes an agent over gRPC. Same lifecycle as httpServer above:
+// cancelling ctx shuts the server down, and Stop() is the explicit path.
+func grpcServer(ctx context.Context) error {
 	server, err := grpc.NewGRPCServer(&EchoAgent{}, ":50051")
 	if err != nil {
 		return err
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		return err
 	}
 	defer func() { _ = server.Stop() }()

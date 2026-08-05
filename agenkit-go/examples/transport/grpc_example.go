@@ -228,7 +228,7 @@ func scenario1BasicCommunication() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 	defer server.Stop()
@@ -301,7 +301,7 @@ func scenario2StreamingResponses() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 	defer server.Stop()
@@ -397,7 +397,7 @@ func scenario3ConcurrentClients() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 	defer server.Stop()
@@ -489,7 +489,7 @@ func scenario4MetadataHandling() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 	defer server.Stop()
@@ -626,7 +626,7 @@ func scenario5ErrorHandling() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 	fmt.Println("Server started")
@@ -686,7 +686,7 @@ func scenario5ErrorHandling() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 	defer server.Stop()

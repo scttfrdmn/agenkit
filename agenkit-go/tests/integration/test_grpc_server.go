@@ -90,17 +90,22 @@ func main() {
 	fmt.Println("Tracing enabled for cross-language observability tests")
 	fmt.Println("Press Ctrl+C to stop")
 
-	// Start server
-	if err := server.Start(); err != nil {
+	// Tie the server's lifetime to SIGINT/SIGTERM. NotifyContext cancels ctx on
+	// either signal, and Start(ctx) shuts the server down when that happens — so the
+	// signal handling and the shutdown are the same mechanism rather than two.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 
-	// Wait for interrupt signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
-	<-sigChan
+	<-ctx.Done()
 
 	fmt.Println("\nShutting down...")
+	// Stop is idempotent, so calling it after ctx cancellation already stopped the
+	// server is a no-op. It stays here to keep the shutdown synchronous: without it
+	// the process could exit before in-flight RPCs drain.
 	if err := server.Stop(); err != nil {
 		log.Printf("Error stopping server: %v", err)
 	}

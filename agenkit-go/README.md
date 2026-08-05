@@ -330,7 +330,9 @@ import "github.com/scttfrdmn/agenkit/agenkit-go/adapter/http"
 // Expose agent as HTTP endpoint
 server := http.NewHTTPAgent(agent, ":8080")
 
-// Start server — the lifecycle is Start(ctx)/Stop()
+// Start server — the lifecycle is Start(ctx)/Stop(). Start returns immediately;
+// cancelling ctx gracefully shuts the server down, so its lifetime can be tied
+// to the caller's scope. Stop() is idempotent, so deferring it is always safe.
 if err := server.Start(ctx); err != nil {
 	log.Fatal(err)
 }
@@ -348,9 +350,9 @@ if err != nil {
 	log.Fatal(err)
 }
 
-// Start server. Note Start() takes no context here, unlike HTTPAgent.Start(ctx)
-// above — see issue #844.
-if err := server.Start(); err != nil {
+// Same lifecycle as the HTTP server above: cancelling ctx shuts the server
+// down, and Stop() is the explicit path.
+if err := server.Start(ctx); err != nil {
 	log.Fatal(err)
 }
 defer func() { _ = server.Stop() }()

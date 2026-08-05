@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — `HTTPAgent.Start(ctx)` accepted a context and ignored it; `GRPCServer.Start` took none (Issue #844)
+
+**BREAKING (Go):** `adapter/grpc.(*GRPCServer).Start` now takes a `context.Context`,
+matching `HTTPAgent`, `LocalAgent` and `AgentRegistry`. Call sites need one argument
+added: `server.Start()` → `server.Start(ctx)`. Pass `context.Background()` to keep the
+old behaviour of shutting down only via `Stop()`.
+
+The reported issue was the signature asymmetry. The worse defect was found while fixing
+it: **`HTTPAgent.Start(ctx)` never read its context.** Renaming the parameter to `_`
+compiled cleanly, which is only possible if nothing in the body used it. `Stop()` then
+built its own context from `context.Background()`, discarding whatever the caller passed.
+
+So a caller could write `Start(ctx)`, cancel `ctx`, and reasonably believe the server was
+shutting down. It wasn't — it served indefinitely. A signature that promises cancellation
+and silently doesn't deliver is more dangerous than one that never promised it, since
+`GRPCServer.Start()` at least told you at the call site that `Stop()` was your
+responsibility. `LocalAgent` compounded it: it forwards `ctx` into `httpAgent.Start(ctx)`,
+where it was dropped, making its own context wiring partly decorative.
+
+Both servers now start a watcher goroutine that calls `Stop()` when `ctx` is cancelled.
+The watcher also selects on a `stopped` channel so it exits when the server is stopped
+explicitly — otherwise a caller who never cancels leaked a goroutine for the process
+lifetime. `Stop()` is now documented and tested as idempotent (guarded by a
+`sync.Once`), because `Start(ctx)` + `defer Stop()` + `cancel()` is the ordinary pattern
+and closing a closed channel panics. `GracefulStop` moved outside the mutex: it blocks
+until in-flight RPCs finish, so holding the lock could deadlock against a handler.
+
+Also in this change: `Stop()`'s shutdown timeout was written `5*1000*1000*1000` in a file
+that already imports `time`; now `5*time.Second`. `Serve` returning
+`grpc.ErrServerStopped` after a graceful stop is no longer logged as an error — it is the
+normal exit path.
+
+**Not a cross-language parity item.** Python has no context parameter anywhere
+(`async def start(self)` uniformly across grpc_server/http_server/local_agent/registry —
+asyncio cancels the task instead), TypeScript's gRPC server takes none, and Rust has no
+gRPC server. Go's problem was Go-internal: advertising `ctx` on HTTP without honouring it.
+
+4 new regression tests in `adapter_test/server_context_test.go` covering cancellation
+shutdown, `Stop()` idempotency, and the stop-then-cancel ordering that would otherwise
+panic on a background goroutine. None of this was tested before, which is why an ignored
+parameter survived. Negative verification: reverting each watcher independently — with
+`_ = ctx` added so the file still compiled and the *test* was the judge — failed the
+matching test in 5.01s with `server still serving after its context was cancelled`.
+
+**The #843 CI gate was widened as a result.** Updating the 21 `Start()` call sites broke
+`agenkit-go/tests/integration/test_grpc_server.go` (`undefined: ctx`), which made eight
+Python cross-language gRPC tests fail because they could not launch a Go server. The
+build-tag gate added in #843 reported success throughout: it searched `examples/` only,
+and the three `tests/integration/` servers also carry `//go:build ignore`. They are
+`go run` targets for the Python harness, so they are exactly as load-bearing as an
+example and were compiled by nothing. The gate's search root is now the whole module —
+41 files to 44. Negative verification: with the break reintroduced, the old
+`examples/`-scoped loop exits 0 and the widened loop exits 1.
+
 ### Fixed — every documented Go install path 404s; version floor contradicted the docs (Issue #834)
 
 `go get github.com/agenkit/agenkit-go` was the documented install command in `README.md`,

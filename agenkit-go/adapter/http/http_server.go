@@ -82,6 +82,11 @@ type HTTPAgent struct {
 	options     ServerOptions
 	upgrader    websocket.Upgrader
 	startTime   time.Time // Track server start time for uptime
+	// stopped is closed by Stop so the context watcher started by Start can exit.
+	// stopOnce guards that close: Stop is documented as idempotent, and closing a
+	// closed channel panics.
+	stopped  chan struct{}
+	stopOnce sync.Once
 }
 
 // NewHTTPAgent creates a new HTTP agent server with default options (HTTP/1.1 only).
@@ -139,6 +144,7 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 		mux:       mux,
 		options:   options,
 		startTime: time.Now(), // Track server start time for uptime
+		stopped:   make(chan struct{}),
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  4096,
 			WriteBufferSize: 4096,
@@ -193,7 +199,19 @@ func NewHTTPAgentWithOptions(agent agenkit.Agent, addr string, options ServerOpt
 	return h
 }
 
-// Start starts the HTTP server (and HTTP/3 if enabled).
+// Start starts the HTTP server (and HTTP/3 if enabled) and returns immediately;
+// the server runs in background goroutines.
+//
+// Cancelling ctx gracefully shuts the server down, so its lifetime can be tied
+// to the caller's scope:
+//
+//	ctx, cancel := context.WithCancel(context.Background())
+//	defer cancel() // server shuts down when the caller returns
+//	if err := server.Start(ctx); err != nil { ... }
+//
+// Before #844 this parameter was accepted and never read: a caller could cancel
+// ctx and keep serving indefinitely, believing they had shut down. Pass
+// context.Background() to opt out and manage shutdown solely via Stop().
 func (h *HTTPAgent) Start(ctx context.Context) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -241,17 +259,38 @@ func (h *HTTPAgent) Start(ctx context.Context) error {
 		}()
 	}
 
+	// Watch ctx for cancellation. The goroutine must also exit when the server is
+	// stopped through Stop(), or a caller who never cancels leaks it for the
+	// lifetime of the process.
+	go func() {
+		select {
+		case <-ctx.Done():
+			if err := h.Stop(); err != nil {
+				log.Printf("HTTP server shutdown after context cancellation failed: %v\n", err)
+			}
+		case <-h.stopped:
+		}
+	}()
+
 	return nil
 }
 
-// Stop stops the HTTP server (and HTTP/3 if enabled).
+// Stop gracefully stops the HTTP server (and HTTP/3 if enabled), waiting up to
+// 5 seconds for in-flight requests to finish. It is idempotent, so it is safe to
+// defer Stop() even when ctx cancellation may have already stopped the server.
 func (h *HTTPAgent) Stop() error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
+	h.stopOnce.Do(func() { close(h.stopped) })
+
 	log.Printf("Agent '%s' stopped\n", h.agent.Name())
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*1000*1000*1000) // 5 seconds
+	// Shutdown needs its own context: the caller's may already be cancelled — that
+	// is the very thing that triggers this path — and a cancelled context makes
+	// Shutdown return immediately, abandoning in-flight requests instead of
+	// draining them.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// Shutdown HTTP/1.1 or HTTP/2 server

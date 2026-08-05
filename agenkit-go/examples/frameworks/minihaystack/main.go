@@ -430,8 +430,8 @@ Answer:`
 	// Run the pipeline with two different questions
 	// ------------------------------------------------------------------
 	questions := []struct {
-		q       string
-		topic   string
+		q     string
+		topic string
 	}{
 		{
 			q:     "What is CRISPR and how is it being used in medicine?",

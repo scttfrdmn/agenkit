@@ -37,15 +37,15 @@ import (
 
 // ApprovalLogEntry represents an entry in the approval audit log.
 type ApprovalLogEntry struct {
-	Timestamp   time.Time
-	Amount      int
-	Confidence  float64
-	RiskLevel   string
-	Decision    string
-	Tier        int
-	Approver    string
-	Feedback    string
-	Modified    bool
+	Timestamp  time.Time
+	Amount     int
+	Confidence float64
+	RiskLevel  string
+	Decision   string
+	Tier       int
+	Approver   string
+	Feedback   string
+	Modified   bool
 }
 
 // Global approval audit log
@@ -367,8 +367,8 @@ func exampleTieredApproval() {
 
 	// Test different amounts
 	testCases := []struct {
-		description string
-		message     string
+		description  string
+		message      string
 		expectedTier int
 	}{
 		{"Small transaction", "Process payment of $500", 0},

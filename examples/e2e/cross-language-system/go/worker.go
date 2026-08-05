@@ -138,13 +138,13 @@ func (a *ImageProcessorAgent) Process(ctx context.Context, message *agenkit.Mess
 
 	// Build response with metadata
 	responseMetadata := map[string]interface{}{
-		"job_id":           jobID,
-		"task":             task,
-		"worker_id":        a.workerID,
-		"worker_language":  "go",
+		"job_id":             jobID,
+		"task":               task,
+		"worker_id":          a.workerID,
+		"worker_language":    "go",
 		"processing_time_ms": processingTime,
-		"timestamp":        time.Now().Unix(),
-		"result":           result,
+		"timestamp":          time.Now().Unix(),
+		"result":             result,
 	}
 
 	// Merge result into metadata
@@ -221,11 +221,11 @@ func (a *ImageProcessorAgent) optimizeImage(ctx context.Context, imagePath strin
 	optimizedSize := int(float64(originalSize) * 0.65) // 35% reduction
 
 	result := map[string]interface{}{
-		"optimized_path":  imagePath + ".optimized.jpg",
-		"original_size":   originalSize,
-		"optimized_size":  optimizedSize,
-		"compression":     "mozjpeg",
-		"size_reduction":  fmt.Sprintf("%.1f%%", 35.0),
+		"optimized_path": imagePath + ".optimized.jpg",
+		"original_size":  originalSize,
+		"optimized_size": optimizedSize,
+		"compression":    "mozjpeg",
+		"size_reduction": fmt.Sprintf("%.1f%%", 35.0),
 	}
 
 	return result, nil
@@ -347,7 +347,7 @@ func main() {
 	// Initialize tracing
 	_, err := observability.InitTracing(
 		fmt.Sprintf("image-processor-%s", workerID),
-		"",  // No exporter endpoint for demo
+		"",    // No exporter endpoint for demo
 		false, // No console exporter
 		1.0,   // 100% sampling
 	)

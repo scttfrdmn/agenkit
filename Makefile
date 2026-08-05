@@ -67,7 +67,15 @@ format: ## Format code (Python: ruff format, Go: gofmt)
 	@echo "Formatting Python code..."
 	@ruff format agenkit/ tests/ examples/
 	@echo "Formatting Go code..."
-	@cd agenkit-go && gofmt -s -w .
+# Whole repo, not just agenkit-go: four Go example trees live outside it
+# (examples/deployment/aws-lambda/go, examples/e2e, examples/infrastructure,
+# examples/apps). The CI gate tells you to run `make format`, so this must fix
+# everything that gate checks or the advice is a dead end (#849).
+#
+# Dockerfile.go is excluded because it is a Dockerfile, not Go — gofmt tries to
+# parse it, reports `illegal character U+0023 '#'` and exits 2, which would fail
+# this target. Renaming it is out of scope here (#856).
+	@gofmt -s -w $$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$$')
 	@echo "✓ Code formatted"
 
 lint: ## Run linters only (no tests)
@@ -76,7 +84,16 @@ lint: ## Run linters only (no tests)
 	@echo "Running Ruff format check..."
 	@ruff format --check agenkit/ tests/
 	@echo "Running go fmt check..."
-	@cd agenkit-go && gofmt -s -l . | grep -v "^examples/" || echo "✓ Go code formatted"
+# Must FAIL on unformatted code. This previously ended in
+# `| grep -v "^examples/" || echo "✓ Go code formatted"`, which printed the
+# offending files and then reported success regardless — grep's non-zero exit on
+# no-match triggered the "✓", and a match exited 0, so neither path ever failed
+# the target. Mirrors the CI gate in lint.yml (#849).
+	@UNFORMATTED=$$(gofmt -s -l $$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$$') 2>/dev/null); \
+	 if [ -n "$$UNFORMATTED" ]; then \
+	   echo "❌ Go code not formatted. Run 'make format' to fix:"; \
+	   echo "$$UNFORMATTED"; exit 1; \
+	 else echo "✓ Go code formatted"; fi
 	@echo "Running go vet..."
 	@cd agenkit-go && go vet $$(go list ./... | grep -v /examples/)
 	@echo "✓ All linters passed"

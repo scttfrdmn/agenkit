@@ -73,25 +73,25 @@ func main() {
 
 	// 2. Wrap each backend with enhanced retry
 	retryConfig := infrastructure.EnhancedRetryConfig{
-		MaxAttempts:            3,
-		InitialBackoff:         100 * time.Millisecond,
-		MaxBackoff:             5 * time.Second,
-		BackoffMultiplier:      2.0,
-		JitterType:             infrastructure.JitterTypeFull,
-		EnableBackpressure:     true,
-		BackpressureThreshold:  0.3,
-		BackpressureWindow:     10,
-		ErrorStrategies:        make(map[infrastructure.ErrorClass]infrastructure.ErrorStrategy),
+		MaxAttempts:           3,
+		InitialBackoff:        100 * time.Millisecond,
+		MaxBackoff:            5 * time.Second,
+		BackoffMultiplier:     2.0,
+		JitterType:            infrastructure.JitterTypeFull,
+		EnableBackpressure:    true,
+		BackpressureThreshold: 0.3,
+		BackpressureWindow:    10,
+		ErrorStrategies:       make(map[infrastructure.ErrorClass]infrastructure.ErrorStrategy),
 	}
 
 	// Add default error strategies
 	retryConfig.ErrorStrategies[infrastructure.ErrorClassTransient] = infrastructure.ErrorStrategy{
-		ErrorClass:         infrastructure.ErrorClassTransient,
-		MaxAttempts:        5,
-		InitialBackoff:     100 * time.Millisecond,
-		MaxBackoff:         5 * time.Second,
-		BackoffMultiplier:  2.0,
-		ShouldRetry:        true,
+		ErrorClass:        infrastructure.ErrorClassTransient,
+		MaxAttempts:       5,
+		InitialBackoff:    100 * time.Millisecond,
+		MaxBackoff:        5 * time.Second,
+		BackoffMultiplier: 2.0,
+		ShouldRetry:       true,
 	}
 
 	retryBackend1 := infrastructure.NewEnhancedRetryDecorator(backend1, retryConfig)
@@ -100,11 +100,11 @@ func main() {
 
 	// 3. Create load balancer with health checking
 	lbConfig := infrastructure.LoadBalancerConfig{
-		Strategy:               infrastructure.StrategyLeastConnections,
-		HealthCheckEnabled:     true,
-		HealthCheckInterval:    5 * time.Second,
-		HealthCheckTimeout:     2 * time.Second,
-		MaxRetriesPerBackend:   2,
+		Strategy:             infrastructure.StrategyLeastConnections,
+		HealthCheckEnabled:   true,
+		HealthCheckInterval:  5 * time.Second,
+		HealthCheckTimeout:   2 * time.Second,
+		MaxRetriesPerBackend: 2,
 	}
 
 	loadBalancer := infrastructure.NewLoadBalancer(
@@ -114,15 +114,15 @@ func main() {
 
 	// 4. Set up health checker for the load balancer
 	healthConfig := infrastructure.HealthCheckConfig{
-		LivenessEnabled:          true,
-		LivenessInterval:         10 * time.Second,
-		LivenessFailureThreshold: 3,
-		ReadinessEnabled:         true,
-		ReadinessInterval:        5 * time.Second,
+		LivenessEnabled:           true,
+		LivenessInterval:          10 * time.Second,
+		LivenessFailureThreshold:  3,
+		ReadinessEnabled:          true,
+		ReadinessInterval:         5 * time.Second,
 		ReadinessFailureThreshold: 2,
-		StartupEnabled:           true,
-		StartupTimeout:           30 * time.Second,
-		StartupFailureThreshold:  5,
+		StartupEnabled:            true,
+		StartupTimeout:            30 * time.Second,
+		StartupFailureThreshold:   5,
 	}
 
 	healthChecker := infrastructure.NewHealthChecker(loadBalancer, healthConfig)

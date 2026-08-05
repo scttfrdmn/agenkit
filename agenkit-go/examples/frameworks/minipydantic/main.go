@@ -53,7 +53,7 @@ import (
 type TypeSafeTool struct {
 	name      string
 	desc      string
-	inputType reflect.Type              // concrete struct type for inputs
+	inputType reflect.Type // concrete struct type for inputs
 	fn        func(interface{}) (interface{}, error)
 }
 

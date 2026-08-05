@@ -4,6 +4,7 @@ package grpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -60,6 +61,12 @@ type GRPCServer struct {
 	server   *grpc.Server
 	mu       sync.Mutex
 	running  bool
+	// stopped is closed by Stop so the context watcher started by Start can exit.
+	// stopOnce guards that close: a grpc.Server cannot be reused after
+	// GracefulStop, but Start does not reject a restart attempt, so without the
+	// Once a Start/Stop/Start/Stop sequence would close a closed channel and panic.
+	stopped  chan struct{}
+	stopOnce sync.Once
 }
 
 // NewGRPCServer creates a new gRPC server with default middleware enabled.
@@ -110,6 +117,7 @@ func NewGRPCServerWithOptions(agent agenkit.Agent, address string, options GRPCS
 		agent:    agent,
 		listener: listener,
 		server:   server,
+		stopped:  make(chan struct{}),
 	}
 
 	agentpb.RegisterAgentServiceServer(server, grpcServer)
@@ -117,8 +125,19 @@ func NewGRPCServerWithOptions(agent agenkit.Agent, address string, options GRPCS
 	return grpcServer, nil
 }
 
-// Start starts the gRPC server.
-func (s *GRPCServer) Start() error {
+// Start starts the gRPC server and returns immediately; the server runs in a
+// background goroutine.
+//
+// Cancelling ctx gracefully stops the server, so the server's lifetime can be
+// tied to the caller's scope:
+//
+//	ctx, cancel := context.WithCancel(context.Background())
+//	defer cancel() // server shuts down when the caller returns
+//	if err := server.Start(ctx); err != nil { ... }
+//
+// Pass context.Background() to opt out and manage shutdown solely via Stop().
+// Stop() remains safe to call either way, and is idempotent.
+func (s *GRPCServer) Start(ctx context.Context) error {
 	s.mu.Lock()
 	if s.running {
 		s.mu.Unlock()
@@ -128,25 +147,46 @@ func (s *GRPCServer) Start() error {
 	s.mu.Unlock()
 
 	go func() {
-		if err := s.server.Serve(s.listener); err != nil {
+		// Serve returns ErrServerStopped after a GracefulStop, which is the normal
+		// path out of both Stop() and the ctx watcher below — not an error.
+		if err := s.server.Serve(s.listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			log.Printf("gRPC server stopped: %v", err)
+		}
+	}()
+
+	// Watch ctx for cancellation. The goroutine must also exit when the server is
+	// stopped through Stop(), or a caller who never cancels leaks it for the
+	// lifetime of the process.
+	go func() {
+		select {
+		case <-ctx.Done():
+			if err := s.Stop(); err != nil {
+				log.Printf("gRPC server shutdown after context cancellation failed: %v", err)
+			}
+		case <-s.stopped:
 		}
 	}()
 
 	return nil
 }
 
-// Stop stops the gRPC server.
+// Stop gracefully stops the gRPC server, waiting for in-flight RPCs to finish.
+// It is idempotent: calling it on a stopped server is a no-op, so it is safe to
+// defer Stop() even when ctx cancellation may have already stopped the server.
 func (s *GRPCServer) Stop() error {
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
 	if !s.running {
+		s.mu.Unlock()
 		return nil
 	}
-
-	s.server.GracefulStop()
 	s.running = false
+	s.stopOnce.Do(func() { close(s.stopped) })
+	s.mu.Unlock()
+
+	// GracefulStop blocks until every in-flight RPC completes. Call it outside the
+	// lock: a handler that itself calls a method needing mu would otherwise
+	// deadlock against the Stop that is waiting for that handler to return.
+	s.server.GracefulStop()
 
 	return nil
 }

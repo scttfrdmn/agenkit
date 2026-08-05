@@ -25,7 +25,7 @@ func TestGRPCBasicCommunication(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -67,7 +67,7 @@ func TestGRPCMultipleRequests(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -107,7 +107,7 @@ func TestGRPCConcurrentRequests(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -166,7 +166,7 @@ func TestGRPCMultipleClients(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -247,7 +247,7 @@ func TestGRPCLargeMessage(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -287,7 +287,7 @@ func TestGRPCMessageMetadataPreserved(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -333,7 +333,7 @@ func TestGRPCServerStartStopMultipleTimes(t *testing.T) {
 			t.Fatalf("Iteration %d: failed to create server: %v", i, err)
 		}
 
-		if err := server.Start(); err != nil {
+		if err := server.Start(ctx); err != nil {
 			t.Fatalf("Iteration %d: failed to start server: %v", i, err)
 		}
 
@@ -382,7 +382,7 @@ func TestGRPCStreamingSupport(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -439,7 +439,7 @@ func TestGRPCErrorHandling(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -528,7 +528,7 @@ func TestGRPCTransportTimeout(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -568,7 +568,7 @@ func TestGRPCTransportReconnect(t *testing.T) {
 	addr := server.Address()
 	endpoint := fmt.Sprintf("grpc://%s", addr)
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 
@@ -602,7 +602,7 @@ func TestGRPCTransportReconnect(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()
@@ -651,7 +651,7 @@ func TestGRPCProtocolConversion(t *testing.T) {
 	}
 	endpoint := fmt.Sprintf("grpc://%s", server.Address())
 
-	if err := server.Start(); err != nil {
+	if err := server.Start(ctx); err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = server.Stop() }()

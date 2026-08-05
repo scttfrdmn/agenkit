@@ -92,25 +92,32 @@ jobs:
           go vet ./examples/readme/
           go run ./examples/readme/
 
-      - name: Compile build-tagged Go examples (blocking)
+      - name: Compile build-tagged Go files (blocking)
         working-directory: agenkit-go
-        # Every standalone example under examples/ carries `//go:build ignore` so
-        # that a tree of `package main` files can coexist in one directory. That tag
-        # also excludes them from `go build ./...`, `go vet ./...`, and the smoke
-        # test above — so before #843 they were compiled by nothing, and 8 of 41
-        # had stopped building. Naming a file directly still compiles it: the tag
-        # only removes it from package-level builds.
+        # Every standalone example carries `//go:build ignore` so that a tree of
+        # `package main` files can coexist in one directory. That tag also excludes
+        # them from `go build ./...`, `go vet ./...`, and the smoke test above — so
+        # before #843 they were compiled by nothing, and 8 of 41 had stopped
+        # building. Naming a file directly still compiles it: the tag only removes
+        # it from package-level builds.
         #
         # The 8 failures were not example typos. They were the visible end of a
         # library-wide interface rot (#847): Introspect() was added to
         # agenkit.Agent without conformance assertions, so 22 agent-shaped types
         # silently stopped satisfying it, and no pattern agent could be wrapped in
         # middleware. The only consumer that tried was a build-tagged example.
+        #
+        # The search root is the whole module, not examples/. #843 scoped it to
+        # examples/ and #844 then broke tests/integration/test_grpc_server.go —
+        # this gate reported success while eight Python cross-language tests could
+        # not start a Go server. Those three tests/integration/ servers are
+        # `go run` targets for the Python harness, so they are exactly as
+        # load-bearing as an example and were covered by nothing.
         env:
           GOTOOLCHAIN: auto
         run: |
           fail=0
-          for f in $(grep -rln '^//go:build ignore' --include='*.go' examples/); do
+          for f in $(grep -rln '^//go:build ignore' --include='*.go' .); do
             go build -o /dev/null "$f" || { echo "FAIL: $f"; fail=1; }
           done
           exit $fail

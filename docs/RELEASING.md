@@ -10,7 +10,7 @@ Complete guide for releasing agenkit (monorepo) and agenkit-go (standalone).
 ```
 
 This will:
-1. ✅ Update version in `pyproject.toml`
+1. ✅ Set the root `VERSION` file and propagate to all 19 declarations (#842)
 2. ✅ Run tests
 3. ✅ Tag and release monorepo
 4. ✅ Push the `vX.Y.Z` tag, which triggers the `sync-agenkit-go.yml` workflow to
@@ -42,7 +42,8 @@ This will:
 ```
 
 **What happens:**
-1. Updates Python version in `pyproject.toml`
+1. Runs `scripts/version.py set X.Y.Z` — writes `VERSION`, then propagates it to
+   every language manifest and MCP wire constant, and fails if any still disagrees
 2. Commits version bump
 3. Runs tests
 4. Creates tag on monorepo
@@ -138,7 +139,7 @@ v0.11.0-rc.1     # Release candidate
 ### During Release
 
 The script handles:
-- [ ] Version bump in `pyproject.toml`
+- [ ] Version bump in `VERSION`, propagated (`make check-version` passes)
 - [ ] Git commit and tag creation
 - [ ] GitHub releases
 - [ ] agenkit-go sync and release

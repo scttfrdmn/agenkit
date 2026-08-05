@@ -25,6 +25,10 @@ type RemoteAgent struct {
 	mu        sync.Mutex // Serialize requests on same connection
 }
 
+// Verify that RemoteAgent implements Agent interface. The doc comment above has
+// claimed this since the type was introduced; nothing checked it (#847).
+var _ agenkit.Agent = (*RemoteAgent)(nil)
+
 // NewRemoteAgent creates a new remote agent client.
 //
 // Args:
@@ -363,6 +367,31 @@ func (r *RemoteAgent) handleStreamResponse(
 // Note: Capability querying not yet implemented in v0.1.0.
 func (r *RemoteAgent) Capabilities() []string {
 	return []string{}
+}
+
+// Introspect reports the proxy's own state. It deliberately does not call the
+// remote agent: introspection has no request/response in the wire protocol, and a
+// network round trip here would make a debugging aid capable of blocking or failing.
+// What a caller can learn locally is where the proxy points and whether it is
+// currently connected.
+func (r *RemoteAgent) Introspect() *agenkit.IntrospectionResult {
+	r.mu.Lock()
+	connected := r.connected
+	r.mu.Unlock()
+
+	result, _ := agenkit.NewIntrospectionResult(
+		r.Name(),
+		r.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"endpoint":  r.endpoint,
+			"connected": connected,
+			"timeout":   r.timeout.String(),
+			"remote":    true,
+		},
+		nil,
+	)
+	return result
 }
 
 // Close closes the connection to the remote agent.

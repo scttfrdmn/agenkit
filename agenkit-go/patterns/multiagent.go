@@ -151,6 +151,31 @@ func (m *MultiAgentOrchestrator) Capabilities() []string {
 	return caps
 }
 
+// Introspect reports the registered agents and the accumulated task log.
+func (m *MultiAgentOrchestrator) Introspect() *agenkit.IntrospectionResult {
+	completed := 0
+	for _, task := range m.tasks {
+		if task.Status == TaskStatusCompleted {
+			completed++
+		}
+	}
+
+	result, _ := agenkit.NewIntrospectionResult(
+		m.Name(),
+		m.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count":     len(m.agents),
+			"agent_names":     agentNamesFromMap(m.agents),
+			"strategy":        string(m.strategy),
+			"task_count":      len(m.tasks),
+			"tasks_completed": completed,
+		},
+		nil,
+	)
+	return result
+}
+
 // Strategy returns the orchestration strategy.
 func (m *MultiAgentOrchestrator) Strategy() OrchestrationStrategy {
 	return m.strategy
@@ -278,6 +303,22 @@ func (c *ConsensusAgent) Capabilities() []string {
 		caps = append(caps, cap)
 	}
 	return caps
+}
+
+// Introspect reports the voting pool and strategy.
+func (c *ConsensusAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		c.Name(),
+		c.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count":     len(c.agents),
+			"agent_names":     agentNames(c.agents),
+			"voting_strategy": string(c.votingStrategy),
+		},
+		nil,
+	)
+	return result
 }
 
 // VotingStrategy returns the voting strategy.

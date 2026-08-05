@@ -135,6 +135,22 @@ func (c *CollaborativeAgent) Capabilities() []string {
 	return capabilities
 }
 
+// Introspect reports the collaborating set and round budget.
+func (c *CollaborativeAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		c.Name(),
+		c.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count": len(c.agents),
+			"agent_names": agentNames(c.agents),
+			"max_rounds":  c.maxRounds,
+		},
+		nil,
+	)
+	return result
+}
+
 // roundResult holds responses from a single collaboration round.
 type roundResult struct {
 	round     int

@@ -18,10 +18,10 @@ func main() {
 
 	// Example 1: In-Memory Storage
 	fmt.Println("=== Example 1: In-Memory Storage ===")
-	inMemory := memory.NewInMemoryMemory(1000)
+	inMemory := memory.NewEphemeralMemory(1000)
 
 	// Store messages
-	msg1 := interfaces.Message{Role: "user", Content: "What is the weather today?"}
+	msg1 := agenkit.Message{Role: "user", Content: "What is the weather today?"}
 	err := inMemory.Store(ctx, "session-123", msg1, map[string]interface{}{
 		"importance": 0.5,
 		"tags":       []string{"weather", "query"},
@@ -30,7 +30,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	msg2 := interfaces.Message{Role: "assistant", Content: "It's sunny and 72°F."}
+	msg2 := agenkit.Message{Role: "assistant", Content: "It's sunny and 72°F."}
 	err = inMemory.Store(ctx, "session-123", msg2, map[string]interface{}{
 		"importance": 0.7,
 	})
@@ -38,7 +38,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	msg3 := interfaces.Message{Role: "user", Content: "Should I bring an umbrella?"}
+	msg3 := agenkit.Message{Role: "user", Content: "Should I bring an umbrella?"}
 	err = inMemory.Store(ctx, "session-123", msg3, map[string]interface{}{
 		"importance": 0.6,
 	})
@@ -46,8 +46,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Retrieve messages
-	messages, err := inMemory.Retrieve(ctx, "session-123", memory.RetrieveOptions{Limit: 10})
+	// Retrieve messages. Limit is a *int so that "unset" is distinguishable from
+	// "zero" — leaving it nil takes the package default of 10.
+	limit := 10
+	messages, err := inMemory.Retrieve(ctx, "session-123", memory.RetrieveOptions{Limit: &limit})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,7 +70,7 @@ func main() {
 	fmt.Println("=== Example 2: Importance-Based Filtering ===")
 	threshold := 0.6
 	importantMessages, err := inMemory.Retrieve(ctx, "session-123", memory.RetrieveOptions{
-		Limit:               10,
+		Limit:               &limit,
 		ImportanceThreshold: &threshold,
 	})
 	if err != nil {
@@ -84,9 +86,9 @@ func main() {
 	// Example 3: Sliding Window Strategy
 	fmt.Println("=== Example 3: Sliding Window Strategy ===")
 	// Create a new memory with more messages
-	mem := memory.NewInMemoryMemory(1000)
+	mem := memory.NewEphemeralMemory(1000)
 	for i := 1; i <= 20; i++ {
-		msg := interfaces.Message{
+		msg := agenkit.Message{
 			Role:    "user",
 			Content: fmt.Sprintf("Message %d", i),
 		}
@@ -112,10 +114,10 @@ func main() {
 	// Example 4: Importance Weighting Strategy
 	fmt.Println("=== Example 4: Importance Weighting Strategy ===")
 	// Create memory with varied importance
-	impMem := memory.NewInMemoryMemory(1000)
+	impMem := memory.NewEphemeralMemory(1000)
 	importanceScores := []float64{0.3, 0.8, 0.5, 0.9, 0.4, 0.7, 0.2, 0.6}
 	for i, score := range importanceScores {
-		msg := interfaces.Message{
+		msg := agenkit.Message{
 			Role:    "user",
 			Content: fmt.Sprintf("Message %d (importance: %.1f)", i+1, score),
 			Metadata: map[string]interface{}{

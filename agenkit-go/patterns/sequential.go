@@ -80,6 +80,21 @@ func (s *SequentialAgent) Capabilities() []string {
 	return capabilities
 }
 
+// Introspect reports the composed pipeline.
+func (s *SequentialAgent) Introspect() *agenkit.IntrospectionResult {
+	result, _ := agenkit.NewIntrospectionResult(
+		s.Name(),
+		s.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"agent_count": len(s.agents),
+			"agent_names": agentNames(s.agents),
+		},
+		nil,
+	)
+	return result
+}
+
 // Process executes the agent pipeline sequentially.
 //
 // The message is passed through each agent in order. Each agent's output

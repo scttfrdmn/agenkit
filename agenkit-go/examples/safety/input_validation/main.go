@@ -30,6 +30,10 @@ func (a *SimpleAgent) Capabilities() []string {
 	return []string{"chat"}
 }
 
+func (a *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "assistant",

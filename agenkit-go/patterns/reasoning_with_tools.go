@@ -31,6 +31,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -208,6 +209,36 @@ func (r *ReasoningWithToolsAgent) Name() string {
 // Capabilities returns the agent capabilities.
 func (r *ReasoningWithToolsAgent) Capabilities() []string {
 	return []string{"reasoning", "tool-use", "interleaved-thinking"}
+}
+
+// Introspect reports the reasoning budget and the available tools.
+func (r *ReasoningWithToolsAgent) Introspect() *agenkit.IntrospectionResult {
+	toolNames := make([]string, 0, len(r.tools))
+	for name := range r.tools {
+		toolNames = append(toolNames, name)
+	}
+	sort.Strings(toolNames)
+
+	result, _ := agenkit.NewIntrospectionResult(
+		r.Name(),
+		r.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"max_reasoning_steps":  r.maxReasoningSteps,
+			"tool_count":           len(r.tools),
+			"tool_names":           toolNames,
+			"enable_trace":         r.enableTrace,
+			"confidence_threshold": r.confidenceThreshold,
+			"inner_agent": func() string {
+				if r.llm == nil {
+					return ""
+				}
+				return r.llm.Name()
+			}(),
+		},
+		nil,
+	)
+	return result
 }
 
 // Process processes message with reasoning and tool use.

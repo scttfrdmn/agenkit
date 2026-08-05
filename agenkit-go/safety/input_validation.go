@@ -343,6 +343,9 @@ type InputValidationMiddleware struct {
 	strict        bool
 }
 
+// Verify that InputValidationMiddleware implements Agent interface.
+var _ agenkit.Agent = (*InputValidationMiddleware)(nil)
+
 // NewInputValidationMiddleware creates a new input validation middleware.
 //
 // Args:
@@ -389,6 +392,11 @@ func (m *InputValidationMiddleware) Name() string {
 // Capabilities returns capabilities of the underlying agent.
 func (m *InputValidationMiddleware) Capabilities() []string {
 	return m.agent.Capabilities()
+}
+
+// Introspect returns the introspection result of the underlying agent.
+func (m *InputValidationMiddleware) Introspect() *agenkit.IntrospectionResult {
+	return m.agent.Introspect()
 }
 
 // Process processes message with input validation.

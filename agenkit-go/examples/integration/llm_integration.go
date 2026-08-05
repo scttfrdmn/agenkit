@@ -21,10 +21,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/llm"
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/scttfrdmn/agenkit/agenkit-go/middleware"
+	"github.com/scttfrdmn/agenkit/agenkit-go/patterns"
 )
 
 func printSeparator(title string) {
@@ -134,36 +136,39 @@ func exampleProductionMiddleware() {
 	// Create base LLM
 	baseLLM := llm.NewOpenAILLM(apiKey, "gpt-3.5-turbo")
 
-	// Wrap with production middleware
-	productionLLM := middleware.WithCircuitBreaker(
-		middleware.WithTimeout(
-			middleware.WithRetry(
-				baseLLM,
-				&middleware.RetryConfig{
-					MaxRetries:        3,
-					InitialDelay:      1.0,
-					RetryMultiplier: 2.0,
-				},
-			),
-			&middleware.TimeoutConfig{
-				Timeout: 30.0,
-			},
-		),
-		&middleware.CircuitBreakerConfig{
-			FailureThreshold: 5,
-			RecoveryTimeout:  60.0,
-		},
-	)
+	// Middleware decorates agenkit.Agent, not llm.LLM, so bridge the LLM into an
+	// agent first. ConversationalAgent accepts any adapter structurally — it needs
+	// only Complete — and adds history management on the way through.
+	agent, err := patterns.NewConversationalAgent(&patterns.ConversationalAgentConfig{
+		LLMClient:    baseLLM,
+		SystemPrompt: "You are concise. Answer in one sentence.",
+	})
+	if err != nil {
+		fmt.Printf("  ❌ Failed to build agent: %v\n\n", err)
+		return
+	}
 
-	fmt.Println("  Middleware stack: Circuit Breaker → Timeout → Retry → OpenAI")
+	// Wrap with production middleware. Each decorator takes its config by value and
+	// fills in defaults for zero fields, so specify only what you want to change.
+	// Durations are time.Duration — not float seconds.
+	withRetry := middleware.NewRetryDecorator(agent, middleware.RetryConfig{
+		MaxRetries:        3,
+		InitialRetryDelay: 1 * time.Second,
+		RetryMultiplier:   2.0,
+	})
+	withTimeout := middleware.NewTimeoutDecorator(withRetry, middleware.TimeoutConfig{
+		Timeout: 30 * time.Second,
+	})
+	productionAgent := middleware.NewCircuitBreakerDecorator(withTimeout, middleware.CircuitBreakerConfig{
+		FailureThreshold: 5,
+		RecoveryTimeout:  60 * time.Second,
+	})
+
+	fmt.Println("  Middleware stack: Circuit Breaker → Timeout → Retry → Conversational → OpenAI")
 	fmt.Println("  Processing request...")
 
 	ctx := context.Background()
-	messages := []*agenkit.Message{
-		agenkit.NewMessage("user", "Explain middleware in one sentence."),
-	}
-
-	response, err := productionLLM.Complete(ctx, messages)
+	response, err := productionAgent.Process(ctx, agenkit.NewMessage("user", "Explain middleware in one sentence."))
 	if err != nil {
 		fmt.Printf("  ❌ Failed: %v\n\n", err)
 		return
@@ -199,12 +204,15 @@ func exampleStreaming() {
 		return
 	}
 
+	// Stream yields *agenkit.Message chunks directly — there is no wrapper type with
+	// separate Error and Message fields. A mid-stream failure arrives as a chunk
+	// carrying Metadata["error"], so check that rather than a chunk.Error field.
 	for chunk := range stream {
-		if chunk.Error != nil {
-			fmt.Printf("\n  ❌ Stream error: %v\n\n", chunk.Error)
+		if streamErr, ok := chunk.Metadata["error"]; ok {
+			fmt.Printf("\n  ❌ Stream error: %v\n\n", streamErr)
 			return
 		}
-		fmt.Print(chunk.Message.ContentString())
+		fmt.Print(chunk.ContentString())
 	}
 	fmt.Println("")
 }

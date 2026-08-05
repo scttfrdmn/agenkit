@@ -157,6 +157,32 @@ func (a *AutonomousAgent) Capabilities() []string {
 	return []string{"autonomous", "goal-directed", "self-organizing"}
 }
 
+// Introspect reports goal progress, which is this agent's working state.
+func (a *AutonomousAgent) Introspect() *agenkit.IntrospectionResult {
+	completed := 0
+	for _, goal := range a.goals {
+		if goal.Status == GoalStatusCompleted {
+			completed++
+		}
+	}
+
+	result, _ := agenkit.NewIntrospectionResult(
+		a.Name(),
+		a.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"objective":       a.objective,
+			"max_iterations":  a.maxIterations,
+			"iteration_count": a.iterationCount,
+			"is_running":      a.isRunning,
+			"goal_count":      len(a.goals),
+			"goals_completed": completed,
+		},
+		nil,
+	)
+	return result
+}
+
 // Process processes a message (autonomous agents don't need messages).
 func (a *AutonomousAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{

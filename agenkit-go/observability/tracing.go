@@ -172,6 +172,9 @@ type TracingMiddleware struct {
 	tracer   trace.Tracer
 }
 
+// Verify that TracingMiddleware implements Agent interface.
+var _ agenkit.Agent = (*TracingMiddleware)(nil)
+
 // NewTracingMiddleware creates a new tracing middleware.
 func NewTracingMiddleware(agent agenkit.Agent, spanName string) *TracingMiddleware {
 	if spanName == "" {

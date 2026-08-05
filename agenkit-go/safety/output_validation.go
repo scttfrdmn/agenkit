@@ -372,6 +372,9 @@ type OutputValidationMiddleware struct {
 	maxSize    int
 }
 
+// Verify that OutputValidationMiddleware implements Agent interface.
+var _ agenkit.Agent = (*OutputValidationMiddleware)(nil)
+
 // NewOutputValidationMiddleware creates a new output validation middleware.
 //
 // Args:
@@ -419,6 +422,11 @@ func (m *OutputValidationMiddleware) Name() string {
 // Capabilities returns capabilities of the underlying agent.
 func (m *OutputValidationMiddleware) Capabilities() []string {
 	return m.agent.Capabilities()
+}
+
+// Introspect returns the introspection result of the underlying agent.
+func (m *OutputValidationMiddleware) Introspect() *agenkit.IntrospectionResult {
+	return m.agent.Introspect()
 }
 
 // Process processes message with output validation.

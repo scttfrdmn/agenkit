@@ -92,6 +92,29 @@ jobs:
           go vet ./examples/readme/
           go run ./examples/readme/
 
+      - name: Compile build-tagged Go examples (blocking)
+        working-directory: agenkit-go
+        # Every standalone example under examples/ carries `//go:build ignore` so
+        # that a tree of `package main` files can coexist in one directory. That tag
+        # also excludes them from `go build ./...`, `go vet ./...`, and the smoke
+        # test above — so before #843 they were compiled by nothing, and 8 of 41
+        # had stopped building. Naming a file directly still compiles it: the tag
+        # only removes it from package-level builds.
+        #
+        # The 8 failures were not example typos. They were the visible end of a
+        # library-wide interface rot (#847): Introspect() was added to
+        # agenkit.Agent without conformance assertions, so 22 agent-shaped types
+        # silently stopped satisfying it, and no pattern agent could be wrapped in
+        # middleware. The only consumer that tried was a build-tagged example.
+        env:
+          GOTOOLCHAIN: auto
+        run: |
+          fail=0
+          for f in $(grep -rln '^//go:build ignore' --include='*.go' examples/); do
+            go build -o /dev/null "$f" || { echo "FAIL: $f"; fail=1; }
+          done
+          exit $fail
+
       - name: Build Go cross-language harness (blocking)
         working-directory: tests/cross_language/harness_go
         # These harnesses build against the agenkit-go core via a local `replace`.

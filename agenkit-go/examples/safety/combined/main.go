@@ -34,6 +34,10 @@ func (a *DemoAgent) Capabilities() []string {
 	return []string{"chat", "file_access"}
 }
 
+func (a *DemoAgent) Introspect() *agenkit.IntrospectionResult {
+	return agenkit.DefaultIntrospectionResult(a)
+}
+
 func (a *DemoAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	return &agenkit.Message{
 		Role:    "assistant",
@@ -67,9 +71,16 @@ func main() {
 	detector := safety.NewAnomalyDetector()
 	detector.MaxRequestsPerMinute = 10 // Strict rate limit for demo
 
-	anomalyCallback := func(event safety.SecurityEvent, details map[string]interface{}) {
-		auditLogger.LogAnomaly("demo-user", string(event), details, "demo-agent")
-		fmt.Printf("⚠ ANOMALY: %s\n", event)
+	// The callback takes *SecurityEvent, and the middleware only invokes it when an
+	// anomaly was actually detected, so event is always non-nil here.
+	anomalyCallback := func(event *safety.SecurityEvent, details map[string]interface{}) {
+		if event == nil {
+			return
+		}
+		if err := auditLogger.LogAnomaly("demo-user", string(*event), details, "demo-agent"); err != nil {
+			log.Printf("Failed to audit anomaly: %v", err)
+		}
+		fmt.Printf("⚠ ANOMALY: %s\n", *event)
 	}
 
 	agentWithAnomaly := safety.NewAnomalyDetectionMiddleware(

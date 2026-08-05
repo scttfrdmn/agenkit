@@ -185,6 +185,32 @@ func (r *ReflectionAgent) Capabilities() []string {
 	return result
 }
 
+// Introspect reports the generator/critic pair and the quality trajectory of the
+// most recent Process call. history is reset at the start of each Process, so
+// iteration_count describes the last run.
+func (r *ReflectionAgent) Introspect() *agenkit.IntrospectionResult {
+	internal := map[string]interface{}{
+		"generator":             r.generator.Name(),
+		"critic":                r.critic.Name(),
+		"max_iterations":        r.maxIterations,
+		"iteration_count":       len(r.history),
+		"quality_threshold":     r.qualityThreshold,
+		"improvement_threshold": r.improvementThreshold,
+	}
+	if len(r.history) > 0 {
+		internal["latest_quality_score"] = r.history[len(r.history)-1].QualityScore
+	}
+
+	result, _ := agenkit.NewIntrospectionResult(
+		r.Name(),
+		r.Capabilities(),
+		nil,
+		internal,
+		nil,
+	)
+	return result
+}
+
 // Process executes the reflection loop.
 //
 // Args:

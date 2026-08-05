@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint security clean coverage check-artifacts
+.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version
 
 # Default target
 .DEFAULT_GOAL := help
@@ -21,6 +21,12 @@ test-verbose: ## Run tests with verbose output
 
 check-artifacts: ## Fail if compiled binaries or oversize files are tracked (#660)
 	@./scripts/check-tracked-artifacts.sh
+
+check-version: ## Fail if any version declaration disagrees with VERSION (#842)
+	@python3 scripts/version.py check
+
+sync-version: ## Rewrite every version declaration from the root VERSION file
+	@python3 scripts/version.py sync
 
 security: ## Run local security scans (trivy + govulncheck + semgrep)
 	@echo "=== Trivy (filesystem: deps, misconfig, secrets) ==="

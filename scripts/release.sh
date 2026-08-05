@@ -84,12 +84,25 @@ echo ""
 echo "📝 Updating version numbers..."
 echo ""
 
-# Update Python version in pyproject.toml
-echo "   Updating pyproject.toml to $PYTHON_VERSION..."
-sed -i '' "s/^version = \".*\"/version = \"$PYTHON_VERSION\"/" pyproject.toml
+# The root VERSION file is the single source of truth; scripts/version.py
+# propagates it to every language manifest and every MCP wire constant.
+#
+# This used to be a lone `sed -i '' ...` against pyproject.toml, which (a) only
+# touched 1 of 17 declarations and (b) is BSD-only syntax that fails on Linux.
+# That is how the version came to be declared sixteen ways spanning 0.10.0 to
+# v0.87.0 — see #842.
+echo "   Setting VERSION to $PYTHON_VERSION and propagating..."
+python3 scripts/version.py set "$PYTHON_VERSION"
+
+# Fail loudly rather than tagging a release whose manifests disagree.
+if ! python3 scripts/version.py check; then
+    echo "❌ Error: version declarations still disagree after sync"
+    echo "   A manifest's layout probably changed; update scripts/version.py"
+    exit 1
+fi
 
 # Commit version bump
-git add pyproject.toml
+git add -A
 git commit -m "chore(release): Bump version to $VERSION"
 
 echo "   ✓ Version numbers updated"

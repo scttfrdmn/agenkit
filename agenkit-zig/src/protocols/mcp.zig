@@ -32,7 +32,7 @@ const Allocator = std.mem.Allocator;
 // ── Protocol constants ────────────────────────────────────────────────────────
 
 pub const PROTOCOL_VERSION = "2024-11-05";
-pub const CLIENT_VERSION = "0.83.0";
+pub const CLIENT_VERSION = "0.87.0";
 
 // ── Wire types ────────────────────────────────────────────────────────────────
 

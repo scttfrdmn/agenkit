@@ -26,7 +26,7 @@ import type {
 } from './types.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
-const CLIENT_VERSION = '0.83.0';
+const CLIENT_VERSION = '0.87.0';
 
 // ─── StdioClient ─────────────────────────────────────────────────────────────
 

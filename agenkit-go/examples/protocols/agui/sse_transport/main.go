@@ -84,9 +84,9 @@ func (d *DemoAgent) Process(ctx context.Context, message *agenkit.Message) (*age
 
 	response := agenkit.NewMessage("assistant", fmt.Sprintf("Analysis of '%s': This requires careful consideration based on the context and available information.", content))
 	response.Metadata = map[string]interface{}{
-		"confidence":   confidence,
+		"confidence":    confidence,
 		"processing_ms": 200,
-		"timestamp":    time.Now().UTC().Format(time.RFC3339),
+		"timestamp":     time.Now().UTC().Format(time.RFC3339),
 	}
 
 	log.Printf("✅ Response generated (confidence: %.2f)", confidence)
@@ -181,8 +181,8 @@ func main() {
 
 	// Create SSE handler with HITL support
 	config := transports.AGUISSEHandlerConfig{
-		Adapter:           hilAdapter, // Use HITL adapter for Interrupt events
-		IncludeEventNames: false,      // Standard SSE format
+		Adapter:           hilAdapter,    // Use HITL adapter for Interrupt events
+		IncludeEventNames: false,         // Standard SSE format
 		CORSOrigins:       []string{"*"}, // Allow all origins (restrict in production)
 		Timeout:           30 * time.Second,
 		PingInterval:      5 * time.Second,

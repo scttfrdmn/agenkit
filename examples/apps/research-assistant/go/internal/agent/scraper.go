@@ -34,8 +34,8 @@ func (a *ScraperAgent) Process(ctx context.Context, message *agenkit.Message) (*
 	if message.Metadata != nil {
 		if msgType, ok := message.Metadata["type"].(string); ok && msgType == "health_check" {
 			return &agenkit.Message{
-				Role:    "assistant",
-				Content: "healthy",
+				Role:     "assistant",
+				Content:  "healthy",
 				Metadata: map[string]interface{}{"status": "ok"},
 			}, nil
 		}

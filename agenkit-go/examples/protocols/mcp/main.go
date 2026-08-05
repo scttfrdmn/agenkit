@@ -3,10 +3,10 @@
 // MCP (Model Context Protocol) Example
 //
 // Demonstrates all four usage patterns for the agenkit MCP package:
-//   1. StdioClient — connect to an MCP server via subprocess stdio
-//   2. HTTPClient  — connect to an MCP server via HTTP
-//   3. MCPServer   — expose agenkit tools as an MCP server
-//   4. ToolsFromClient — bridge MCP tools into a ReActAgent
+//  1. StdioClient — connect to an MCP server via subprocess stdio
+//  2. HTTPClient  — connect to an MCP server via HTTP
+//  3. MCPServer   — expose agenkit tools as an MCP server
+//  4. ToolsFromClient — bridge MCP tools into a ReActAgent
 //
 // None of the external servers need to be running; each section fails
 // gracefully with an explanatory message.

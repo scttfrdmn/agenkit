@@ -285,9 +285,9 @@ func example3CircuitBreakerWithRetry() {
 
 	// Layer 1: Retry for transient failures (inner)
 	retryConfig := middleware.RetryConfig{
-		MaxRetries:       2,
-		InitialRetryDelay:    100 * time.Millisecond,
-		RetryMultiplier: 2.0,
+		MaxRetries:        2,
+		InitialRetryDelay: 100 * time.Millisecond,
+		RetryMultiplier:   2.0,
 	}
 	retryDB := middleware.NewRetryDecorator(db, retryConfig)
 

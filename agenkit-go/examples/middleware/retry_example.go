@@ -98,10 +98,10 @@ func example1BasicRetry() {
 
 	// Wrap with retry middleware
 	retryConfig := middleware.RetryConfig{
-		MaxRetries:       5,
-		InitialRetryDelay:    100 * time.Millisecond,
-		MaxRetryDelay:        2 * time.Second,
-		RetryMultiplier: 2.0,
+		MaxRetries:        5,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     2 * time.Second,
+		RetryMultiplier:   2.0,
 	}
 	agent := middleware.NewRetryDecorator(baseAgent, retryConfig)
 
@@ -140,10 +140,10 @@ func example2MaxRetriesExceeded() {
 
 	// Wrap with retry middleware (3 attempts)
 	retryConfig := middleware.RetryConfig{
-		MaxRetries:       3,
-		InitialRetryDelay:    50 * time.Millisecond,
-		MaxRetryDelay:        1 * time.Second,
-		RetryMultiplier: 2.0,
+		MaxRetries:        3,
+		InitialRetryDelay: 50 * time.Millisecond,
+		MaxRetryDelay:     1 * time.Second,
+		RetryMultiplier:   2.0,
 	}
 	agent := middleware.NewRetryDecorator(baseAgent, retryConfig)
 
@@ -183,10 +183,10 @@ func example3RateLimitHandling() {
 
 	// Retry with longer delays (respecting rate limits)
 	retryConfig := middleware.RetryConfig{
-		MaxRetries:       4,
-		InitialRetryDelay:    500 * time.Millisecond, // Longer initial delay
-		MaxRetryDelay:        5 * time.Second,
-		RetryMultiplier: 2.0,
+		MaxRetries:        4,
+		InitialRetryDelay: 500 * time.Millisecond, // Longer initial delay
+		MaxRetryDelay:     5 * time.Second,
+		RetryMultiplier:   2.0,
 	}
 	agent := middleware.NewRetryDecorator(rateLimitAgent, retryConfig)
 

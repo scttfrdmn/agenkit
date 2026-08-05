@@ -119,8 +119,8 @@ type MockLLM struct {
 	name string
 }
 
-func (m *MockLLM) Name() string                 { return m.name }
-func (m *MockLLM) Capabilities() []string       { return []string{"text-generation"} }
+func (m *MockLLM) Name() string           { return m.name }
+func (m *MockLLM) Capabilities() []string { return []string{"text-generation"} }
 func (m *MockLLM) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// In production, replace with OpenAI, Anthropic, Bedrock, etc.
 	return &agenkit.Message{
@@ -242,10 +242,10 @@ func handleRequest(ctx context.Context, request events.APIGatewayProxyRequest) (
 			response.Metadata = make(map[string]interface{})
 		}
 		response.Metadata["lambda"] = map[string]interface{}{
-			"request_id":         lc.AwsRequestID,
-			"function_name":      lambdacontext.FunctionName,
-			"memory_limit_mb":    lambdacontext.MemoryLimitInMB,
-			"remaining_time_ms":  lc.Deadline.UnixMilli() - lambdacontext.Deadline.UnixMilli(),
+			"request_id":        lc.AwsRequestID,
+			"function_name":     lambdacontext.FunctionName,
+			"memory_limit_mb":   lambdacontext.MemoryLimitInMB,
+			"remaining_time_ms": lc.Deadline.UnixMilli() - lambdacontext.Deadline.UnixMilli(),
 		}
 	}
 

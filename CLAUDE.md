@@ -34,7 +34,9 @@
 ### Project Context
 - **Project**: Agenkit - Cross-language AI agent **toolkit** (NOT a framework)
 - **Languages**: Python, Go, TypeScript, Rust, C++, Zig, C#, Java, Scala (100% feature parity achieved!)
-- **Current**: v0.73.0 (Scala Implementation — agenkit-scala, sbt `io.agenkit:agenkit-scala_3`)
+- **Version**: read the root `VERSION` file — the single source of truth (`make check-version`
+  asserts all 17 declarations agree). Never hardcode a version in prose here: this line
+  used to name one and was 14 releases stale (#842).
 - **Tests**: `make test` (15-30s locally, 100% pass required)
 
 ### 🚨 Testing Policy
@@ -357,5 +359,6 @@ See `ROADMAP.md` for complete release schedule.
 
 ---
 
-**Last Updated:** March 17, 2026 (v0.73.0 current)
+**Last Updated:** August 2026
+**Current version:** see the root `VERSION` file (not restated here — it rots; #842)
 **Token Count:** ~200 lines

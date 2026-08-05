@@ -381,6 +381,40 @@ jobs:
       - name: Check for tracked build artifacts
         run: ./scripts/check-tracked-artifacts.sh
 
+  # The root VERSION file is the single source of truth for the release version.
+  # 17 places declare it — 8 language manifests, 9 MCP `clientInfo.version` wire
+  # constants — and before #842 no two agreed: they spanned 0.10.0 (Python's
+  # __version__) to v0.87.0 (the newest tag), a 77-minor-version gap. It
+  # accumulated silently because release.sh rewrote exactly one of them and
+  # nothing ever compared them.
+  #
+  # The MCP constants matter most: they are transmitted to remote peers during
+  # handshake, so a stale one tells a third party the wrong thing rather than
+  # merely mislabelling a package.
+  #
+  # Blocking and toolchain-free: two declarations disagreeing is never a
+  # judgement call. On a tag push it additionally asserts VERSION == the tag,
+  # which is the only check that can catch a release tagged off an unsynced tree.
+  version-guard:
+    name: Version Consistency Guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Check all version declarations agree with VERSION
+        run: python3 scripts/version.py check
+      - name: Check VERSION matches the tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          file="$(python3 scripts/version.py get)"
+          if [ "$tag" != "$file" ]; then
+            echo "Tag v$tag does not match VERSION ($file)"
+            exit 1
+          fi
+          echo "Tag v$tag matches VERSION"
+
   # Compile gates for the remaining cross-language test harnesses. The Go
   # harness is gated in the smoke-test job above; these are the other four.
   #

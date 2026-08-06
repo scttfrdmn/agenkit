@@ -404,6 +404,27 @@ jobs:
       - name: Check for tracked build artifacts
         run: ./scripts/check-tracked-artifacts.sh
 
+  # release.sh's test step was unreachable code for its entire life (#863):
+  # `if ! uv run pytest ... | tail -20` tests tail's status, not pytest's, so a
+  # release with a red suite printed "✓ Tests completed" and went on to tag and
+  # push. This runs release.sh against a failing `make` stub in a throwaway clone
+  # and asserts it aborts without tagging — behavioural, not a grep, because the
+  # original looked entirely plausible. Blocking: nothing about "a red suite must
+  # not be tagged" is a judgement call. Cheap (~5s, no toolchain).
+  release-gate:
+    name: Release Gate Blocks Failing Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout code
+        # Full history: the check clones the repo, and a shallow clone cannot be
+        # branched or committed to the way the probe requires.
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Verify release.sh aborts on a failing test gate
+        run: ./scripts/check-release-gate.sh
+
   # The root VERSION file is the single source of truth for the release version.
   # 19 places declare it — 8 language manifests, 9 MCP `clientInfo.version` wire
   # constants, and 2 Cargo.lock files that record it via a path dependency. Before

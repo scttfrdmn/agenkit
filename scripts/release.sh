@@ -154,6 +154,48 @@ echo ""
 echo "🏷️  Creating git tag..."
 echo ""
 
+# The previous release, for the compare link. This used to be hardcoded to
+# v0.10.0, so every tag since has advertised a diff spanning the entire project
+# history instead of the release (#865).
+PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+if [ -z "$PREV_TAG" ]; then
+    echo "❌ Error: no previous tag found; cannot build a compare link"
+    exit 1
+fi
+echo "   Previous release: $PREV_TAG"
+
+# Release notes come from this version's CHANGELOG section, not from boilerplate.
+# The notes used to say "See commit history for detailed changes" while a fully
+# written CHANGELOG entry sat unused in the repo (#865).
+NOTES_FILE="${TMPDIR:-/tmp}/agenkit-release-$PYTHON_VERSION-notes.md"
+if ! python3 - "$PYTHON_VERSION" "$NOTES_FILE" <<'EXTRACT'
+import re, sys
+version, out = sys.argv[1], sys.argv[2]
+text = open("CHANGELOG.md").read()
+# Match this version's heading through the next `## [` heading.
+pattern = rf"^## \[v?{re.escape(version)}\][^\n]*\n(.*?)(?=^## \[)"
+m = re.search(pattern, text, re.MULTILINE | re.DOTALL)
+if not m:
+    sys.exit(f"CHANGELOG.md has no '## [v{version}]' section — add it before releasing")
+body = m.group(1).strip()
+if len(body) < 50:
+    sys.exit(f"the CHANGELOG section for {version} is only {len(body)} chars; it looks empty")
+# GitHub rejects a release body over 125000 characters. Leave room for the
+# installation preamble and compare-link footer appended below (~600 chars).
+if len(body) > 120000:
+    sys.exit(
+        f"the CHANGELOG section for {version} is {len(body)} chars, over GitHub's "
+        "125000-char release-body limit. Summarize it, or publish the detail as a "
+        "linked document."
+    )
+open(out, "w").write(body + "\n")
+print(f"   Release notes: {len(body)} chars from CHANGELOG.md")
+EXTRACT
+then
+    echo "❌ Error: could not extract release notes from CHANGELOG.md"
+    exit 1
+fi
+
 git tag -a "$VERSION" -m "Release $VERSION
 
 This release includes:
@@ -171,7 +213,7 @@ pip install agenkit==$PYTHON_VERSION
 go get github.com/scttfrdmn/agenkit-go@$VERSION
 \`\`\`
 
-**Full Changelog:** https://github.com/scttfrdmn/agenkit/compare/v0.10.0...$VERSION"
+**Full Changelog:** https://github.com/scttfrdmn/agenkit/compare/$PREV_TAG...$VERSION"
 
 echo "   ✓ Tag created: $VERSION"
 echo ""
@@ -190,31 +232,33 @@ echo ""
 echo "📦 Creating GitHub release..."
 echo ""
 
+# Prepend installation instructions to the CHANGELOG body extracted above.
+RELEASE_BODY="${TMPDIR:-/tmp}/agenkit-release-$PYTHON_VERSION-body.md"
+{
+    echo "## Installation"
+    echo ""
+    echo '**Python:**'
+    echo '```bash'
+    echo "pip install agenkit==$PYTHON_VERSION"
+    echo '```'
+    echo ""
+    echo '**Go:**'
+    echo '```bash'
+    echo "go get github.com/scttfrdmn/agenkit-go@$VERSION"
+    echo '```'
+    echo ""
+    echo "---"
+    echo ""
+    cat "$NOTES_FILE"
+    echo ""
+    echo "---"
+    echo ""
+    echo "**Full Changelog:** https://github.com/scttfrdmn/agenkit/compare/$PREV_TAG...$VERSION"
+} > "$RELEASE_BODY"
+
 gh release create "$VERSION" \
     --title "Agenkit $VERSION" \
-    --notes "Release $VERSION
-
-## Installation
-
-**Python:**
-\`\`\`bash
-pip install agenkit==$PYTHON_VERSION
-\`\`\`
-
-**Go:**
-\`\`\`bash
-go get github.com/scttfrdmn/agenkit-go@$VERSION
-\`\`\`
-
-## What's Included
-
-- ✅ Python SDK (agenkit)
-- ✅ Go SDK (agenkit-go)
-- ✅ Cross-language compatibility
-- ✅ All transports (HTTP, gRPC, WebSocket)
-- ✅ Middleware & composition patterns
-
-See commit history for detailed changes." \
+    --notes-file "$RELEASE_BODY" \
     --repo scttfrdmn/agenkit
 
 echo "   ✓ GitHub release created"

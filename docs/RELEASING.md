@@ -140,6 +140,11 @@ v0.11.0-rc.1     # Release candidate
 
 The script handles:
 - [ ] Version bump in `VERSION`, propagated (`make check-version` passes)
+- [ ] **The full local gate (`make test`), blocking** — a failing suite aborts the
+      release and rolls back the version-bump commit. Before #863 this step tested
+      `tail`'s exit status rather than the suite's, so it could never fail and a red
+      suite would be tagged and pushed. `make check-release-gate` verifies it still
+      blocks, by running the script against a deliberately failing stub.
 - [ ] Git commit and tag creation
 - [ ] GitHub releases
 - [ ] agenkit-go sync and release

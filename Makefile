@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins
+.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins check-release-gate
 
 # Default target
 .DEFAULT_GOAL := help
@@ -27,6 +27,9 @@ check-version: ## Fail if any version declaration disagrees with VERSION (#842)
 
 check-tool-pins: ## Fail if ruff is pinned inconsistently or invoked bare (#793)
 	@./scripts/check-tool-pins.sh
+
+check-release-gate: ## Fail if release.sh could tag a release with a red suite (#863)
+	@./scripts/check-release-gate.sh
 
 sync-version: ## Rewrite every version declaration from the root VERSION file
 	@python3 scripts/version.py sync

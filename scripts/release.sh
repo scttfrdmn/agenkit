@@ -108,23 +108,46 @@ git commit -m "chore(release): Bump version to $VERSION"
 echo "   ✓ Version numbers updated"
 echo ""
 
-# 3. Run tests (optional but recommended)
-echo "🧪 Running tests..."
+# 3. Run the full local gate. Blocking — a red suite must not be tagged.
+#
+# This step used to be unreachable code (#863):
+#
+#     if ! uv run pytest tests/ -v --tb=short 2>&1 | tail -20; then
+#
+# tests `tail`'s exit status, not pytest's, and `tail` succeeds whenever it can
+# read its input — always. So the prompt, the `git reset`, and the `exit 1` below
+# could never run, and a release with failing tests printed "✓ Tests completed"
+# and went straight on to tag and push. `set -e` does not save this: in a
+# pipeline only the last command's status is checked, and pipefail is not set.
+#
+# Two further gaps closed here: it ran `pytest tests/` (the Python leg only,
+# ~1/9th of the gate that CLAUDE.md and docs/RELEASING.md both specify), so
+# broken Go/Rust/C++/Zig/C#/Java/Scala could not block a release either — which
+# is most of the recent breakage (#857, #851, #831, #829, #811, #817). And it
+# prompted interactively, so it could not run unattended.
+#
+# Redirect to a file and tail the FILE; never pipe the command whose status you
+# are testing. (`make test` output is also far too large to read inline.)
+echo "🧪 Running the full local gate (make test)..."
 echo ""
-if command -v uv &> /dev/null; then
-    echo "   Running Python tests..."
-    if ! uv run pytest tests/ -v --tb=short 2>&1 | tail -20; then
-        echo "   ⚠️  Some tests failed - continue anyway? (y/N)"
-        read -r response
-        if [[ ! "$response" =~ ^[Yy]$ ]]; then
-            echo "   Aborting release"
-            git reset --soft HEAD~1
-            exit 1
-        fi
-    fi
+TEST_LOG="${TMPDIR:-/tmp}/agenkit-release-$PYTHON_VERSION-test.log"
+if ! make test > "$TEST_LOG" 2>&1; then
+    echo ""
+    tail -40 "$TEST_LOG"
+    echo ""
+    echo "❌ Release aborted: the local gate failed."
+    echo "   Full log: $TEST_LOG"
+    echo ""
+    # Undo the version-bump commit made above. VERSION and the 18 propagated
+    # manifests stay modified in the working tree, so fix the tests and re-run;
+    # `git checkout -- .` discards the bump if you want a clean slate.
+    git reset --soft HEAD~1
+    echo "   The version-bump commit was undone. VERSION + manifests remain"
+    echo "   staged at $PYTHON_VERSION — re-run this script after fixing."
+    exit 1
 fi
 
-echo "   ✓ Tests completed"
+echo "   ✓ All tests passed"
 echo ""
 
 # 4. Create git tag

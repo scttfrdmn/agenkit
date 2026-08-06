@@ -130,6 +130,12 @@ if [ "$LINT" = true ]; then
     run_step "Go module coverage + out-of-tree example builds" \
         ./scripts/check-go-modules.sh
 
+    # release.sh's test step could never fail (#863) — `if ! pytest ... | tail`
+    # tests tail, not pytest. Verified behaviourally against a failing `make`
+    # stub, not by grepping. Mirrors the release-gate job in test.yml.
+    run_step "Release gate blocks a failing test suite" \
+        ./scripts/check-release-gate.sh
+
     # Rust lint (#773, #778). --all-targets matters: without it clippy skips
     # tests/ and examples/, which is exactly where the six deny-by-default errors
     # found in #773 had accumulated unseen. `-D warnings` as of #778, which

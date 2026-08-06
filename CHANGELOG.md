@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.89.0] - 2026-08-06
+
+**82 commits since v0.87.0.** Two breaking changes, both convergence fixes where one
+core disagreed with the other eight — see the `BREAKING` sections below.
+
+The bulk of this release is defect repair rather than new features, and a recurring
+theme is **gates that could not fail**: a release step that tested `tail`'s exit
+status instead of the test suite's (#863), a `gofmt` check that read stdin and
+exited 0 (#849), Go files in no module that nothing compiled (#857), a lint gate
+whose verdict depended on `$PATH` (#793), and Docker images that had been unbuildable
+for many releases (#856). Several shipped defects were found only by *running* code
+that previously merely compiled.
+
+0.88.0 is skipped: it is reserved for the observability milestone (#715).
+
+
 ### Fixed — seven tracked Go files belonged to no module, so nothing compiled them (Issue #857)
 
 A `.go` file outside every module is invisible to all three Go gates at once, which is why

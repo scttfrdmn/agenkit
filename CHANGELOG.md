@@ -7,6 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — seven tracked Go files belonged to no module, so nothing compiled them (Issue #857)
+
+A `.go` file outside every module is invisible to all three Go gates at once, which is why
+this survived four consecutive gate-scoping fixes (#843 → #844 → #849 → #793 → this):
+
+- `go build ./...` and `go vet ./...` **require** a module — they cannot be run at all.
+- The #848 build-tag gate greps `^//go:build ignore` with `working-directory: agenkit-go`,
+  so a file both untagged and outside `agenkit-go/` is doubly excluded.
+- `gofmt` is purely syntactic, so #849's gate reformatted these files and reported success.
+  **Formatting a file that cannot compile is not the same as it working.**
+
+Five of the seven did not compile. The failures were not typos:
+
+| Defect | Detail |
+|---|---|
+| Fictional import | `github.com/scttfrdmn/agenkit/agenkit-go` — the repo-root path, which contains **no `.go` files at all** (the #839 class) |
+| Interface rot | agent types missing the `Introspect()` that #847 added to `agenkit.Agent` |
+| Four invented APIs | `patterns.NewRouterPattern(fn, map, nil)`, `Chat(messages) (string, error)`, `ToolResult{Output: …}`, `lambdacontext.Deadline` — none ever existed |
+| A missing binary | `research-assistant/go/cmd/worker` was never written, yet its Dockerfile built it and `docker-compose.yml` ran it, so the README's only command could not succeed |
+
+Fixed by adding 5 `go.mod` files and repairing every file until each module builds, vets,
+**and runs** — `go build` alone is insufficient: `production_agent.go` compiled and then
+died with `System failed startup checks`.
+
+**Four defects in `agenkit-go/infrastructure/health.go`** surfaced while making that example
+run, all in shipped library code: a mutual startup/readiness dependency that deadlocked, a
+nil dereference on `response.ContentString()`, a read of `ConsecutiveFailures` under the
+wrong mutex, and an unreachable startup retry budget. Covered by a new `health_test.go`
+(12 tests, `go test -race` clean).
+
+**All four example Dockerfiles could not build**, and the Go version was only the surface
+issue. Pinning `golang:1.21`/`1.22` against a `go 1.25.12` directive was fatal, but so was
+the build context — proven by running the build rather than reasoning about it:
+
+```console
+go: …@v0.0.0 (replaced by ../../../../agenkit-go): reading /agenkit-go/go.mod: no such file or directory
+```
+
+A context of `./go` puts the `replace` target outside it, so `go mod download` failed
+regardless of Go version. The three app Dockerfiles + `docker-compose.yml` files now use the
+repository root as context; all three images build.
+
+**Gate: `scripts/check-go-modules.sh`** (CI + `test-local.sh --lint`) closes both halves.
+Part 1 asserts every tracked `.go` file resolves to a module; Part 2 builds **and** vets
+every module — the half that would have caught #851 changing `GRPCServer.Start()` to
+`Start(ctx)` and silently breaking two app modules that *have* a `go.mod` but that nothing
+ever built. Both failure classes are negative-verified (orphan file → exit 1; the #851
+regression → exit 1), and both checks carry floors on their input counts so an empty list
+cannot read as success (#849's lesson). Currently: 336 files, 9 modules.
+
+The gate builds with `-o` into a scratch dir. A bare `go build ./...` writes its executable
+into the working directory named after what it built, so the gate would otherwise dirty the
+tree with the exact artifacts `check-tracked-artifacts.sh` exists to exclude — and `git
+add -A` would commit them. It did, once, during this work: 52 MB across four binaries,
+caught before commit. `.gitignore` now covers all seven names, each taken from running the
+build rather than inferred (three are `worker`, not the module name).
+
+Also: removed `proto/agentpb/` — a stale duplicate of `agenkit-go/proto/agentpb/` that
+nothing imports and that the `.proto`'s own `option go_package` does not name. `proto/`
+itself stays; it is the live Python package imported by `agenkit/adapters/python/grpc_server.py`.
+
+Deferred to a follow-up: `examples/deployment/docker-compose/go/` has a Dockerfile building
+`./cmd/agent` and zero `.go` files. Writing it is net-new code, not a #857 repair.
+
 ### Fixed — the Python lint gate's verdict depended on whose machine ran it (Issue #793)
 
 #793 reported 28 `ruff check` findings failing `test-local.sh --lint`, with an inventory of

@@ -214,6 +214,15 @@ func (hc *HealthChecker) CheckLiveness(ctx context.Context) HealthCheckResult {
 }
 
 // CheckReadiness performs a readiness check.
+//
+// Readiness is gated on startup having completed, so this reports Unhealthy until
+// then. CheckStartup deliberately does NOT call this method — it calls probe()
+// directly. Routing startup through the gate made the two mutually dependent:
+// startup asked readiness, readiness answered "startup not complete", and
+// startupComplete (which only CheckStartup sets) could never be reached. An
+// example configured with StartupEnabled+ReadinessEnabled therefore never became
+// healthy, and every probe of a healthy agent reported failure. health.go had no
+// test file at all, so nothing caught it (#857).
 func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 	startTime := time.Now()
 	probeType := Readiness
@@ -221,7 +230,11 @@ func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 	hc.trackCheckStarted(probeType)
 
 	// Check if startup completed
-	if hc.config.StartupEnabled && !hc.startupComplete {
+	hc.mu.RLock()
+	startupPending := hc.config.StartupEnabled && !hc.startupComplete
+	hc.mu.RUnlock()
+
+	if startupPending {
 		duration := time.Since(startTime).Milliseconds()
 		hc.trackCheckFailure(probeType, float64(duration))
 		return HealthCheckResult{
@@ -233,6 +246,22 @@ func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 		}
 	}
 
+	result := hc.probe(ctx, probeType, startTime)
+	if result.Status == Healthy {
+		hc.mu.Lock()
+		hc.lastSuccessfulRequest = time.Now()
+		hc.mu.Unlock()
+	}
+	return result
+}
+
+// probe sends one test message to the agent and classifies the outcome. Shared by
+// CheckReadiness and CheckStartup so that startup does not have to go through the
+// readiness gate it is itself a precondition of.
+//
+// Records success/failure for probeType; the caller records the start. startTime is
+// the caller's so DurationMS covers the whole check, not just the agent call.
+func (hc *HealthChecker) probe(ctx context.Context, probeType ProbeType, startTime time.Time) HealthCheckResult {
 	// Test with a simple request
 	checkCtx, cancel := context.WithTimeout(ctx, hc.config.ReadinessTimeout)
 	defer cancel()
@@ -245,12 +274,29 @@ func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 	response, err := hc.agent.Process(checkCtx, testMsg)
 	duration := time.Since(startTime).Milliseconds()
 
-	if err != nil || response.ContentString() == "" {
+	// `response.ContentString()` only after confirming err == nil: Process returns a
+	// nil *Message on error, and ContentString has a pointer receiver, so evaluating
+	// both sides of the `||` panicked whenever the agent failed. Go's `||` is
+	// short-circuiting, which masked it — but only while err was non-nil AND the
+	// first operand was checked first. A probe of a *failing* agent nil-dereferenced
+	// as soon as anything reordered it.
+	if err != nil {
 		hc.trackCheckFailure(probeType, float64(duration))
 		return HealthCheckResult{
 			Status:     Unhealthy,
 			ProbeType:  probeType,
-			Message:    fmt.Sprintf("Readiness check failed: %v", err),
+			Message:    fmt.Sprintf("%s check failed: %v", probeType, err),
+			Timestamp:  time.Now(),
+			DurationMS: float64(duration),
+		}
+	}
+
+	if response == nil || response.ContentString() == "" {
+		hc.trackCheckFailure(probeType, float64(duration))
+		return HealthCheckResult{
+			Status:     Unhealthy,
+			ProbeType:  probeType,
+			Message:    fmt.Sprintf("%s check failed: agent returned empty content", probeType),
 			Timestamp:  time.Now(),
 			DurationMS: float64(duration),
 		}
@@ -258,9 +304,6 @@ func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 
 	// Success
 	hc.trackCheckSuccess(probeType, float64(duration))
-	hc.mu.Lock()
-	hc.lastSuccessfulRequest = time.Now()
-	hc.mu.Unlock()
 
 	return HealthCheckResult{
 		Status:     Healthy,
@@ -272,42 +315,40 @@ func (hc *HealthChecker) CheckReadiness(ctx context.Context) HealthCheckResult {
 }
 
 // CheckStartup performs a startup check.
+//
+// Probes the agent directly rather than calling CheckReadiness: readiness is gated
+// on startupComplete, which only this method sets, so going through it could never
+// succeed (#857). See CheckReadiness.
 func (hc *HealthChecker) CheckStartup(ctx context.Context) HealthCheckResult {
 	startTime := time.Now()
 	probeType := Startup
 
 	hc.trackCheckStarted(probeType)
 
-	// Perform readiness check as startup test
-	readinessResult := hc.CheckReadiness(ctx)
+	// probe records the success/failure counter for Startup itself, so this method
+	// only reshapes the message. Tracking it again here would double-count every
+	// startup probe against TotalChecks.
+	probeResult := hc.probe(ctx, probeType, startTime)
 
-	if readinessResult.Status == Healthy {
+	if probeResult.Status == Healthy {
 		hc.mu.Lock()
 		hc.startupComplete = true
+		// A passing startup probe IS a passing readiness probe — it is the same
+		// request against the same agent. Handing off directly (as Kubernetes does
+		// when a startupProbe succeeds) is what makes IsHealthy() true promptly;
+		// otherwise readiness stays false until readinessLoop's first tick, so an
+		// agent that was ready immediately still reported unhealthy for a full
+		// ReadinessInterval.
+		hc.isReady = true
+		hc.lastSuccessfulRequest = time.Now()
 		hc.mu.Unlock()
 
-		duration := time.Since(startTime).Milliseconds()
-		hc.trackCheckSuccess(probeType, float64(duration))
-
-		return HealthCheckResult{
-			Status:     Healthy,
-			ProbeType:  probeType,
-			Message:    "Startup complete",
-			Timestamp:  time.Now(),
-			DurationMS: float64(duration),
-		}
+		probeResult.Message = "Startup complete"
+		return probeResult
 	}
 
-	duration := time.Since(startTime).Milliseconds()
-	hc.trackCheckFailure(probeType, float64(duration))
-
-	return HealthCheckResult{
-		Status:     Unhealthy,
-		ProbeType:  probeType,
-		Message:    "Startup checks not passing yet",
-		Timestamp:  time.Now(),
-		DurationMS: float64(duration),
-	}
+	probeResult.Message = "Startup checks not passing yet"
+	return probeResult
 }
 
 func (hc *HealthChecker) livenessLoop(ctx context.Context) {
@@ -354,9 +395,15 @@ func (hc *HealthChecker) readinessLoop(ctx context.Context) {
 		case <-ticker.C:
 			result := hc.CheckReadiness(ctx)
 
+			// ConsecutiveFailures is guarded by metrics.mu, not hc.mu. Reading it
+			// under the wrong mutex was a data race that `go test -race` never saw
+			// because health.go had no tests at all.
+			hc.metrics.mu.RLock()
+			failures := hc.metrics.ConsecutiveFailures[Readiness]
+			hc.metrics.mu.RUnlock()
+
 			hc.mu.Lock()
 			if result.Status == Unhealthy {
-				failures := hc.metrics.ConsecutiveFailures[Readiness]
 				if failures >= hc.config.ReadinessFailureThreshold {
 					hc.isReady = false
 				}
@@ -373,6 +420,14 @@ func (hc *HealthChecker) startupCheck(ctx context.Context) {
 
 	startTime := time.Now()
 	attempts := 0
+
+	// Spread StartupFailureThreshold attempts over StartupTimeout instead of waiting
+	// a hardcoded 10s between them. With the default 30s timeout and 30 attempts the
+	// old interval allowed exactly three probes before the timeout fired, so 27 of
+	// the 30 configured attempts were unreachable — and a caller who shortened
+	// StartupTimeout below 10s got exactly one.
+	interval := hc.config.StartupTimeout / time.Duration(max(hc.config.StartupFailureThreshold, 1))
+	interval = min(max(interval, 100*time.Millisecond), 10*time.Second)
 
 	for {
 		if time.Since(startTime) > hc.config.StartupTimeout {
@@ -394,8 +449,7 @@ func (hc *HealthChecker) startupCheck(ctx context.Context) {
 			return
 		case <-hc.stopChan:
 			return
-		case <-time.After(10 * time.Second):
-			// Wait 10s between startup checks
+		case <-time.After(interval):
 		}
 	}
 }

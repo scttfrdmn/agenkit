@@ -38,8 +38,10 @@ services:
   # Go Worker Service (gRPC)
   go-worker:
     build:
-      context: ./go
-      dockerfile: Dockerfile
+      # Repo root: go/go.mod `replace`s agenkit-go to ../../../../agenkit-go, which
+      # a context of ./go excludes — `go mod download` could not see it (#857).
+      context: ../../..
+      dockerfile: examples/apps/customer-support/go/Dockerfile
     container_name: customer-support-worker
     ports:
       - "${GO_WORKER_GRPC_PORT:-50051}:50051"

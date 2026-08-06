@@ -10,12 +10,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
 	"time"
 
-	"github.com/scttfrdmn/agenkit/agenkit-go/core"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"github.com/scttfrdmn/agenkit/agenkit-go/infrastructure"
 )
 
@@ -41,20 +42,43 @@ func (a *SimulatedAgent) Capabilities() []string {
 	return []string{"text_generation", "reasoning"}
 }
 
-func (a *SimulatedAgent) Process(msg core.Message) (core.Message, error) {
+// Introspect satisfies agenkit.Agent. Every agent-shaped type must implement it:
+// omitting it is what let 22 types silently stop satisfying the interface in #847.
+func (a *SimulatedAgent) Introspect() *agenkit.IntrospectionResult {
+	result, err := agenkit.NewIntrospectionResult(
+		a.agentName,
+		a.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"failure_rate":  a.failureRate,
+			"request_count": a.requestCount,
+		},
+		nil,
+	)
+	if err != nil {
+		return nil
+	}
+	return result
+}
+
+func (a *SimulatedAgent) Process(ctx context.Context, msg *agenkit.Message) (*agenkit.Message, error) {
 	a.requestCount++
 
-	// Simulate processing time
-	time.Sleep(100 * time.Millisecond)
-
-	// Simulate occasional failures
-	if rand.Float64() < a.failureRate {
-		return core.Message{}, fmt.Errorf("%s: simulated transient error", a.agentName)
+	// Simulate processing time, but honour cancellation while doing so.
+	select {
+	case <-time.After(100 * time.Millisecond):
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	}
 
-	return core.Message{
+	// Simulate occasional failures
+	if rand.Float64() < a.failureRate { //nolint:gosec // simulation, not security
+		return nil, fmt.Errorf("%s: simulated transient error", a.agentName)
+	}
+
+	return &agenkit.Message{
 		Role:    "agent",
-		Content: fmt.Sprintf("%s processed: %s", a.agentName, msg.Content),
+		Content: fmt.Sprintf("%s processed: %s", a.agentName, msg.ContentString()),
 		Metadata: map[string]interface{}{
 			"agent":         a.agentName,
 			"request_count": a.requestCount,
@@ -66,6 +90,9 @@ func (a *SimulatedAgent) Process(msg core.Message) (core.Message, error) {
 func main() {
 	log.Println("Starting production agent system...")
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// 1. Create backend agents with varying failure rates
 	backend1 := NewSimulatedAgent("agent-1", 0.1)
 	backend2 := NewSimulatedAgent("agent-2", 0.05)
@@ -73,11 +100,11 @@ func main() {
 
 	// 2. Wrap each backend with enhanced retry
 	retryConfig := infrastructure.EnhancedRetryConfig{
-		MaxAttempts:           3,
-		InitialBackoff:        100 * time.Millisecond,
-		MaxBackoff:            5 * time.Second,
-		BackoffMultiplier:     2.0,
-		JitterType:            infrastructure.JitterTypeFull,
+		MaxRetries:            3,
+		InitialRetryDelay:     100 * time.Millisecond,
+		MaxRetryDelay:         5 * time.Second,
+		RetryMultiplier:       2.0,
+		JitterType:            infrastructure.FullJitter,
 		EnableBackpressure:    true,
 		BackpressureThreshold: 0.3,
 		BackpressureWindow:    10,
@@ -85,12 +112,12 @@ func main() {
 	}
 
 	// Add default error strategies
-	retryConfig.ErrorStrategies[infrastructure.ErrorClassTransient] = infrastructure.ErrorStrategy{
-		ErrorClass:        infrastructure.ErrorClassTransient,
-		MaxAttempts:       5,
-		InitialBackoff:    100 * time.Millisecond,
-		MaxBackoff:        5 * time.Second,
-		BackoffMultiplier: 2.0,
+	retryConfig.ErrorStrategies[infrastructure.Transient] = infrastructure.ErrorStrategy{
+		ErrorClass:        infrastructure.Transient,
+		MaxRetries:        5,
+		InitialRetryDelay: 100 * time.Millisecond,
+		MaxRetryDelay:     5 * time.Second,
+		RetryMultiplier:   2.0,
 		ShouldRetry:       true,
 	}
 
@@ -100,25 +127,36 @@ func main() {
 
 	// 3. Create load balancer with health checking
 	lbConfig := infrastructure.LoadBalancerConfig{
-		Strategy:             infrastructure.StrategyLeastConnections,
-		HealthCheckEnabled:   true,
-		HealthCheckInterval:  5 * time.Second,
-		HealthCheckTimeout:   2 * time.Second,
-		MaxRetriesPerBackend: 2,
+		Strategy:            infrastructure.LeastConnections,
+		HealthCheckInterval: 5 * time.Second,
+		HealthCheckTimeout:  2 * time.Second,
+		FailureThreshold:    3,
+		SuccessThreshold:    2,
+		EnableFailover:      true,
 	}
 
-	loadBalancer := infrastructure.NewLoadBalancer(
-		[]core.Agent{retryBackend1, retryBackend2, retryBackend3},
+	// nil weights means "weight 1 each"; pass a []int to bias WeightedRoundRobin.
+	loadBalancer, err := infrastructure.NewLoadBalancer(
+		[]agenkit.Agent{retryBackend1, retryBackend2, retryBackend3},
 		lbConfig,
+		nil,
 	)
+	if err != nil {
+		log.Fatalf("failed to create load balancer: %v", err)
+	}
+
+	loadBalancer.StartHealthChecks(ctx)
+	defer loadBalancer.StopHealthChecks()
 
 	// 4. Set up health checker for the load balancer
 	healthConfig := infrastructure.HealthCheckConfig{
 		LivenessEnabled:           true,
 		LivenessInterval:          10 * time.Second,
+		LivenessTimeout:           5 * time.Second,
 		LivenessFailureThreshold:  3,
 		ReadinessEnabled:          true,
 		ReadinessInterval:         5 * time.Second,
+		ReadinessTimeout:          3 * time.Second,
 		ReadinessFailureThreshold: 2,
 		StartupEnabled:            true,
 		StartupTimeout:            30 * time.Second,
@@ -126,7 +164,7 @@ func main() {
 	}
 
 	healthChecker := infrastructure.NewHealthChecker(loadBalancer, healthConfig)
-	healthChecker.Start()
+	healthChecker.Start(ctx)
 
 	// Wait for startup to complete
 	log.Println("Waiting for startup checks...")
@@ -143,17 +181,17 @@ func main() {
 	failed := 0
 
 	for i := 0; i < 20; i++ {
-		msg := core.Message{
+		msg := &agenkit.Message{
 			Role:    "user",
 			Content: fmt.Sprintf("Request %d", i),
 		}
 
-		response, err := loadBalancer.Process(msg)
+		response, err := loadBalancer.Process(ctx, msg)
 		if err != nil {
 			log.Printf("Request %d: FAILED - %v", i, err)
 			failed++
 		} else {
-			log.Printf("Request %d: SUCCESS - %s", i, response.Content)
+			log.Printf("Request %d: SUCCESS - %s", i, response.ContentString())
 			successful++
 		}
 
@@ -165,30 +203,38 @@ func main() {
 	log.Println("\n" + "============================================================")
 	log.Println("FINAL METRICS")
 	log.Println("============================================================")
+	log.Printf("Requests attempted here: %d successful, %d failed", successful, failed)
 
 	// Load balancer metrics
-	lbMetrics := loadBalancer.GetMetrics()
+	lbMetrics := loadBalancer.Metrics()
 	log.Printf("\nLoad Balancer:")
 	log.Printf("  Total requests: %d", lbMetrics.TotalRequests)
 	log.Printf("  Successful: %d", lbMetrics.SuccessfulRequests)
 	log.Printf("  Failed: %d", lbMetrics.FailedRequests)
+	log.Printf("  Failover attempts: %d", lbMetrics.FailoverAttempts)
 	if lbMetrics.TotalRequests > 0 {
 		successRate := float64(lbMetrics.SuccessfulRequests) / float64(lbMetrics.TotalRequests) * 100
 		log.Printf("  Success rate: %.1f%%", successRate)
 	}
 
-	// Backend distribution
+	// Backend health transitions
+	log.Println("\nBackend Health Changes:")
+	for backendID, count := range lbMetrics.BackendHealthChanges {
+		log.Printf("  %s: %d transitions", backendID, count)
+	}
+
+	// Per-backend request distribution
 	log.Println("\nBackend Distribution:")
-	for backendID, count := range lbMetrics.BackendRequestCounts {
-		log.Printf("  %s: %d requests", backendID, count)
+	for _, stats := range loadBalancer.GetBackendStats() {
+		log.Printf("  %v: %v requests (healthy=%v)", stats["name"], stats["total_requests"], stats["healthy"])
 	}
 
 	// Retry metrics for each backend
 	log.Println("\nRetry Metrics:")
-	backends := []core.Agent{retryBackend1, retryBackend2, retryBackend3}
+	backends := []agenkit.Agent{retryBackend1, retryBackend2, retryBackend3}
 	for i, backend := range backends {
 		if retryAgent, ok := backend.(*infrastructure.EnhancedRetryDecorator); ok {
-			metrics := retryAgent.GetMetrics()
+			metrics := retryAgent.Metrics()
 			log.Printf("  Agent %d:", i+1)
 			log.Printf("    Total attempts: %d", metrics.TotalAttempts)
 			log.Printf("    Successful on first: %d", metrics.SuccessfulFirstAttempt)
@@ -202,7 +248,7 @@ func main() {
 	}
 
 	// Health metrics
-	healthMetrics := healthChecker.GetMetrics()
+	healthMetrics := healthChecker.Metrics()
 	log.Println("\nHealth Checks:")
 	for probeType, count := range healthMetrics.TotalChecks {
 		success := healthMetrics.SuccessfulChecks[probeType]

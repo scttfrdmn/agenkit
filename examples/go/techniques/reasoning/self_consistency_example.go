@@ -40,6 +40,24 @@ func (a *SimpleAgent) Capabilities() []string {
 	return []string{"reasoning"}
 }
 
+// Introspect satisfies agenkit.Agent. Omitting it is what made this file stop
+// compiling: Introspect() was added to the interface without conformance
+// assertions, so agent-shaped types silently stopped satisfying it (#847). Nothing
+// noticed here because the file was in no Go module at all (#857).
+func (a *SimpleAgent) Introspect() *agenkit.IntrospectionResult {
+	result, err := agenkit.NewIntrospectionResult(
+		a.Name(),
+		a.Capabilities(),
+		nil,
+		map[string]interface{}{"response_index": a.index},
+		nil,
+	)
+	if err != nil {
+		return nil
+	}
+	return result
+}
+
 func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	response := a.responses[a.index%len(a.responses)]
 	a.index++
@@ -47,7 +65,7 @@ func (a *SimpleAgent) Process(ctx context.Context, message *agenkit.Message) (*a
 }
 
 func main() {
-	fmt.Println("=== Self-Consistency Reasoning Examples ===\n")
+	fmt.Print("=== Self-Consistency Reasoning Examples ===\n\n")
 
 	// Example 1: Basic Self-Consistency with Majority Voting
 	example1()

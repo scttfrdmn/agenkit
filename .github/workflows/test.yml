@@ -122,6 +122,29 @@ jobs:
           done
           exit $fail
 
+      - name: Every tracked .go file is in a module, and every module builds (blocking)
+        # Two gaps, both of which shipped breakage:
+        #
+        # 1. A .go file in NO module is invisible to every other gate. `go build
+        #    ./...` cannot be run without a module; the build-tag gate above greps
+        #    from working-directory: agenkit-go and only matches `//go:build
+        #    ignore`; and gofmt (#849) is purely syntactic, so it formatted these
+        #    files without ever compiling them. Seven tracked files were orphaned
+        #    this way and five did not compile — fictional imports of a root
+        #    `agenkit-go` package that has no .go files, agent types missing the
+        #    Introspect() #847 added, and four APIs called with signatures that
+        #    never existed.
+        #
+        # 2. "Has a go.mod" is not "is built." The two examples/apps/*/go modules
+        #    were compiled by nothing, so #851's GRPCServer.Start() -> Start(ctx)
+        #    broke both of them silently.
+        #
+        # GOTOOLCHAIN: auto because the out-of-tree example modules may name a
+        # patch toolchain newer than the pinned one.
+        env:
+          GOTOOLCHAIN: auto
+        run: ./scripts/check-go-modules.sh
+
       - name: Build Go cross-language harness (blocking)
         working-directory: tests/cross_language/harness_go
         # These harnesses build against the agenkit-go core via a local `replace`.

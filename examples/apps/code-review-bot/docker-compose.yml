@@ -26,7 +26,11 @@ services:
       - review-network
 
   go-analyzer:
-    build: ./go
+    build:
+      # Repo root: go/go.mod `replace`s agenkit-go to ../../../../agenkit-go, which
+      # a context of ./go excludes — `go mod download` could not see it (#857).
+      context: ../../..
+      dockerfile: examples/apps/code-review-bot/go/Dockerfile
     container_name: code-review-analyzer
     ports:
       - "${GO_ANALYZER_GRPC_PORT:-50051}:50051"

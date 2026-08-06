@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the Python lint gate's verdict depended on whose machine ran it (Issue #793)
+
+#793 reported 28 `ruff check` findings failing `test-local.sh --lint`, with an inventory of
+six rules to fix. Re-measuring before starting found the diagnosis wrong, and the real fix
+is smaller and elsewhere. **ruff was declared three ways, with three answers:**
+
+| Where | Declared | Resolves to | Verdict |
+|---|---|---|---|
+| `pyproject.toml` `[dev]` | `ruff>=0.1.0` | 0.14.4 | `All checks passed!` |
+| `.pre-commit-config.yaml` | `rev: v0.9.1` | 0.9.1 | a third ruleset |
+| `scripts/test-local.sh:88` | bare `ruff` | `$PATH` (0.15.10 here) | `Found 28 errors.` |
+
+Both counts are correct. All six rules the issue names — `UP042`, `FURB110`, `PLW0108`,
+`ASYNC240`, `PLC0207`, `ASYNC250` — are **preview-only in 0.14.4 and stable by 0.15.x**, so
+the inventory was taken with a ruff that had promoted them:
+
+```console
+$ uv run --extra dev ruff check agenkit/ --select ASYNC250
+warning: Selection `ASYNC250` has no effect because preview is not enabled.
+```
+
+A `>=` floor on a linter guarantees this: every developer legitimately has a different one,
+so `--lint` passed or failed depending on the machine. **That is the defect** — not a
+backlog of 28. (With preview fully enabled there are 1380 findings, not 28, which is the
+argument for pinning rather than enabling.) Two *formatter* versions are worse still: each
+"fixes" what the other wrote, forever.
+
+Now `ruff==0.14.4` exactly, matched by `rev: v0.14.4` in pre-commit, and every invocation
+in `Makefile` / `test-local.sh` / `lint.yml` goes through `uv run --extra dev` so none can
+resolve against `$PATH`. `scripts/check-tool-pins.sh` (`make check-tool-pins`, and a CI
+step) fails if the two pins disagree, if the pin degrades back to a range, or if a bare
+`ruff` reappears. `./scripts/test-local.sh --lint` now exits 0.
+
+Two side findings fixed in passing:
+
+- **`test-local.sh:95` held a third copy of the gofmt gate** — `gofmt -s -l .` from
+  `agenkit-go` with `grep -v "^examples/"`, the exact scoping #849 removed from CI and
+  `make lint`. It was blind to the same 11 files and #849 missed it. Now repo-wide with the
+  300-file floor. Verified: old step exits 0 on an injected defect, new step exits 1.
+- `test-local.sh`'s format check omitted `examples/`, unlike `make format` (#856).
+
+Deferred deliberately, with reasoning recorded on the issue: the `UP042`→`StrEnum`
+migration (those are wire-format types, and it changes `str()`/f-string output) and the
+0.15.x upgrade. The **`ASYNC250`** finding is a genuine defect independent of any linter —
+`agenkit/techniques/compositions/simple_human_approval.py:97` calls bare `input()` inside
+`async def`, stalling the event loop — and remains open.
+
 ### Fixed — both Docker base images had been unbuildable for many releases (Issue #856)
 
 `Dockerfile.go` was a Dockerfile named `*.go`, so `gofmt` tried to parse it and exited 2

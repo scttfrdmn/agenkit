@@ -64,7 +64,12 @@ dev = [
     "pytest-timeout>=2.2.0",
     "pytest-xdist>=3.5.0",
     "mypy>=1.5.0",
-    "ruff>=0.1.0",
+    # Pinned exactly, not floored. A `>=` on a linter means every machine can
+    # legitimately have a different one: #793 was a Homebrew 0.15.10 reporting 28
+    # findings against a locked 0.14.4 reporting none, because the six rules
+    # involved are preview-only in 0.14.4 and stable by 0.15.x. Bump deliberately,
+    # with the new version's findings fixed in the same change.
+    "ruff==0.14.4",
     "bandit>=1.7.5",
     "pylint>=3.0.0",
     "hypothesis>=6.0.0",

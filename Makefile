@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version
+.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins
 
 # Default target
 .DEFAULT_GOAL := help
@@ -24,6 +24,9 @@ check-artifacts: ## Fail if compiled binaries or oversize files are tracked (#66
 
 check-version: ## Fail if any version declaration disagrees with VERSION (#842)
 	@python3 scripts/version.py check
+
+check-tool-pins: ## Fail if ruff is pinned inconsistently or invoked bare (#793)
+	@./scripts/check-tool-pins.sh
 
 sync-version: ## Rewrite every version declaration from the root VERSION file
 	@python3 scripts/version.py sync
@@ -65,7 +68,11 @@ install: ## Install development dependencies
 
 format: ## Format code (Python: ruff format, Go: gofmt)
 	@echo "Formatting Python code..."
-	@ruff format agenkit/ tests/ examples/
+# `uv run --extra dev` rather than a bare `ruff`, so this uses the pinned 0.14.4 and
+# not whatever is on $PATH. A bare `ruff` here could reformat the tree with a
+# different version than the CI gate checks with, producing a diff CI then rejects
+# (#793). Keep the path set in step with lint.yml and test-local.sh.
+	@uv run --extra dev ruff format agenkit/ tests/ examples/
 	@echo "Formatting Go code..."
 # Whole repo, not just agenkit-go: four Go example trees live outside it
 # (examples/deployment/aws-lambda/go, examples/e2e, examples/infrastructure,
@@ -76,9 +83,9 @@ format: ## Format code (Python: ruff format, Go: gofmt)
 
 lint: ## Run linters only (no tests)
 	@echo "Running Ruff check..."
-	@ruff check agenkit/ tests/
+	@uv run --extra dev ruff check agenkit/ tests/
 	@echo "Running Ruff format check..."
-	@ruff format --check agenkit/ tests/
+	@uv run --extra dev ruff format --check agenkit/ tests/ examples/
 	@echo "Running go fmt check..."
 # Must FAIL on unformatted code. This previously ended in
 # `| grep -v "^examples/" || echo "✓ Go code formatted"`, which printed the

@@ -4,8 +4,14 @@
 
 repos:
   # Python linting and formatting
+  #
+  # `rev` must match the `ruff==` pin in pyproject.toml's dev extra. It read v0.9.1
+  # against a locked 0.14.4, so this repo had three ruffs — 0.9.1 here, 0.14.4 in
+  # CI, and whatever `brew install ruff` put on $PATH for scripts/test-local.sh —
+  # each with a different ruleset. That is what #793 measured as "28 findings":
+  # a version disagreement, not a backlog. Bump both together, never one alone.
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.1
+    rev: v0.14.4
     hooks:
       - id: ruff
         args: [--fix]

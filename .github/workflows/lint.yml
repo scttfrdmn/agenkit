@@ -36,6 +36,14 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      # ruff was declared three ways with three answers — `>=0.1.0` in pyproject
+      # (resolving to 0.14.4), `rev: v0.9.1` in pre-commit, and a bare `ruff` on
+      # $PATH in test-local.sh (0.15.10 locally). They disagreed by 28 findings, so
+      # `--lint` passed or failed depending on whose machine ran it (#793). Two
+      # formatter versions are worse still: each "fixes" the other forever.
+      - name: Check tool pins agree
+        run: ./scripts/check-tool-pins.sh
+
       # Use the repo's locked ruff (via uv --extra dev) so CI and local
       # `make format` agree — pinning avoids formatter version skew.
       #

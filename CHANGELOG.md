@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **SBOM generation + Sigstore signing had never once succeeded** (#867). The
+  `release-security.yml` workflow was 6-for-6 *failures* across v0.86.0, v0.87.0 and
+  v0.89.0, so **no agenkit release has ever shipped an SBOM, checksum manifest, or
+  signature** — `gh release view --json assets` was empty for every tag while
+  `CLAUDE.md` cited "release attestation" as the job's justification. Two causes, one
+  per cosign era: the workflow passed only the deprecated
+  `--output-signature`/`--output-certificate`, which cosign v3 *ignores* under the new
+  bundle format before failing with `must specify --bundle with --new-bundle-format`
+  (reproduced locally); and on v0.89.0 an unpinned ambient OIDC provider returned a
+  non-JSON body (`invalid character 'u'`). Now signs with `--bundle` and
+  `--oidc-provider=github-actions`, pins the cosign *binary* (not just the installer
+  action — that's how the failure mode changed between June and August with no commit),
+  and **verifies its own signatures** plus **reads the release page back** to assert all
+  six assets exist. A `workflow_dispatch` against an existing tag repairs a release
+  without cutting a new version.
+- **`uv.lock` was a 20th version declaration nobody propagated** (#868). The `v0.89.0`
+  tag shipped `version = "0.87.0"` in `uv.lock` while `VERSION` said `0.89.0`, and
+  `make check-version` truthfully reported "All 19 declarations agree" because
+  `uv.lock` was not one of the 19. `uv` self-heals the lock on resolve, so
+  `release.sh`'s ordering — commit the bump, *then* run the suite — meant `uv run
+  pytest` rewrote the file after the commit: stale content in the tag, dirty tree
+  afterwards, and a preflight failure waiting for the next release. `uv.lock` is now a
+  tracked declaration, `release.sh` aborts if the suite modifies any tracked file, and
+  `version.py` asserts a floor on its own declaration count — the reassuring "All 19"
+  was the tell, and nothing had checked that 19 was the right number.
+
+### Changed
+
+- `make check-release-gate` grew two probes: a suite that passes but dirties the tree
+  must abort the release, and `uv.lock` must be a propagated declaration. Both verified
+  negatively — with the fixes reverted, `release.sh` *tags* despite the dirty tree.
+
 ## [v0.89.0] - 2026-08-06
 
 **82 commits since v0.87.0.** Two breaking changes, both convergence fixes where one

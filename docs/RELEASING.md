@@ -145,9 +145,37 @@ The script handles:
       `tail`'s exit status rather than the suite's, so it could never fail and a red
       suite would be tagged and pushed. `make check-release-gate` verifies it still
       blocks, by running the script against a deliberately failing stub.
+- [ ] **A clean tree after the suite, blocking** — the version bump is committed
+      *before* the suite runs, so any tracked file the suite regenerates lands after
+      the commit and is therefore absent from the tag. That is how the v0.89.0 tag
+      shipped `uv.lock` at `0.87.0` (#868). `make check-release-gate` also probes this,
+      with a stub that passes but modifies a tracked file.
 - [ ] Git commit and tag creation
 - [ ] GitHub releases
 - [ ] agenkit-go sync and release
+
+### After the tag: SBOM + signing is a separate workflow
+
+`release-security.yml` reacts to the published release, generates CycloneDX + SPDX
+SBOMs, signs each with cosign keyless, and attaches six assets. **It is not part of
+`release.sh`, so a green release says nothing about it** — it failed on every release
+from v0.86.0 through v0.89.0 while appearing to be a working control, because nothing
+ever read the release page back (#867).
+
+Verify it, don't assume it:
+
+```bash
+gh run list --workflow release-security.yml --limit 1
+gh release view vX.Y.Z --json assets --jq '.assets[].name'   # expect 6
+```
+
+The workflow now verifies its own signatures and asserts the six assets exist, so a
+failure is loud. To repair a release that shipped without assets, dispatch it against
+the existing tag — no new version needed:
+
+```bash
+gh workflow run release-security.yml --ref vX.Y.Z
+```
 
 ### After Release
 

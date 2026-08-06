@@ -133,7 +133,11 @@ if [ "$LINT" = true ]; then
     # release.sh's test step could never fail (#863) — `if ! pytest ... | tail`
     # tests tail, not pytest. Verified behaviourally against a failing `make`
     # stub, not by grepping. Mirrors the release-gate job in test.yml.
-    run_step "Release gate blocks a failing test suite" \
+    #
+    # Also probes #868: a suite that PASSES but rewrites a tracked file must abort
+    # the release, because the version bump is committed before the suite runs and
+    # a post-commit rewrite is therefore missing from the tag.
+    run_step "Release gate blocks a failing suite and a dirty tree" \
         ./scripts/check-release-gate.sh
 
     # Rust lint (#773, #778). --all-targets matters: without it clippy skips

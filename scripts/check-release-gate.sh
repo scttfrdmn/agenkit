@@ -171,11 +171,150 @@ else
   echo "    the version-bump commit was rolled back"
 fi
 
+# ------------------------------------------------------------------
+# Part 3: release.sh aborts when the suite dirties the tree (#868).
+# ------------------------------------------------------------------
+# The v0.89.0 tag shipped `version = "0.87.0"` in uv.lock while VERSION said
+# 0.89.0, because release.sh commits the bump in step 2 and only runs the suite in
+# step 3 — and `uv run pytest` self-heals uv.lock on resolve. So the rewrite landed
+# after the commit: the tag got the stale content and the tree was left dirty.
+# `make check-version` reported "All 19 agree" throughout, truthfully, because
+# uv.lock was not one of the 19.
+#
+# uv.lock is now a tracked declaration in scripts/version.py, so that instance is
+# fixed at the source. This asserts the general ordering hazard stays guarded: a
+# stub `make` that exits 0 but modifies a tracked file must abort the release.
+echo
+echo "==> Verifying release.sh aborts when the suite modifies tracked files"
+
+work3=$(mktemp -d)
+trap 'rm -rf "$work" "$work3"' EXIT
+
+# Tags ARE cloned here, unlike Part 2. release.sh's `git describe --tags` needs a
+# previous tag for the compare link (#865) and aborts without one — which would stop
+# this probe *before* the dirty-tree check and make Part 3 vacuous. Part 2 does not
+# care because its stub fails earlier.
+if ! git clone --quiet --no-hardlinks "$repo_root" "$work3/repo" 2>"$work3/clone.err"; then
+  echo "FAIL: could not clone the repo for the dirty-tree probe:"
+  cat "$work3/clone.err"
+  exit 1
+fi
+
+cd "$work3/repo"
+git remote remove origin 2>/dev/null || true
+git config user.email "release-gate-probe@localhost"
+git config user.name "release gate probe"
+git config commit.gpgsign false
+git config tag.gpgsign false
+cp -R "$repo_root/scripts/." "$work3/repo/scripts/"
+git add -A scripts/ >/dev/null 2>&1 || true
+git commit --quiet -m "probe: overlay working-tree scripts" >/dev/null 2>&1 || true
+git checkout --quiet -B main
+
+# This stub PASSES (exit 0) but modifies a tracked file, standing in for uv's
+# self-healing rewrite. The distinction from Part 2 matters: there the suite failed,
+# here it succeeds, so the test gate lets the release through and only the
+# dirty-tree assertion can stop it.
+mkdir -p "$work3/bin"
+cat > "$work3/bin/make" <<'STUB'
+#!/usr/bin/env bash
+echo "stub make: suite passes, but rewrites a tracked file (as uv does to uv.lock)"
+printf '\n# touched by the probe\n' >> CHANGELOG.md
+exit 0
+STUB
+chmod +x "$work3/bin/make"
+
+cat > "$work3/bin/git" <<STUB
+#!/usr/bin/env bash
+if [ "\${1:-}" = "pull" ]; then exit 0; fi
+exec /usr/bin/git "\$@"
+STUB
+chmod +x "$work3/bin/git"
+
+# The CHANGELOG section release.sh now requires (#865), so the notes extraction is
+# not what stops this probe. It must reach the dirty-tree check.
+probe3_version="v99.99.98"
+python3 - "$probe3_version" <<'SEED'
+import sys, pathlib
+version = sys.argv[1].lstrip("v")
+p = pathlib.Path("CHANGELOG.md")
+text = p.read_text()
+entry = (
+    f"## [v{version}] - 2026-01-01\n\n"
+    "Probe fixture for scripts/check-release-gate.sh Part 3. Long enough to clear the\n"
+    "50-character minimum that release.sh enforces on a CHANGELOG section.\n\n"
+)
+marker = "## ["
+i = text.index(marker)
+p.write_text(text[:i] + entry + text[i:])
+SEED
+git add -A CHANGELOG.md >/dev/null 2>&1 || true
+git commit --quiet -m "probe: seed a CHANGELOG section" >/dev/null 2>&1 || true
+
+set +e
+PATH="$work3/bin:$PATH" ./scripts/release.sh "$probe3_version" --skip-go \
+  > "$work3/out.log" 2>&1
+rc3=$?
+set -e
+
+# Same anti-vacuity discipline as Part 2: prove the probe got past the test gate,
+# since an early preflight abort also exits non-zero.
+if ! grep -q 'All tests passed' "$work3/out.log"; then
+  echo "FAIL: the probe never got past the test gate, so this check proved nothing."
+  echo "      release.sh's last 20 lines:"
+  tail -20 "$work3/out.log" | sed 's/^/      /'
+  exit 1
+fi
+
+if [ "$rc3" -eq 0 ]; then
+  echo "FAIL: release.sh exited 0 after the suite modified a tracked file."
+  echo "      The tag would ship pre-suite content and the tree would be left dirty"
+  echo "      — this is #868. Last 20 lines:"
+  tail -20 "$work3/out.log" | sed 's/^/      /'
+  fail=1
+elif /usr/bin/git rev-parse "$probe3_version" >/dev/null 2>&1; then
+  echo "FAIL: release.sh tagged $probe3_version despite the suite dirtying the tree."
+  fail=1
+elif ! grep -q 'test suite modified tracked files' "$work3/out.log"; then
+  echo "FAIL: release.sh aborted, but not at the dirty-tree check — so something else"
+  echo "      stopped it and this assertion is vacuous. Last 20 lines:"
+  tail -20 "$work3/out.log" | sed 's/^/      /'
+  fail=1
+else
+  echo "    release.sh exited $rc3 at the dirty-tree check and created no tag"
+fi
+
+# ------------------------------------------------------------------
+# Part 4: every version declaration is propagated (#868).
+# ------------------------------------------------------------------
+# scripts/version.py's own floor catches a *deleted* declaration. This catches the
+# other direction for the one file that self-heals: uv.lock must already agree with
+# VERSION, because if it does not, a resolve during the suite will rewrite it and
+# reintroduce #868 from the other end.
+echo
+echo "==> Verifying uv.lock is a propagated version declaration"
+
+cd "$repo_root"
+if ! python3 scripts/version.py check > "$work3/version.log" 2>&1; then
+  echo "FAIL: version declarations disagree:"
+  sed 's/^/      /' "$work3/version.log"
+  fail=1
+elif ! grep -qE 'All 2[0-9] version declarations agree' "$work3/version.log"; then
+  echo "FAIL: expected 20+ tracked declarations, got:"
+  sed 's/^/      /' "$work3/version.log"
+  echo "      uv.lock was the 20th and was missing until #868. If a declaration was"
+  echo "      removed on purpose, update this check and _EXPECTED_DECLARATIONS together."
+  fail=1
+else
+  echo "    $(cat "$work3/version.log")"
+fi
+
 cd "$repo_root"
 
 if [ "$fail" -eq 0 ]; then
   echo
-  echo "OK: the release gate blocks a failing test suite."
+  echo "OK: the release gate blocks a failing suite, a suite that dirties the tree,"
+  echo "    and a stale version declaration."
 fi
 
 exit "$fail"

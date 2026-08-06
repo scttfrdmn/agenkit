@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <PackageId>Agenkit</PackageId>
-    <Version>0.87.0</Version>
+    <Version>0.89.0</Version>
     <Authors>Agenkit Contributors</Authors>
     <Description>Minimal, composable interfaces for AI agents — C#/.NET</Description>
     <PackageTags>ai;agents;llm;anthropic;openai</PackageTags>

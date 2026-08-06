@@ -4,7 +4,7 @@ package io.agenkit.protocols.mcp;
 final class McpConstants {
 
     static final String PROTOCOL_VERSION = "2024-11-05";
-    static final String CLIENT_VERSION = "0.87.0";
+    static final String CLIENT_VERSION = "0.89.0";
     static final String CLIENT_NAME = "agenkit";
 
     private McpConstants() {}

@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 internal static class McpConstants
 {
     internal const string ProtocolVersion = "2024-11-05";
-    internal const string ClientVersion = "0.87.0";
+    internal const string ClientVersion = "0.89.0";
 }
 
 // Wire types

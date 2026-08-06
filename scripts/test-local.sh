@@ -121,6 +121,15 @@ if [ "$LINT" = true ]; then
     run_step "go vet" \
         bash -c 'go vet $(go list ./... | grep -v /examples/)'
 
+    # Every tracked .go file must be in a module, and every module must build
+    # (#857). `go vet` above is scoped to the agenkit-go module and drops
+    # /examples/, so it can see neither the orphaned files nor the out-of-tree
+    # example modules. Both classes had shipped breakage. Mirrors the CI step in
+    # .github/workflows/test.yml.
+    cd "$REPO_ROOT"
+    run_step "Go module coverage + out-of-tree example builds" \
+        ./scripts/check-go-modules.sh
+
     # Rust lint (#773, #778). --all-targets matters: without it clippy skips
     # tests/ and examples/, which is exactly where the six deny-by-default errors
     # found in #773 had accumulated unseen. `-D warnings` as of #778, which

@@ -2,7 +2,10 @@
 # Agenkit Go Agent - Production Dockerfile
 # ============================================================
 
-FROM golang:1.22-alpine AS builder
+# Must be >= the `go` directive in go.mod (1.25.12); 1.21/1.22 could not build
+# these modules at all, so every one of these image builds failed at `go mod
+# download` (#857).
+FROM golang:1.25-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata

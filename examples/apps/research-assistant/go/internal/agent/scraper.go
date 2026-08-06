@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	agenkit "github.com/scttfrdmn/agenkit/agenkit-go"
+	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
 // ScraperAgent handles web scraping and content extraction.
@@ -28,6 +28,23 @@ func (a *ScraperAgent) Capabilities() []string {
 	return []string{"html_parsing", "pdf_extraction", "web_scraping"}
 }
 
+// Introspect satisfies agenkit.Agent, which grpc.NewGRPCServer requires. It was
+// missing since Introspect() joined the interface (#847); nothing noticed because
+// this tree had no go.mod and no cmd/worker, so nothing ever compiled it (#857).
+func (a *ScraperAgent) Introspect() *agenkit.IntrospectionResult {
+	result, err := agenkit.NewIntrospectionResult(
+		a.name,
+		a.Capabilities(),
+		nil,
+		map[string]interface{}{"worker_language": "go"},
+		nil,
+	)
+	if err != nil {
+		return nil
+	}
+	return result
+}
+
 // Process handles scraping requests.
 func (a *ScraperAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Health check
@@ -41,7 +58,10 @@ func (a *ScraperAgent) Process(ctx context.Context, message *agenkit.Message) (*
 		}
 	}
 
-	content := strings.ToLower(message.Content)
+	// Message.Content is `any` (it can carry structured content), so read it
+	// through ContentString() rather than passing it to a string parameter.
+	request := message.ContentString()
+	content := strings.ToLower(request)
 	var result string
 
 	// Simulate scraping based on content
@@ -51,7 +71,7 @@ func (a *ScraperAgent) Process(ctx context.Context, message *agenkit.Message) (*
 	case strings.Contains(content, "pdf"):
 		result = "Extracted PDF text: Sample PDF content with multiple pages"
 	default:
-		result = fmt.Sprintf("Scraped web content for: %s", message.Content)
+		result = fmt.Sprintf("Scraped web content for: %s", request)
 	}
 
 	return &agenkit.Message{

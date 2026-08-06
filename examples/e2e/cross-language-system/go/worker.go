@@ -26,13 +26,14 @@ package main
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/json"
+	"crypto/md5" //nolint:gosec // simulated image checksum, not a security boundary
 	"fmt"
 	"log"
 	"math/rand"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/adapter/grpc"
@@ -83,14 +84,39 @@ func (a *ImageProcessorAgent) Capabilities() []string {
 	}
 }
 
+// Introspect satisfies agenkit.Agent, which is required to wrap this worker in
+// tracing middleware. It was missing since Introspect() joined the interface
+// (#847), and nothing noticed because this file was in no Go module (#857).
+func (a *ImageProcessorAgent) Introspect() *agenkit.IntrospectionResult {
+	result, err := agenkit.NewIntrospectionResult(
+		a.Name(),
+		a.Capabilities(),
+		nil,
+		map[string]interface{}{
+			"worker_id":        a.workerID,
+			"uptime_seconds":   time.Since(a.started).Seconds(),
+			"total_tasks":      a.stats.TotalTasks,
+			"successful_tasks": a.stats.SuccessfulTasks,
+			"failed_tasks":     a.stats.FailedTasks,
+		},
+		map[string]interface{}{"worker_language": "go"},
+	)
+	if err != nil {
+		return nil
+	}
+	return result
+}
+
 // Process handles image processing requests.
 func (a *ImageProcessorAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	startTime := time.Now()
 
-	// Extract request metadata
-	metadata, ok := message.Metadata.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid metadata format")
+	// Extract request metadata. Message.Metadata is already a
+	// map[string]interface{}, so the type assertion this used to do did not
+	// compile — Go rejects a type assertion on a non-interface value.
+	metadata := message.Metadata
+	if metadata == nil {
+		return nil, fmt.Errorf("message has no metadata; job_id and task are required")
 	}
 
 	jobID := getStringFromMetadata(metadata, "job_id", "unknown")
@@ -382,12 +408,15 @@ func main() {
 	fmt.Println("Press Ctrl+C to stop")
 	fmt.Println()
 
-	// Start server
-	if err := server.Start(); err != nil {
+	// Start server. Cancelling ctx shuts it down, so wire it to SIGINT/SIGTERM
+	// rather than blocking on a bare `select {}` that no signal can reach.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := server.Start(ctx); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 
-	// Handle shutdown gracefully
-	// (In production, you'd handle signals properly)
-	select {}
+	<-ctx.Done()
+	log.Printf("[%s] shutting down", workerID)
 }

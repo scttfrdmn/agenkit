@@ -152,6 +152,26 @@ deploy/**/*.zip
 deploy/**/.mf/
 deploy/**/.wrangler/
 
+# Lambda build artifacts under examples/ — `make build` in
+# examples/deployment/aws-lambda/go/ writes ./bootstrap, and `make package` a .zip.
+# Only deploy/** was covered, so these landed as untracked noise (#857).
+examples/deployment/**/bootstrap
+examples/deployment/**/*.zip
+examples/deployment/**/.aws-sam/
+
+# Compiled output of the out-of-tree example Go modules. These have no extension
+# to match generically: `go build` names the executable after the thing it built,
+# so a single-main module yields the module path's last element and `go build
+# ./cmd/worker` yields `worker`. Names below were taken from running each build,
+# not inferred. scripts/check-go-modules.sh uses -o to a scratch dir and no longer
+# produces them, but a bare `go build` still does, and `git add -A` would then
+# track ~52 MB of them — which is how #660 tracked ~1 GB.
+examples/infrastructure/go/infrastructure-go
+examples/go/techniques/reasoning/go-techniques-reasoning
+examples/e2e/cross-language-system/go/e2e-cross-language-worker
+examples/deployment/aws-lambda/go/aws-lambda-go
+examples/apps/*/go/worker
+
 # Rust build artifacts
 agenkit-rust/target/
 agenkit-rust/Cargo.lock

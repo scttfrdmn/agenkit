@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -27,19 +28,19 @@ func main() {
 		log.Fatalf("Failed to create server: %v", err)
 	}
 
-	// Start server in goroutine
-	go func() {
-		if err := server.Start(); err != nil {
-			log.Fatalf("Failed to start server: %v", err)
-		}
-	}()
+	// Start the server. Start is non-blocking and takes the context whose
+	// cancellation shuts it down, so wire that context to SIGINT/SIGTERM rather
+	// than launching it in a goroutine and watching signals separately.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	if err := server.Start(ctx); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
+	}
 
 	log.Printf("Analyzer agent listening on :%d", *port)
 
-	// Wait for interrupt signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
+	<-ctx.Done()
 
 	log.Println("Shutting down analyzer agent...")
 	if err := server.Stop(); err != nil {

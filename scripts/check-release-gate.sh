@@ -73,6 +73,18 @@ fi
 cd "$work/repo"
 git remote remove origin 2>/dev/null || true
 
+# A local identity for the clone, because release.sh makes its own version-bump
+# commit and a CI runner has no global user.name/user.email — `git commit` then
+# fails with "empty ident name", release.sh aborts under `set -e` before reaching
+# the gate, and the probe proves nothing. This passed locally (where a global
+# identity exists) and failed on ubuntu-latest; the "did the probe reach the gate"
+# assertion below is what surfaced it rather than a false pass. Signing off too:
+# the runner has no key, and a signature is irrelevant to a throwaway clone.
+git config user.email "release-gate-probe@localhost"
+git config user.name "release gate probe"
+git config commit.gpgsign false
+git config tag.gpgsign false
+
 # Overlay the WORKING TREE's scripts/ onto the clone. `git clone` copies HEAD, so
 # without this the probe exercises the committed release.sh rather than the one
 # under review — a fix would appear to fail and a regression would appear to pass,
@@ -83,8 +95,7 @@ cp -R "$repo_root/scripts/." "$work/repo/scripts/"
 # ...and commit it in the clone. release.sh's second preflight rejects a dirty
 # tree, so an uncommitted overlay aborts the probe before the step under test.
 git add -A scripts/ >/dev/null 2>&1 || true
-git -c user.email=gate@localhost -c user.name=gate -c commit.gpgsign=false \
-    commit --quiet -m "probe: overlay working-tree scripts" >/dev/null 2>&1 || true
+git commit --quiet -m "probe: overlay working-tree scripts" >/dev/null 2>&1 || true
 
 # release.sh's first preflight rejects any branch but main. The clone checks out
 # whatever branch the source repo is on, so without this the probe run dies at

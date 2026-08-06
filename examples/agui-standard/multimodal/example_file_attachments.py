@@ -88,9 +88,7 @@ class FileProcessorAgent(Agent):
                     response_parts.append(
                         f"\n{i}. {file_info['filename']} ({file_info['mime_type']})"
                     )
-                    response_parts.append(
-                        f"   Size: {file_info['size']} chars (base64)"
-                    )
+                    response_parts.append(f"   Size: {file_info['size']} chars (base64)")
 
             if text_parts:
                 response_parts.append(f"\n\nContext: {' '.join(text_parts)}")

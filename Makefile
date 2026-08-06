@@ -71,11 +71,7 @@ format: ## Format code (Python: ruff format, Go: gofmt)
 # (examples/deployment/aws-lambda/go, examples/e2e, examples/infrastructure,
 # examples/apps). The CI gate tells you to run `make format`, so this must fix
 # everything that gate checks or the advice is a dead end (#849).
-#
-# Dockerfile.go is excluded because it is a Dockerfile, not Go — gofmt tries to
-# parse it, reports `illegal character U+0023 '#'` and exits 2, which would fail
-# this target. Renaming it is out of scope here (#856).
-	@gofmt -s -w $$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$$')
+	@gofmt -s -w $$(git ls-files '*.go' | grep -v '^\.claude/')
 	@echo "✓ Code formatted"
 
 lint: ## Run linters only (no tests)
@@ -91,7 +87,7 @@ lint: ## Run linters only (no tests)
 # the target. The 300-file floor guards the guard: `gofmt -s -l` with no arguments
 # reads stdin and exits 0, so an empty list would report success on nothing.
 # Mirrors the CI gate in lint.yml (#849).
-	@FILES=$$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$$'); \
+	@FILES=$$(git ls-files '*.go' | grep -v '^\.claude/'); \
 	 COUNT=$$(printf '%s\n' "$$FILES" | grep -c . || true); \
 	 if [ "$$COUNT" -lt 300 ]; then \
 	   echo "❌ gofmt check found only $$COUNT Go files (expected 300+); fix this check"; exit 1; \

@@ -198,7 +198,7 @@ async def demo_tool_visualization():
     # Show active tool cards
     print("\nActive Tool Cards:")
     for card in copilot.get_active_tools():
-        print(f"  • {card['tool_name']}: {card['status']} ({card['progress']*100:.0f}%)")
+        print(f"  • {card['tool_name']}: {card['status']} ({card['progress'] * 100:.0f}%)")
 
 
 async def demo_concurrent_tools():
@@ -221,7 +221,7 @@ async def demo_concurrent_tools():
         if event.type == "tool_call_start":
             print(f"   🔧 {event.tool_call_name}")
         elif event.type == "tool_call_progress":
-            print(f"   Progress: {event.progress*100:.0f}%")
+            print(f"   Progress: {event.progress * 100:.0f}%")
 
     print()
 
@@ -233,7 +233,7 @@ async def demo_concurrent_tools():
         if event.type == "tool_call_start":
             print(f"   🔧 {event.tool_call_name}")
         elif event.type == "tool_call_progress":
-            print(f"   Progress: {event.progress*100:.0f}%")
+            print(f"   Progress: {event.progress * 100:.0f}%")
 
     print()
 
@@ -261,7 +261,7 @@ async def demo_tool_card_state():
             print(f"Tool: {event.tool_call_name}")
 
         elif event.type == "tool_call_progress":
-            print(f"State: EXECUTING (progress: {event.progress*100:.0f}%)")
+            print(f"State: EXECUTING (progress: {event.progress * 100:.0f}%)")
 
         elif event.type == "tool_call_result":
             print(f"State: EXECUTING → COMPLETED")
@@ -272,8 +272,8 @@ async def demo_tool_card_state():
     for card in copilot.get_active_tools():
         print(f"\n  Tool: {card['tool_name']}")
         print(f"  Status: {card['status']}")
-        print(f"  Progress: {card['progress']*100:.0f}%")
-        if card['result']:
+        print(f"  Progress: {card['progress'] * 100:.0f}%")
+        if card["result"]:
             print(f"  Result: {card['result']}")
 
 

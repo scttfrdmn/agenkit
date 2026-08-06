@@ -71,26 +71,43 @@ def generate_test_context() -> str:
     ]
 
     for i, (name, founded, ceo, city, product, launch, growth) in enumerate(companies):
-        documents.extend([
-            f"Document {i*5+1}: {name} was founded in {founded}.",
-            f"Document {i*5+2}: The CEO of {name} is {ceo}.",
-            f"Document {i*5+3}: {name} is headquartered in {city}.",
-            f"Document {i*5+4}: {name}'s flagship product {product} launched in {launch}.",
-            f"Document {i*5+5}: {name} reported {growth} revenue growth in 2023.",
-        ])
+        documents.extend(
+            [
+                f"Document {i * 5 + 1}: {name} was founded in {founded}.",
+                f"Document {i * 5 + 2}: The CEO of {name} is {ceo}.",
+                f"Document {i * 5 + 3}: {name} is headquartered in {city}.",
+                f"Document {i * 5 + 4}: {name}'s flagship product {product} launched in {launch}.",
+                f"Document {i * 5 + 5}: {name} reported {growth} revenue growth in 2023.",
+            ]
+        )
 
     # Dataset 2: Research papers (need to find connections)
     papers = [
         ("Neural Scaling Laws", "Kaplan et al.", "2020", "compute, parameters, data scaling"),
-        ("Attention Is All You Need", "Vaswani et al.", "2017", "transformers, attention mechanism"),
-        ("GPT-3: Language Models are Few-Shot Learners", "Brown et al.", "2020", "in-context learning, scaling"),
-        ("BERT: Bidirectional Encoder Representations", "Devlin et al.", "2019", "pre-training, bidirectional"),
+        (
+            "Attention Is All You Need",
+            "Vaswani et al.",
+            "2017",
+            "transformers, attention mechanism",
+        ),
+        (
+            "GPT-3: Language Models are Few-Shot Learners",
+            "Brown et al.",
+            "2020",
+            "in-context learning, scaling",
+        ),
+        (
+            "BERT: Bidirectional Encoder Representations",
+            "Devlin et al.",
+            "2019",
+            "pre-training, bidirectional",
+        ),
         ("Chain-of-Thought Prompting", "Wei et al.", "2022", "reasoning, multi-step problems"),
     ]
 
     for i, (title, authors, year, keywords) in enumerate(papers):
         documents.append(
-            f"Paper {i+1}: '{title}' by {authors} ({year}) - Key concepts: {keywords}."
+            f"Paper {i + 1}: '{title}' by {authors} ({year}) - Key concepts: {keywords}."
         )
 
     # Dataset 3: Events timeline (need to order and reason about)
@@ -195,7 +212,9 @@ async def main():
         if tracker.storage.costs:
             print(f"\n📊 Per-call breakdown:")
             for i, cost in enumerate(tracker.storage.costs, 1):
-                print(f"   Call {i}: {cost.input_tokens:,} in + {cost.output_tokens:,} out = ${cost.total_cost:.4f}")
+                print(
+                    f"   Call {i}: {cost.input_tokens:,} in + {cost.output_tokens:,} out = ${cost.total_cost:.4f}"
+                )
 
     except Exception as e:
         if "budget" in str(e).lower():

@@ -74,9 +74,7 @@ class VisionAgent(Agent):
                         image_count += 1
                         mime_type = part.get("mime_type", "image/png")
                         data_len = len(part.get("image_base64", ""))
-                        text_parts.append(
-                            f"[Image: {mime_type}, {data_len} chars base64]"
-                        )
+                        text_parts.append(f"[Image: {mime_type}, {data_len} chars base64]")
 
             response = f"I received a multimodal message with {image_count} image(s):\n\n"
             response += "\n".join(text_parts)

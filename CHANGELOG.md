@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — both Docker base images had been unbuildable for many releases (Issue #856)
+
+`Dockerfile.go` was a Dockerfile named `*.go`, so `gofmt` tried to parse it and exited 2
+(`illegal character U+0023 '#'`). #849 worked around that with a name-based exclusion in
+two gates. Renaming it was supposed to be the cleanup; investigating found the file was
+not merely misnamed but **broken**, along with its Python sibling:
+
+- **`FROM golang:1.21-alpine`** against an `agenkit-go/go.mod` requiring `go 1.25.12`, so
+  `go mod download` failed outright under `GOTOOLCHAIN=local`.
+- **`FROM python:3.11-slim`** against `requires-python = ">=3.12"`, so the runtime stage
+  failed installing the project's *own* wheel: `Package 'agenkit' requires a different
+  Python: 3.11.15 not in '>=3.12'`.
+- The Go build step read `A || B && C`, which sh parses left-associative as `(A || B) && C`.
+  So `C` ran on every path: when the real build succeeded, `B` was skipped and `C` still
+  tried to compile a `/tmp/dummy.go` that was never written (`stat /tmp/dummy.go: directory
+  not found`). Worse, `C` produced the **only** binary `CMD` referenced, so even a
+  successful build would have shipped an image whose entrypoint did not exist. Broken on
+  both branches. The fallback is gone — if the example stops compiling, the build now fails.
+- Both labelled themselves `org.opencontainers.image.version="0.1.0"`, stale by 86
+  releases. Now passed via `--build-arg VERSION="$(cat VERSION)"` rather than hardcoded,
+  which would have been a 20th declaration for #842's guard to police.
+
+`docker-compose.yml` builds both images, so `docker compose up` was dead on arrival for
+all four services. **Nothing in CI built either one** — the same "built by nothing" rot as
+#839, where 9 of 11 documented Go constructors turned out to be fictional. A new
+`docker-build` matrix job builds both and then *runs* them, because `docker build` happily
+succeeds on an image whose `CMD` is missing or whose label is stale.
+
+Renamed to `docker/agenkit-go.Dockerfile` and `docker/agenkit-python.Dockerfile`
+(recognised by Docker tooling and editors, and no longer matched by a `*.go` glob), with
+all references updated in `docker-compose.yml`, `deploy/README.md`, `ROADMAP.md` and
+`README_OLD.md`. Both gofmt exclusions are dropped: the glob is honest again.
+
+### Fixed — `make format` wrote 46 files CI never checked (Issue #856)
+
+`make format` ran `ruff format agenkit/ tests/ examples/` while the CI gate checked only
+`agenkit/ tests/`. The gate reported "371 files already formatted" while **46 tracked
+Python example files were unformatted**, so running the project's own documented formatter
+produced a 46-file diff unrelated to your change — silently widening any PR whose author
+followed the instructions. The gate now checks `examples/` too and the 46 files are
+formatted. Same lesson as the Go half in #849: an excluded directory is a directory that
+drifts, and examples are documentation (CLAUDE.md).
+
 ### Fixed — the version was declared 17 ways and no two agreed (Issue #842)
 
 `agenkit.__version__` reported **0.10.0** while the newest git tag was **v0.87.0** — 77

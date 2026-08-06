@@ -551,7 +551,9 @@ async def example_module_composition() -> None:
             ans2 = await self.answer_sub.acall(question=sq2) if sq2 else {"answer": ""}
 
             # Step 3: synthesize
-            context = f"Q1: {sq1}\nA1: {ans1.get('answer', '')}\nQ2: {sq2}\nA2: {ans2.get('answer', '')}"
+            context = (
+                f"Q1: {sq1}\nA1: {ans1.get('answer', '')}\nQ2: {sq2}\nA2: {ans2.get('answer', '')}"
+            )
             return await self.synthesize.acall(context=context, question=question)
 
     pipeline = MultiHopQA(llm)

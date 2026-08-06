@@ -295,8 +295,8 @@ Build and run with Docker:
 
 ```bash
 # Build images
-docker build -f Dockerfile.python -t agenkit/python:0.1.0 .
-docker build -f Dockerfile.go -t agenkit/go:0.1.0 .
+docker build -f docker/agenkit-python.Dockerfile -t agenkit/python:0.1.0 .
+docker build -f docker/agenkit-go.Dockerfile -t agenkit/go:0.1.0 .
 
 # Run with docker-compose
 docker-compose up -d

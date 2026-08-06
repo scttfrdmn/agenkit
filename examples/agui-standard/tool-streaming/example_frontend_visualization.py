@@ -48,8 +48,7 @@ class SearchTool(Tool):
                 progress_reporter.report(progress, status)
 
         results = [
-            {"title": f"Result {i+1}", "snippet": f"Information about {query}"}
-            for i in range(3)
+            {"title": f"Result {i + 1}", "snippet": f"Information about {query}"} for i in range(3)
         ]
 
         return ToolResult(
@@ -161,11 +160,7 @@ class VisualizationAgent(Agent):
         else:
             return Message(
                 role="assistant",
-                content=(
-                    "Try:\n"
-                    "  • 'search for python'\n"
-                    "  • 'calculate 42 * 3.14'"
-                ),
+                content=("Try:\n  • 'search for python'\n  • 'calculate 42 * 3.14'"),
             )
 
 

@@ -47,9 +47,9 @@ async def basic_load_balancing_example():
 
     # Process messages - they'll be distributed across backends
     for i in range(6):
-        message = Message(role="user", content=f"Request {i+1}")
+        message = Message(role="user", content=f"Request {i + 1}")
         response = await balancer.process(message)
-        print(f"Request {i+1}: {response.content}")
+        print(f"Request {i + 1}: {response.content}")
 
     # Show backend statistics
     print("\nBackend Statistics:")
@@ -84,7 +84,7 @@ async def weighted_load_balancing_example():
 
     # Send 12 requests to see distribution
     for i in range(12):
-        message = Message(role="user", content=f"Request {i+1}")
+        message = Message(role="user", content=f"Request {i + 1}")
         await balancer.process(message)
 
     print("Request distribution (weights 3:2:1):")
@@ -249,10 +249,7 @@ async def production_deployment_example():
         enable_backpressure=True,
     )
 
-    retry_backends = [
-        EnhancedRetryDecorator(agent, retry_config)
-        for agent in backends
-    ]
+    retry_backends = [EnhancedRetryDecorator(agent, retry_config) for agent in backends]
 
     # Step 3: Add load balancer
     load_balancer = LoadBalancer(
@@ -281,7 +278,7 @@ async def production_deployment_example():
 
     tasks = []
     for i in range(20):
-        message = Message(role="user", content=f"Production request {i+1}")
+        message = Message(role="user", content=f"Production request {i + 1}")
         tasks.append(load_balancer.process(message))
 
     responses = await asyncio.gather(*tasks)

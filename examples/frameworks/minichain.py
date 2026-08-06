@@ -18,7 +18,13 @@ from typing import Any, Protocol, cast
 
 from agenkit import Agent, Message
 from agenkit.adapters.llm import LLM, OpenAILLM
-from agenkit.patterns import ConversationalAgent, ConversationalAgentConfig, RouterAgent, RouterConfig, SequentialAgent
+from agenkit.patterns import (
+    ConversationalAgent,
+    ConversationalAgentConfig,
+    RouterAgent,
+    RouterConfig,
+    SequentialAgent,
+)
 
 
 class Chain(Protocol):

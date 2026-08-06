@@ -252,8 +252,12 @@ async def start_server() -> None:
 
     print("\n✅ Server running on ws://localhost:8765")
     print("\nTest commands:")
-    print('  echo \'{"type": "message", "content": "Should I proceed?"}\' | websocat ws://localhost:8765')
-    print('  echo \'{"type": "message", "content": "This is a critical decision"}\' | websocat ws://localhost:8765')
+    print(
+        '  echo \'{"type": "message", "content": "Should I proceed?"}\' | websocat ws://localhost:8765'
+    )
+    print(
+        '  echo \'{"type": "message", "content": "This is a critical decision"}\' | websocat ws://localhost:8765'
+    )
     print('  echo \'{"type": "message", "content": "Simple task"}\' | websocat ws://localhost:8765')
     print("\nMessage format:")
     print('  {"type": "message", "content": "your message here"}')
@@ -280,9 +284,7 @@ async def test_client() -> None:
         # Test 1: High confidence (no approval needed)
         print("Test 1: High confidence message")
         print("-" * 50)
-        await websocket.send(
-            json.dumps({"type": "message", "content": "This is a simple task"})
-        )
+        await websocket.send(json.dumps({"type": "message", "content": "This is a simple task"}))
 
         interrupt_count = 0
         while True:

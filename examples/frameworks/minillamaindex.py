@@ -262,9 +262,7 @@ class FunctionAgent(Agent):
         Simplified single-turn: build a prompt listing tools, call LLM,
         detect TOOL: / ARGS: markers and dispatch, return final text.
         """
-        tool_descriptions = "\n".join(
-            f"- {t.name}: {t.description}" for t in self.tools.values()
-        )
+        tool_descriptions = "\n".join(f"- {t.name}: {t.description}" for t in self.tools.values())
         preamble = self.system_prompt + "\n\n" if self.system_prompt else ""
         prompt = (
             f"{preamble}"
@@ -449,7 +447,9 @@ async def example_rag_agent() -> None:
     print("   engine = index.as_query_engine(llm=llm)")
     print("   rag_tool = QueryEngineTool(query_engine=engine, name='knowledge_base', ...)")
     print("   agent = FunctionAgent(name='research_assistant', llm=llm, tools=[rag_tool])")
-    print("   result = await agent.process(Message(role='user', content='What languages does Agenkit support?'))")
+    print(
+        "   result = await agent.process(Message(role='user', content='What languages does Agenkit support?'))"
+    )
     print()
     print("   # Agenkit equivalent:")
     print("   from agenkit.memory import InMemoryDocumentStore")
@@ -458,7 +458,9 @@ async def example_rag_agent() -> None:
     print("   tool = RetrievalTool(store=store, llm=llm)")
     print("   agent = Agent(llm=llm, tools=[tool])")
 
-    print("\n   Pattern: LlamaIndex.VectorStoreIndex + QueryEngineTool → Agenkit InMemoryDocumentStore + RetrievalTool")
+    print(
+        "\n   Pattern: LlamaIndex.VectorStoreIndex + QueryEngineTool → Agenkit InMemoryDocumentStore + RetrievalTool"
+    )
     print("   Similarity search: keyword overlap (demo); production uses embedding vectors.")
 
 

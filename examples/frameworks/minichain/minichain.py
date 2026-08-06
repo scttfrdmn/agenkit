@@ -267,6 +267,7 @@ class ConversationChain(Chain):
 
 # Convenience functions for creating chains
 
+
 def create_llm_chain(agent: Agent, prompt: str, system: str | None = None) -> LLMChain:
     """
     Create an LLM chain with prompt template.

@@ -143,8 +143,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 image_size = data.get("image_size", 0)
 
                 logger.info(
-                    f"Client {client_id}: Image upload - {image_format} "
-                    f"({image_size/1024:.1f}KB)"
+                    f"Client {client_id}: Image upload - {image_format} ({image_size / 1024:.1f}KB)"
                 )
 
                 user_message = Message(
@@ -172,7 +171,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 file_type = data.get("file_type", "unknown")
 
                 logger.info(
-                    f"Client {client_id}: File upload - {file_name} " f"({file_size/1024:.1f}KB)"
+                    f"Client {client_id}: File upload - {file_name} ({file_size / 1024:.1f}KB)"
                 )
 
                 user_message = Message(

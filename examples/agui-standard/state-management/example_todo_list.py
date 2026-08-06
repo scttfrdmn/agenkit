@@ -40,18 +40,14 @@ class TodoAgent(Agent):
                 todo_id = int(message.content[9:].strip())
                 return self._complete_todo(todo_id)
             except ValueError:
-                return Message(
-                    role="assistant", content="❌ Invalid ID. Use: complete <id>"
-                )
+                return Message(role="assistant", content="❌ Invalid ID. Use: complete <id>")
 
         elif content.startswith("delete "):
             try:
                 todo_id = int(message.content[7:].strip())
                 return self._delete_todo(todo_id)
             except ValueError:
-                return Message(
-                    role="assistant", content="❌ Invalid ID. Use: delete <id>"
-                )
+                return Message(role="assistant", content="❌ Invalid ID. Use: delete <id>")
 
         elif "list" in content or "show" in content:
             return self._list_todos()
@@ -85,7 +81,7 @@ class TodoAgent(Agent):
         self._next_id += 1
 
         # Update state with new todo and stats
-        self._state_manager.update(f"/todos/{len(self._todos)-1}", todo)
+        self._state_manager.update(f"/todos/{len(self._todos) - 1}", todo)
         self._state_manager.update("/total_count", len(self._todos))
         self._update_stats()
 
@@ -103,9 +99,7 @@ class TodoAgent(Agent):
 
                 # Update state
                 self._state_manager.update(f"/todos/{i}/completed", True)
-                self._state_manager.update(
-                    f"/todos/{i}/completed_at", todo["completed_at"]
-                )
+                self._state_manager.update(f"/todos/{i}/completed_at", todo["completed_at"])
                 self._update_stats()
 
                 return Message(
@@ -113,9 +107,7 @@ class TodoAgent(Agent):
                     content=f"✨ Completed todo #{todo_id}: {todo['title']}",
                 )
 
-        return Message(
-            role="assistant", content=f"❌ Todo #{todo_id} not found"
-        )
+        return Message(role="assistant", content=f"❌ Todo #{todo_id} not found")
 
     def _delete_todo(self, todo_id: int) -> Message:
         """Delete a todo."""
@@ -129,13 +121,9 @@ class TodoAgent(Agent):
                 self._state_manager.update("/total_count", len(self._todos))
                 self._update_stats()
 
-                return Message(
-                    role="assistant", content=f"🗑️ Deleted todo #{todo_id}: {title}"
-                )
+                return Message(role="assistant", content=f"🗑️ Deleted todo #{todo_id}: {title}")
 
-        return Message(
-            role="assistant", content=f"❌ Todo #{todo_id} not found"
-        )
+        return Message(role="assistant", content=f"❌ Todo #{todo_id} not found")
 
     def _list_todos(self) -> Message:
         """List all todos."""
@@ -162,7 +150,7 @@ class TodoAgent(Agent):
                 f"  • Total: {total}\n"
                 f"  • Completed: {completed}\n"
                 f"  • Pending: {pending}\n"
-                f"  • Completion Rate: {(completed/total*100) if total > 0 else 0:.1f}%"
+                f"  • Completion Rate: {(completed / total * 100) if total > 0 else 0:.1f}%"
             ),
         )
 

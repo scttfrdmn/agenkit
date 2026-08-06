@@ -237,9 +237,7 @@ class ResearchAssistantAgent(Agent):
         response_content = await self._generate_response(content, tool_results)
 
         # Store in history
-        self._conversation_history.append(
-            {"role": "assistant", "content": response_content}
-        )
+        self._conversation_history.append({"role": "assistant", "content": response_content})
 
         return Message(
             role="assistant",
@@ -287,9 +285,7 @@ class ResearchAssistantAgent(Agent):
 
         return tools
 
-    async def _generate_response(
-        self, query: str, tool_results: list[dict[str, Any]]
-    ) -> str:
+    async def _generate_response(self, query: str, tool_results: list[dict[str, Any]]) -> str:
         """Generate response based on query and tool results.
 
         Args:
@@ -316,9 +312,7 @@ class ResearchAssistantAgent(Agent):
 
             if tool_name == "web_search":
                 data = result.data
-                response_parts.append(
-                    f"🔍 **Search Results** for '{data['query']}':\n"
-                )
+                response_parts.append(f"🔍 **Search Results** for '{data['query']}':\n")
                 for i, res in enumerate(data["results"][:3], 1):
                     response_parts.append(
                         f"\n**{i}. {res['title']}**\n{res['snippet']}\n[{res['url']}]"

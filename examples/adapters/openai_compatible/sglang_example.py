@@ -62,9 +62,7 @@ async def basic_completion() -> None:
         provider="sglang",
     )
 
-    messages = [
-        Message(role="user", content="Explain the concept of attention in transformers.")
-    ]
+    messages = [Message(role="user", content="Explain the concept of attention in transformers.")]
 
     print("\n📤 Sending complex prompt about attention mechanisms...")
     start_time = time.time()
@@ -243,8 +241,12 @@ async def prefix_caching_demo() -> None:
 
     print("\n📊 Performance Analysis:")
     print(f"   Request 1 (cold cache): {times[0]:.2f}s")
-    print(f"   Request 2 (warm cache): {times[1]:.2f}s ({(times[1]/times[0])*100:.1f}% of original)")
-    print(f"   Request 3 (warm cache): {times[2]:.2f}s ({(times[2]/times[0])*100:.1f}% of original)")
+    print(
+        f"   Request 2 (warm cache): {times[1]:.2f}s ({(times[1] / times[0]) * 100:.1f}% of original)"
+    )
+    print(
+        f"   Request 3 (warm cache): {times[2]:.2f}s ({(times[2] / times[0]) * 100:.1f}% of original)"
+    )
     print("\n✨ RadixAttention cached the system prompt after first request!")
 
 

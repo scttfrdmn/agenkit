@@ -48,7 +48,9 @@ async def basic_completion() -> None:
             print(f"Tokens : {usage.get('total_tokens')}")
     except Exception as e:
         print(f"Error (is vLLM running?): {e}")
-        print("  docker run --gpus all -p 8000:8000 vllm/vllm-openai --model meta-llama/Llama-3.2-3B-Instruct")
+        print(
+            "  docker run --gpus all -p 8000:8000 vllm/vllm-openai --model meta-llama/Llama-3.2-3B-Instruct"
+        )
     print()
 
 

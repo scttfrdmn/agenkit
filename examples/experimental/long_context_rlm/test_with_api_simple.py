@@ -112,6 +112,7 @@ Your task: Write Python code to extract this information and provide FINAL(answe
     except Exception as e:
         print(f"\n❌ Error: {e}")
         import traceback
+
         traceback.print_exc()
 
 

@@ -129,11 +129,17 @@ async def compare_sequential_vs_parallel():
     llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini")
 
     # Create team
-    analyst1 = CrewMember(agent=llm, role="Analyst 1", goal="Analyze data", backstory="Expert analyst")
+    analyst1 = CrewMember(
+        agent=llm, role="Analyst 1", goal="Analyze data", backstory="Expert analyst"
+    )
 
-    analyst2 = CrewMember(agent=llm, role="Analyst 2", goal="Analyze data", backstory="Expert analyst")
+    analyst2 = CrewMember(
+        agent=llm, role="Analyst 2", goal="Analyze data", backstory="Expert analyst"
+    )
 
-    analyst3 = CrewMember(agent=llm, role="Analyst 3", goal="Analyze data", backstory="Expert analyst")
+    analyst3 = CrewMember(
+        agent=llm, role="Analyst 3", goal="Analyze data", backstory="Expert analyst"
+    )
 
     # Define independent tasks
     tasks = [

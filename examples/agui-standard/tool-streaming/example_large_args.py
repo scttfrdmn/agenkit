@@ -61,7 +61,9 @@ class DataAgent(Agent):
     async def process(self, message: Message) -> Message:
         """Process message with tool call."""
         # Generate large dataset
-        large_dataset = [{"id": i, "value": i * 2, "category": "A" if i % 2 == 0 else "B"} for i in range(1000)]
+        large_dataset = [
+            {"id": i, "value": i * 2, "category": "A" if i % 2 == 0 else "B"} for i in range(1000)
+        ]
 
         response_parts = []
 
@@ -96,8 +98,7 @@ async def demo_direct_streaming():
 
     # Generate large dataset
     large_dataset = [
-        {"id": i, "value": i * 2, "category": "A" if i % 2 == 0 else "B"}
-        for i in range(1000)
+        {"id": i, "value": i * 2, "category": "A" if i % 2 == 0 else "B"} for i in range(1000)
     ]
 
     # Track tool call with streaming

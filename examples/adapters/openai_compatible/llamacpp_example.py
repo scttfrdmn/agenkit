@@ -92,7 +92,9 @@ async def quantization_comparison() -> None:
     print("\n📊 Quantization Options:")
     print("-" * 60)
     for quant, info in quantization_info.items():
-        print(f"  {quant:8} | Size: {info['size']:6} | Quality: {info['quality']:12} | Speed: {info['speed']}")
+        print(
+            f"  {quant:8} | Size: {info['size']:6} | Quality: {info['quality']:12} | Speed: {info['speed']}"
+        )
 
     print("\nRecommendation:")
     print("  • Edge devices: Q2_K or Q4_K_M")

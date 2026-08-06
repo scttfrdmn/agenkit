@@ -143,7 +143,7 @@ async def high_throughput_batch() -> None:
     print(f"\n📊 Batch Results:")
     print(f"  • Requests: {len(test_prompts)}")
     print(f"  • Total time: {total_time:.2f}s")
-    print(f"  • Avg time/request: {total_time/len(test_prompts):.2f}s")
+    print(f"  • Avg time/request: {total_time / len(test_prompts):.2f}s")
     print(f"  • Total tokens: {total_tokens}")
     print(f"  • Throughput: {throughput:.1f} tokens/sec")
     print(f"  • GPU utilization: High (concurrent processing)")
@@ -166,25 +166,25 @@ async def low_latency_inference() -> None:
 
     latencies = []
     for i in range(10):
-        messages = [Message(role="user", content=f"Quick response test {i+1}")]
+        messages = [Message(role="user", content=f"Quick response test {i + 1}")]
 
         start = time.time()
         response = await llm.complete(messages, max_tokens=50)
         latency = time.time() - start
         latencies.append(latency)
 
-        print(f"  Request {i+1}: {latency*1000:.0f}ms")
+        print(f"  Request {i + 1}: {latency * 1000:.0f}ms")
 
     avg_latency = sum(latencies) / len(latencies)
     p50 = sorted(latencies)[len(latencies) // 2]
     p95 = sorted(latencies)[int(len(latencies) * 0.95)]
 
     print(f"\n📊 Latency Statistics:")
-    print(f"  • Average: {avg_latency*1000:.0f}ms")
-    print(f"  • P50: {p50*1000:.0f}ms")
-    print(f"  • P95: {p95*1000:.0f}ms")
-    print(f"  • Min: {min(latencies)*1000:.0f}ms")
-    print(f"  • Max: {max(latencies)*1000:.0f}ms")
+    print(f"  • Average: {avg_latency * 1000:.0f}ms")
+    print(f"  • P50: {p50 * 1000:.0f}ms")
+    print(f"  • P95: {p95 * 1000:.0f}ms")
+    print(f"  • Min: {min(latencies) * 1000:.0f}ms")
+    print(f"  • Max: {max(latencies) * 1000:.0f}ms")
 
 
 async def multi_gpu_deployment() -> None:

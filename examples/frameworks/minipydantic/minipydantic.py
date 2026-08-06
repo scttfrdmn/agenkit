@@ -353,9 +353,7 @@ class TypeSafeAgent(Agent):
 
         return tools
 
-    def _format_response(
-        self, query: str, results: list[dict[str, Any]]
-    ) -> str:
+    def _format_response(self, query: str, results: list[dict[str, Any]]) -> str:
         """Format response from tool results.
 
         Args:

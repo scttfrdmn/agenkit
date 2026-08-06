@@ -38,8 +38,16 @@ jobs:
 
       # Use the repo's locked ruff (via uv --extra dev) so CI and local
       # `make format` agree — pinning avoids formatter version skew.
+      #
+      # `examples/` is included, and must stay in step with the `ruff format` call in
+      # the Makefile. This gate checked only agenkit/ tests/ while `make format` wrote
+      # agenkit/ tests/ examples/, so it reported "371 files already formatted" while
+      # 46 tracked example files were unformatted. Anyone running the documented
+      # formatter got a surprise 46-file diff unrelated to their change (#856). Same
+      # lesson as the Go half (#849): an excluded directory is a directory that drifts,
+      # and examples are documentation (CLAUDE.md).
       - name: Check Python formatting (ruff format)
-        run: uv run --extra dev ruff format --check agenkit/ tests/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
+        run: uv run --extra dev ruff format --check agenkit/ tests/ examples/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
 
       # Scope is the whole repo, and examples are NOT excluded. This check used to
       # run with `working-directory: agenkit-go` and `grep -v '^examples/'`, which
@@ -54,12 +62,13 @@ jobs:
       # files. .claude/worktrees is excluded because it holds scratch checkouts.
       #
       # Driven off `git ls-files` rather than `gofmt -l .` so the set matches what
-      # `make format` fixes exactly. Dockerfile.go is skipped: it is a Dockerfile
-      # despite the extension, and gofmt exits 2 on it with
-      # `illegal character U+0023 '#'` (#856).
+      # `make format` fixes exactly. No name-based exclusions: the sole one was
+      # `Dockerfile.go`, a Dockerfile despite the extension, which made gofmt exit 2
+      # with `illegal character U+0023 '#'`. It is now docker/agenkit-go.Dockerfile,
+      # so the glob is honest again and every match really is Go (#856).
       - name: Check Go formatting (gofmt)
         run: |
-          FILES=$(git ls-files '*.go' | grep -v '^\.claude/' | grep -v '^Dockerfile\.go$')
+          FILES=$(git ls-files '*.go' | grep -v '^\.claude/')
           # Fail loudly if the file list is empty rather than reporting success on
           # nothing. `gofmt -s -l` with no arguments reads stdin and exits 0, so a
           # layout change that broke this glob would turn the gate into a silent
@@ -77,3 +86,52 @@ jobs:
             echo "$UNFORMATTED"
             exit 1
           fi
+
+  # Nothing in CI built these two images, so both had been broken for many releases
+  # (#856): the Go one pinned golang:1.21-alpine against a go.mod requiring 1.25.12,
+  # and the Python one pinned python:3.11-slim against requires-python >=3.12, so each
+  # failed installing the project's own artifact. docker-compose.yml builds both, so
+  # `docker compose up` was dead on arrival. Same "built by nothing" rot as #839.
+  #
+  # Build only — no push, no registry credentials. That is enough to catch base-image
+  # drift, which is the whole failure mode here.
+  docker-build:
+    name: Docker Base Images (build only)
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    timeout-minutes: 20
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [go, python]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      # The images label themselves from the root VERSION file via --build-arg rather
+      # than a hardcoded literal, which would be a 20th version declaration for the
+      # #842 guard to police. Both read "0.1.0" for 86 releases.
+      - name: Build ${{ matrix.image }} image
+        run: |
+          docker build \
+            --build-arg VERSION="$(cat VERSION)" \
+            -f "docker/agenkit-${{ matrix.image }}.Dockerfile" \
+            -t "agenkit-${{ matrix.image }}:ci" .
+
+      # A build that produces an image whose entrypoint does not exist still "passes"
+      # docker build. The Go image used to do exactly that: CMD pointed at a binary
+      # only its (unreachable) fallback branch produced, so run it and require the
+      # declared version back.
+      - name: Smoke-run ${{ matrix.image }} image
+        run: |
+          OUT=$(docker run --rm "agenkit-${{ matrix.image }}:ci" 2>&1 | head -20)
+          echo "$OUT"
+          EXPECTED=$(cat VERSION)
+          LABEL=$(docker inspect "agenkit-${{ matrix.image }}:ci" \
+            --format '{{index .Config.Labels "org.opencontainers.image.version"}}')
+          if [ "$LABEL" != "$EXPECTED" ]; then
+            echo "❌ image.version label is '$LABEL', expected '$EXPECTED' from VERSION"
+            exit 1
+          fi
+          echo "✓ label matches VERSION ($EXPECTED)"

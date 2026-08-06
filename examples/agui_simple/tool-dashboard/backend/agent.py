@@ -46,8 +46,8 @@ class SearchTool(Tool):
 
         results = [
             {
-                "title": f"Result {i+1} for '{query}'",
-                "url": f"https://example.com/result{i+1}",
+                "title": f"Result {i + 1} for '{query}'",
+                "url": f"https://example.com/result{i + 1}",
                 "snippet": f"This is a relevant snippet about {query}...",
             }
             for i in range(num_results)
@@ -376,7 +376,7 @@ class ResearchAgent(Agent):
                 response_parts.append(f"**Error**: {result['error']}")
 
         response_parts.append(
-            f"\n---\n**Total Execution Time**: " f"{sum(r['execution_time'] for r in results):.2f}s"
+            f"\n---\n**Total Execution Time**: {sum(r['execution_time'] for r in results):.2f}s"
         )
 
         return "\n".join(response_parts)

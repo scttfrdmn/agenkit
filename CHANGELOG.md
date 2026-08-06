@@ -7,6 +7,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — the Python lint gate's verdict depended on whose machine ran it (Issue #793)
+
+#793 reported 28 `ruff check` findings failing `test-local.sh --lint`, with an inventory of
+six rules to fix. Re-measuring before starting found the diagnosis wrong, and the real fix
+is smaller and elsewhere. **ruff was declared three ways, with three answers:**
+
+| Where | Declared | Resolves to | Verdict |
+|---|---|---|---|
+| `pyproject.toml` `[dev]` | `ruff>=0.1.0` | 0.14.4 | `All checks passed!` |
+| `.pre-commit-config.yaml` | `rev: v0.9.1` | 0.9.1 | a third ruleset |
+| `scripts/test-local.sh:88` | bare `ruff` | `$PATH` (0.15.10 here) | `Found 28 errors.` |
+
+Both counts are correct. All six rules the issue names — `UP042`, `FURB110`, `PLW0108`,
+`ASYNC240`, `PLC0207`, `ASYNC250` — are **preview-only in 0.14.4 and stable by 0.15.x**, so
+the inventory was taken with a ruff that had promoted them:
+
+```console
+$ uv run --extra dev ruff check agenkit/ --select ASYNC250
+warning: Selection `ASYNC250` has no effect because preview is not enabled.
+```
+
+A `>=` floor on a linter guarantees this: every developer legitimately has a different one,
+so `--lint` passed or failed depending on the machine. **That is the defect** — not a
+backlog of 28. (With preview fully enabled there are 1380 findings, not 28, which is the
+argument for pinning rather than enabling.) Two *formatter* versions are worse still: each
+"fixes" what the other wrote, forever.
+
+Now `ruff==0.14.4` exactly, matched by `rev: v0.14.4` in pre-commit, and every invocation
+in `Makefile` / `test-local.sh` / `lint.yml` goes through `uv run --extra dev` so none can
+resolve against `$PATH`. `scripts/check-tool-pins.sh` (`make check-tool-pins`, and a CI
+step) fails if the two pins disagree, if the pin degrades back to a range, or if a bare
+`ruff` reappears. `./scripts/test-local.sh --lint` now exits 0.
+
+Two side findings fixed in passing:
+
+- **`test-local.sh:95` held a third copy of the gofmt gate** — `gofmt -s -l .` from
+  `agenkit-go` with `grep -v "^examples/"`, the exact scoping #849 removed from CI and
+  `make lint`. It was blind to the same 11 files and #849 missed it. Now repo-wide with the
+  300-file floor. Verified: old step exits 0 on an injected defect, new step exits 1.
+- `test-local.sh`'s format check omitted `examples/`, unlike `make format` (#856).
+
+Deferred deliberately, with reasoning recorded on the issue: the `UP042`→`StrEnum`
+migration (those are wire-format types, and it changes `str()`/f-string output) and the
+0.15.x upgrade. The **`ASYNC250`** finding is a genuine defect independent of any linter —
+`agenkit/techniques/compositions/simple_human_approval.py:97` calls bare `input()` inside
+`async def`, stalling the event loop — and remains open.
+
+### Fixed — both Docker base images had been unbuildable for many releases (Issue #856)
+
+`Dockerfile.go` was a Dockerfile named `*.go`, so `gofmt` tried to parse it and exited 2
+(`illegal character U+0023 '#'`). #849 worked around that with a name-based exclusion in
+two gates. Renaming it was supposed to be the cleanup; investigating found the file was
+not merely misnamed but **broken**, along with its Python sibling:
+
+- **`FROM golang:1.21-alpine`** against an `agenkit-go/go.mod` requiring `go 1.25.12`, so
+  `go mod download` failed outright under `GOTOOLCHAIN=local`.
+- **`FROM python:3.11-slim`** against `requires-python = ">=3.12"`, so the runtime stage
+  failed installing the project's *own* wheel: `Package 'agenkit' requires a different
+  Python: 3.11.15 not in '>=3.12'`.
+- The Go build step read `A || B && C`, which sh parses left-associative as `(A || B) && C`.
+  So `C` ran on every path: when the real build succeeded, `B` was skipped and `C` still
+  tried to compile a `/tmp/dummy.go` that was never written (`stat /tmp/dummy.go: directory
+  not found`). Worse, `C` produced the **only** binary `CMD` referenced, so even a
+  successful build would have shipped an image whose entrypoint did not exist. Broken on
+  both branches. The fallback is gone — if the example stops compiling, the build now fails.
+- Both labelled themselves `org.opencontainers.image.version="0.1.0"`, stale by 86
+  releases. Now passed via `--build-arg VERSION="$(cat VERSION)"` rather than hardcoded,
+  which would have been a 20th declaration for #842's guard to police.
+
+`docker-compose.yml` builds both images, so `docker compose up` was dead on arrival for
+all four services. **Nothing in CI built either one** — the same "built by nothing" rot as
+#839, where 9 of 11 documented Go constructors turned out to be fictional. A new
+`docker-build` matrix job builds both and then *runs* them, because `docker build` happily
+succeeds on an image whose `CMD` is missing or whose label is stale.
+
+Renamed to `docker/agenkit-go.Dockerfile` and `docker/agenkit-python.Dockerfile`
+(recognised by Docker tooling and editors, and no longer matched by a `*.go` glob), with
+all references updated in `docker-compose.yml`, `deploy/README.md`, `ROADMAP.md` and
+`README_OLD.md`. Both gofmt exclusions are dropped: the glob is honest again.
+
+### Fixed — `make format` wrote 46 files CI never checked (Issue #856)
+
+`make format` ran `ruff format agenkit/ tests/ examples/` while the CI gate checked only
+`agenkit/ tests/`. The gate reported "371 files already formatted" while **46 tracked
+Python example files were unformatted**, so running the project's own documented formatter
+produced a 46-file diff unrelated to your change — silently widening any PR whose author
+followed the instructions. The gate now checks `examples/` too and the 46 files are
+formatted. Same lesson as the Go half in #849: an excluded directory is a directory that
+drifts, and examples are documentation (CLAUDE.md).
+
 ### Fixed — the version was declared 17 ways and no two agreed (Issue #842)
 
 `agenkit.__version__` reported **0.10.0** while the newest git tag was **v0.87.0** — 77

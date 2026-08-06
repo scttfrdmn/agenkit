@@ -32,9 +32,7 @@ class ChatAgent(Agent):
 
         # Update conversation metadata
         self._state_manager.update("/conversation/message_count", self._message_count)
-        self._state_manager.update(
-            "/conversation/last_message_at", datetime.now().isoformat()
-        )
+        self._state_manager.update("/conversation/last_message_at", datetime.now().isoformat())
 
         # Respond to preferences commands
         content = message.content.lower()

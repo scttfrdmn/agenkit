@@ -49,7 +49,9 @@ class SimpleChatAgent(Agent):
         if "hello" in content.lower() or "hi" in content.lower():
             response = "👋 Hello! I'm a simple chat agent. I can greet you by name if you ask!"
         elif "help" in content.lower():
-            response = "I can:\n• Respond to greetings\n• Answer simple questions\n• Greet you by name"
+            response = (
+                "I can:\n• Respond to greetings\n• Answer simple questions\n• Greet you by name"
+            )
         else:
             response = f"You said: '{content}'\n\nThis is a demonstration of custom AG-UI frontends built with React, Vue, and Svelte!"
 

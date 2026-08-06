@@ -45,7 +45,7 @@ async def main() -> None:
         print(f"Not available (is the DeepSpeed-MII server running?): {e}")
         print()
         print("Start the server with:")
-        print('  python -c "import mii; mii.serve(\'meta-llama/Llama-3.1-8B-Instruct\')"')
+        print("  python -c \"import mii; mii.serve('meta-llama/Llama-3.1-8B-Instruct')\"")
         return
 
     print(f"Response : {response.content}")

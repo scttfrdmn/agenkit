@@ -96,13 +96,19 @@ Calculation results for "{query}":
 
 **Analysis**:
 - Range: {max(numbers) - min(numbers) if numbers and len(numbers) > 1 else "N/A"}
-- Standard deviation: ~{(sum((x - sum(numbers)/len(numbers))**2 for x in numbers) / len(numbers))**0.5 if numbers and len(numbers) > 1 else "N/A"}
+- Standard deviation: ~{
+            (sum((x - sum(numbers) / len(numbers)) ** 2 for x in numbers) / len(numbers)) ** 0.5
+            if numbers and len(numbers) > 1
+            else "N/A"
+        }
 
 **Interpretation**: The data shows {
-    "consistent values" if numbers and max(numbers) - min(numbers) < 10
-    else "varied distribution" if numbers
-    else "no numerical data"
-}.
+            "consistent values"
+            if numbers and max(numbers) - min(numbers) < 10
+            else "varied distribution"
+            if numbers
+            else "no numerical data"
+        }.
 """
 
         return Message(
@@ -464,9 +470,9 @@ class CoordinatorAgent(Agent):
         successful = sum(1 for r in results if r["status"] == "success")
         lines.append(
             f"- **Agents Completed**: {successful}/{len(results)}\n"
-            f"- **Success Rate**: {successful/len(results):.0%}\n"
+            f"- **Success Rate**: {successful / len(results):.0%}\n"
             f"- **Average Confidence**: "
-            f"{sum(r.get('confidence', 0) for r in results)/len(results):.0%}"
+            f"{sum(r.get('confidence', 0) for r in results) / len(results):.0%}"
         )
 
         return "\n".join(lines)

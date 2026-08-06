@@ -35,14 +35,14 @@ class FileProcessingTool(Tool):
             # Simulate processing
             await asyncio.sleep(0.3)
 
-            processed_files.append(f"file_{i+1}.txt")
+            processed_files.append(f"file_{i + 1}.txt")
 
             # Report progress if available
             if progress_reporter:
                 progress_reporter.report(
                     progress=(i + 1) / file_count,
-                    status=f"Processing file {i+1}/{file_count}",
-                    metadata={"current_file": f"file_{i+1}.txt"},
+                    status=f"Processing file {i + 1}/{file_count}",
+                    metadata={"current_file": f"file_{i + 1}.txt"},
                 )
 
         return ToolResult(
@@ -87,7 +87,7 @@ class AnalysisTool(Tool):
                 progress = 0.2 + (0.6 * (i + 1) / steps)
                 progress_reporter.report(
                     progress=progress,
-                    status=f"Analyzing batch {i+1}/{steps}",
+                    status=f"Analyzing batch {i + 1}/{steps}",
                     metadata={"phase": "analysis", "batch": i + 1},
                 )
 
@@ -169,9 +169,7 @@ class ProcessingAgent(Agent):
                     )
                 elif event.type == "tool_call_result":
                     result = event.content
-                    response_parts.append(
-                        f"✅ Analyzed {result['analyzed']} records"
-                    )
+                    response_parts.append(f"✅ Analyzed {result['analyzed']} records")
                     response_parts.append(f"📈 Insights: {', '.join(result['insights'])}")
 
             return Message(role="assistant", content="\n".join(response_parts))

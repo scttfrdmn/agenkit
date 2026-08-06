@@ -747,7 +747,9 @@ async def example_session_runner() -> None:
 
     # Demonstrate session state accumulation (without real LLM calls)
     session_service.append(user_id, session_id, turn1)
-    session_service.append(user_id, session_id, Content.from_text("Machine learning is...", role="model"))
+    session_service.append(
+        user_id, session_id, Content.from_text("Machine learning is...", role="model")
+    )
     session_service.append(user_id, session_id, turn2)
 
     history = session_service.get_history(user_id, session_id)

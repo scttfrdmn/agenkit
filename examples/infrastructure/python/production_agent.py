@@ -136,9 +136,7 @@ async def main() -> None:
     logger.info("System is healthy and ready!")
 
     # 5. Process requests through the production system
-    requests = [
-        Message(role="user", content=f"Request {i}") for i in range(20)
-    ]
+    requests = [Message(role="user", content=f"Request {i}") for i in range(20)]
 
     successful = 0
     failed = 0
@@ -177,9 +175,7 @@ async def main() -> None:
 
     # Retry metrics for each backend
     logger.info(f"\nRetry Metrics:")
-    for i, backend in enumerate(
-        [retry_backend1, retry_backend2, retry_backend3], 1
-    ):
+    for i, backend in enumerate([retry_backend1, retry_backend2, retry_backend3], 1):
         metrics = backend.get_metrics()
         logger.info(f"  Agent {i}:")
         logger.info(f"    Total attempts: {metrics.total_attempts}")
@@ -188,9 +184,7 @@ async def main() -> None:
         logger.info(f"    Failed after retries: {metrics.failed_after_retries}")
         logger.info(f"    Total retries: {metrics.total_retries}")
         if metrics.backpressure_detected > 0:
-            logger.info(
-                f"    Backpressure detected: {metrics.backpressure_detected} times"
-            )
+            logger.info(f"    Backpressure detected: {metrics.backpressure_detected} times")
 
     # Health metrics
     health_metrics = health_checker.get_metrics()
@@ -198,9 +192,7 @@ async def main() -> None:
     for probe_type, count in health_metrics.total_checks.items():
         success = health_metrics.successful_checks.get(probe_type, 0)
         failed = health_metrics.failed_checks.get(probe_type, 0)
-        logger.info(
-            f"  {probe_type}: {success}/{count} passed ({failed} failed)"
-        )
+        logger.info(f"  {probe_type}: {success}/{count} passed ({failed} failed)")
 
     # Export Prometheus metrics
     logger.info(f"\nPrometheus Metrics:")

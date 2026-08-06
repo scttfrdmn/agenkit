@@ -84,15 +84,39 @@ run_step() {
 if [ "$LINT" = true ]; then
     echo -e "${BLUE}=== Linting ===${NC}"
 
+    # `uv run --extra dev` rather than a bare `ruff`, which resolves to whatever is
+    # on $PATH. That skew was the whole of #793: a Homebrew ruff 0.15.10 reported 28
+    # findings while the locked 0.14.4 reported none, because all six rules involved
+    # (UP042, FURB110, PLW0108, ASYNC240, PLC0207, ASYNC250) are preview-only in
+    # 0.14.4 and stable by 0.15.x. So `--lint` passed or failed depending on whose
+    # machine it ran on. pytest below already used `uv run`; ruff never got the same
+    # treatment. ruff is now pinned exactly (==) in pyproject.toml, not floored (>=).
     run_step "Ruff (Python linter)" \
-        ruff check agenkit/ tests/
+        uv run --extra dev ruff check agenkit/ tests/
 
+    # examples/ included to match `make format` and the CI gate (#856).
     run_step "ruff format (Python formatter)" \
-        ruff format --check agenkit/ tests/
+        uv run --extra dev ruff format --check agenkit/ tests/ examples/
+
+    # Whole repo and no examples/ exclusion, mirroring the CI gate and `make lint`
+    # (#849). This step used `gofmt -s -l .` from agenkit-go with `grep -v
+    # "^examples/"`, so it was blind to the same 11 files — it was the third copy of
+    # that gate and the one #849 missed. The 300-file floor guards against the file
+    # list silently becoming empty, since `gofmt -s -l` with no arguments reads stdin
+    # and exits 0.
+    cd "$REPO_ROOT"
+    run_step "go fmt check" \
+        bash -c 'FILES=$(git ls-files "*.go" | grep -v "^\.claude/");
+                 COUNT=$(printf "%s\n" "$FILES" | grep -c . || true);
+                 if [ "$COUNT" -lt 300 ]; then
+                   echo "gofmt check found only $COUNT Go files (expected 300+); fix this check"; exit 1;
+                 fi;
+                 UNFORMATTED=$(gofmt -s -l $FILES);
+                 if [ -n "$UNFORMATTED" ]; then
+                   echo "Code not formatted (run make format):"; echo "$UNFORMATTED"; exit 1;
+                 fi'
 
     cd "$REPO_ROOT/agenkit-go"
-    run_step "go fmt check" \
-        bash -c 'if [ "$(gofmt -s -l . | grep -v "^examples/" | wc -l)" -gt 0 ]; then echo "Code not formatted:"; gofmt -s -l . | grep -v "^examples/"; exit 1; fi'
 
     run_step "go vet" \
         bash -c 'go vet $(go list ./... | grep -v /examples/)'

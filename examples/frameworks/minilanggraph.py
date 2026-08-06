@@ -457,7 +457,9 @@ async def example_simple_graph() -> None:
     print("   pipeline = SequentialAgent([preprocess_agent, generate_agent])")
     print("   result = await pipeline.process(message)")
 
-    state = await graph.ainvoke({"messages": [Message(role="user", content="Tell me about Agenkit")]})
+    state = await graph.ainvoke(
+        {"messages": [Message(role="user", content="Tell me about Agenkit")]}
+    )
     path = state.metadata.get("execution_path", [])
     print(f"\n   Execution path: {' → '.join(path)} → END")
     print("   Pattern: LangGraph.StateGraph → Agenkit SequentialAgent / custom graph")
@@ -531,8 +533,12 @@ async def example_conditional_routing() -> None:
     creative_state = await graph.ainvoke(
         {"messages": [Message(role="user", content="Write a poem about agents")]}
     )
-    print(f"\n   'What is Agenkit?' → path: {' → '.join(factual_state.metadata.get('execution_path', []))}")
-    print(f"   'Write a poem...'  → path: {' → '.join(creative_state.metadata.get('execution_path', []))}")
+    print(
+        f"\n   'What is Agenkit?' → path: {' → '.join(factual_state.metadata.get('execution_path', []))}"
+    )
+    print(
+        f"   'Write a poem...'  → path: {' → '.join(creative_state.metadata.get('execution_path', []))}"
+    )
     print("   Pattern: LangGraph.add_conditional_edges → Agenkit RouterAgent / conditional routing")
 
 
@@ -590,7 +596,9 @@ async def example_agent_tool_loop() -> None:
     print("\n   # LangGraph-style API (canonical agent loop):")
     print("   graph.add_node('agent', call_model)")
     print("   graph.add_node('tools', ToolNode(tools))")
-    print("   graph.add_conditional_edges('agent', should_continue, {'continue': 'tools', 'end': END})")
+    print(
+        "   graph.add_conditional_edges('agent', should_continue, {'continue': 'tools', 'end': END})"
+    )
     print("   graph.add_edge('tools', 'agent')  # cycle back")
     print("   graph.set_entry_point('agent')")
     print()
@@ -599,9 +607,7 @@ async def example_agent_tool_loop() -> None:
     print("   agent = ReActAgent(llm=llm, tools=[calculator, search])")
     print("   result = await agent.process(message)")
 
-    state = await graph.ainvoke(
-        {"messages": [Message(role="user", content="What is 144 / 12?")]}
-    )
+    state = await graph.ainvoke({"messages": [Message(role="user", content="What is 144 / 12?")]})
     path = state.metadata.get("execution_path", [])
     print(f"\n   Execution path: {' → '.join(path + ['END'])}")
     print("   Pattern: LangGraph agent loop → Agenkit ReActAgent (reason+act+observe)")
@@ -630,9 +636,7 @@ async def example_memory_saver() -> None:
     thread_id = "user-session-42"
 
     # First run
-    state1 = await graph.ainvoke(
-        {"messages": [Message(role="user", content="My name is Alex.")]}
-    )
+    state1 = await graph.ainvoke({"messages": [Message(role="user", content="My name is Alex.")]})
     memory.save(thread_id, state1)
 
     # Reload state and continue

@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
     )
 
     logger.info("Multi-Agent Coordination backend ready!")
-    logger.info(f"Available specialized agents: " f"{', '.join(coordinator._agents.keys())}")
+    logger.info(f"Available specialized agents: {', '.join(coordinator._agents.keys())}")
     yield
 
     logger.info("Shutting down Multi-Agent Coordination backend...")

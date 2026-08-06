@@ -262,14 +262,14 @@ to a human support agent who will help you shortly.
 
 **Ticket Details:**
 - Ticket ID: {ticket.ticket_id}
-- Issue Type: {classification['issue_type'].title()}
-- Priority: {classification['priority'].upper()}
-- Created: {ticket.created_at.strftime('%Y-%m-%d %H:%M UTC')}
+- Issue Type: {classification["issue_type"].title()}
+- Priority: {classification["priority"].upper()}
+- Created: {ticket.created_at.strftime("%Y-%m-%d %H:%M UTC")}
 
 **What happens next:**
 1. A support specialist will review your case
 2. You'll receive an email when they're ready to assist
-3. Average response time: {self._get_response_time(classification['priority'])}
+3. Average response time: {self._get_response_time(classification["priority"])}
 
 In the meantime, you can check your ticket status at support.example.com/tickets/{ticket.ticket_id}
 
@@ -295,11 +295,11 @@ Is there anything else I can help you with while you wait?
 Thank you for contacting support! I can help you with that.
 
 **Issue Identified:** {keyword.title()} Issue
-**Priority:** {classification['priority'].upper()}
+**Priority:** {classification["priority"].upper()}
 **Ticket ID:** {ticket.ticket_id}
 
 **Solution:**
-{kb_info['solution']}
+{kb_info["solution"]}
 
 **Additional Resources:**
 - Help Center: https://help.example.com/{keyword}
@@ -344,8 +344,8 @@ Thank you for reaching out! I'd be happy to assist you.
 
 **Ticket Information:**
 - Ticket ID: {ticket.ticket_id}
-- Category: {classification['issue_type'].title()}
-- Priority: {classification['priority'].upper()}
+- Category: {classification["issue_type"].title()}
+- Priority: {classification["priority"].upper()}
 
 To better help you, could you provide:
 - What you were trying to do

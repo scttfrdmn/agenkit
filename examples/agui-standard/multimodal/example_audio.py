@@ -102,20 +102,22 @@ class AudioAgent(Agent):
             response_parts = [f"🎵 Received {len(audio_parts)} audio clip(s):"]
 
             for i, audio in enumerate(audio_parts, 1):
-                duration_str = (
-                    f"{audio['duration']:.1f}s" if audio.get("duration") else "unknown"
-                )
+                duration_str = f"{audio['duration']:.1f}s" if audio.get("duration") else "unknown"
 
                 if audio["source"] == "url":
                     response_parts.append(f"\n{i}. Audio from URL (duration: {duration_str})")
                     response_parts.append(f"   URL: {audio['url'][:50]}...")
-                    response_parts.append(f"   🎤 Transcription: [Simulated transcription of audio clip {i}]")
+                    response_parts.append(
+                        f"   🎤 Transcription: [Simulated transcription of audio clip {i}]"
+                    )
                 else:
                     response_parts.append(
                         f"\n{i}. Audio: {audio['mime_type']} (duration: {duration_str})"
                     )
                     response_parts.append(f"   Size: {audio['size']} chars (base64)")
-                    response_parts.append(f"   🎤 Transcription: [Simulated transcription of audio clip {i}]")
+                    response_parts.append(
+                        f"   🎤 Transcription: [Simulated transcription of audio clip {i}]"
+                    )
 
             if text_parts:
                 response_parts.append(f"\n\n💬 Context: {' '.join(text_parts)}")

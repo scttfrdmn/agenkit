@@ -85,7 +85,9 @@ class KernelArguments:
 # ---------------------------------------------------------------------------
 
 
-def kernel_function(name: str = "", description: str = "") -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+def kernel_function(
+    name: str = "", description: str = ""
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator to mark a method as a KernelFunction (mirrors SK @kernel_function).
     Pattern: SK.@kernel_function → attaches metadata used by KernelPlugin discovery
@@ -428,9 +430,7 @@ class SemanticSummaryPlugin:
     @kernel_function(name="summarize", description="Summarize text to a given number of sentences")
     async def summarize(self, text: str, sentence_count: int = 3) -> str:
         """Summarize text to a target sentence count using LLM."""
-        prompt = (
-            f"Summarize the following text in exactly {sentence_count} sentence(s):\n\n{text}"
-        )
+        prompt = f"Summarize the following text in exactly {sentence_count} sentence(s):\n\n{text}"
         response = await self._llm.complete([Message(role="user", content=prompt)])
         return cast(str, response.content)
 
@@ -548,13 +548,17 @@ async def example_semantic_plugin() -> None:
     summary_plugin = KernelPlugin.from_object(summary_obj, "SummaryPlugin")
     kernel.add_plugin(summary_plugin)
 
-    print("\n   summary_plugin = KernelPlugin.from_object(SemanticSummaryPlugin(llm), 'SummaryPlugin')")
+    print(
+        "\n   summary_plugin = KernelPlugin.from_object(SemanticSummaryPlugin(llm), 'SummaryPlugin')"
+    )
     print("   kernel.add_plugin(summary_plugin)")
 
     summarize_fn = kernel.get_function("SummaryPlugin", "summarize")
 
     print("\n   summarize_fn = kernel.get_function('SummaryPlugin', 'summarize')")
-    print("   result = await kernel.invoke(summarize_fn, KernelArguments(text='...', sentence_count=2))")
+    print(
+        "   result = await kernel.invoke(summarize_fn, KernelArguments(text='...', sentence_count=2))"
+    )
     print("\n   Pattern: SK.KernelFunction (semantic) → Agenkit Agent with prompt template")
     print("   LLM call is deferred until invoke(); kernel owns the service lifecycle")
 
@@ -575,15 +579,21 @@ async def example_kernel_arguments() -> None:
 
     # Build KernelArguments
     args = KernelArguments(topic="quantum computing", audience="high school students", length="3")
-    print(f"\n   args = KernelArguments(topic='quantum computing', audience='high school students')")
+    print(
+        f"\n   args = KernelArguments(topic='quantum computing', audience='high school students')"
+    )
     print(f"   args['topic'] → {args['topic']}")
     print(f"   args.get('length', '5') → {args.get('length', '5')}")
 
     # Inline prompt template with placeholder substitution
     template = "Explain {{$topic}} to {{$audience}} in {{$length}} sentences."
-    print(f"\n   template = 'Explain {{{{$topic}}}} to {{{{$audience}}}} in {{{{$length}}}} sentences.'")
+    print(
+        f"\n   template = 'Explain {{{{$topic}}}} to {{{{$audience}}}} in {{{{$length}}}} sentences.'"
+    )
     print(f"   result = await kernel.invoke_prompt(template, args)")
-    print(f"\n   Rendered prompt: {template.replace('{{$topic}}', args['topic']).replace('{{$audience}}', args['audience']).replace('{{$length}}', args['length'])!r}")
+    print(
+        f"\n   Rendered prompt: {template.replace('{{$topic}}', args['topic']).replace('{{$audience}}', args['audience']).replace('{{$length}}', args['length'])!r}"
+    )
     print("\n   Pattern: SK.kernel.invoke_prompt → {{$var}} substitution + LLM call")
     print("   Agenkit Message wraps the rendered prompt; LLM adapter handles completion")
 
@@ -614,7 +624,9 @@ async def example_chat_history() -> None:
 
     agent = SKAgent(kernel=kernel, system_message="You are a helpful coding assistant.")
     print("\n   agent = SKAgent(kernel=kernel, system_message='...')")
-    print("   reply = await agent.process(Message(role='user', content='What is a list comprehension?'))")
+    print(
+        "   reply = await agent.process(Message(role='user', content='What is a list comprehension?'))"
+    )
     print("\n   Pattern: SK.ChatHistory → Agenkit ConversationalAgent history")
     print("   SKAgent wraps Kernel to expose Agent.process() interface")
 

@@ -223,9 +223,7 @@ async def example_circuit_breaker_with_retry():
     db = FlakeyDatabase()
 
     # Layer 1: Retry for transient failures (inner)
-    retry_db = RetryDecorator(
-        db, RetryConfig(max_retries=2, initial_delay=0.1, multiplier=2.0)
-    )
+    retry_db = RetryDecorator(db, RetryConfig(max_retries=2, initial_delay=0.1, multiplier=2.0))
 
     # Layer 2: Circuit breaker for persistent failures (outer)
     protected_db = CircuitBreakerDecorator(

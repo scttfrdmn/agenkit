@@ -257,7 +257,9 @@ async def setup_instructions() -> None:
     print("       --port 30000")
 
     print("\n4️⃣  TensorRT-LLM:")
-    print("   docker run --gpus all -p 8001:8001 nvcr.io/nvidia/tritonserver:23.10-trtllm-python-py3 \\")
+    print(
+        "   docker run --gpus all -p 8001:8001 nvcr.io/nvidia/tritonserver:23.10-trtllm-python-py3 \\"
+    )
     print("       tritonserver --model-repository=/models")
 
     print("\n📚 For detailed setup, see:")

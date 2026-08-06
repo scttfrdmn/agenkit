@@ -581,8 +581,8 @@ Official Docker images for easy deployment.
 - ✅ Environment variable configuration
 
 **Files**:
-- `Dockerfile.python` - Python base image
-- `Dockerfile.go` - Go base image
+- `docker/agenkit-python.Dockerfile` - Python base image
+- `docker/agenkit-go.Dockerfile` - Go base image
 - `docker-compose.yml` - Full stack orchestration
 - `.dockerignore` - Build optimization
 - `deploy/prometheus.yml` - Metrics configuration

@@ -172,7 +172,9 @@ async def stream_handler(request: web.Request) -> web.StreamResponse:
                     },
                 )
                 await response.write(sse_data.encode("utf-8"))
-                print(f"[SSE] ⚠️  Sent interrupt event - Status: {event.context.get('approval_status')}")
+                print(
+                    f"[SSE] ⚠️  Sent interrupt event - Status: {event.context.get('approval_status')}"
+                )
 
             elif isinstance(event, TextMessageStart):
                 sse_data = format_sse_event(

@@ -109,9 +109,9 @@ async def tiered_approval_func(request: ApprovalRequest) -> ApprovalResponse:
     confidence = request.confidence
     risk_level = request.message.metadata.get("risk_level", "unknown")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Tiered Approval Request")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Amount:      ${amount:,}")
     print(f"Confidence:  {confidence:.2f}")
     print(f"Risk Level:  {risk_level}")
@@ -187,9 +187,9 @@ async def contextual_approval_func(request: ApprovalRequest) -> ApprovalResponse
     amount = request.message.metadata.get("amount", 0)
     risk_level = request.message.metadata.get("risk_level", "unknown")
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("Contextual Approval Analysis")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"Type:        {tx_type}")
     print(f"Amount:      ${amount:,}")
     print(f"Confidence:  {confidence:.2f}")

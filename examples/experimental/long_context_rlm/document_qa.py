@@ -36,9 +36,7 @@ class DocumentQAAgent:
         self.agent = agent
         self.sub_agent = sub_agent or agent
 
-    async def answer_question(
-        self, question: str, documents: list[dict[str, Any]]
-    ) -> str:
+    async def answer_question(self, question: str, documents: list[dict[str, Any]]) -> str:
         """
         Answer multi-hop question over document collection.
 
@@ -52,7 +50,7 @@ class DocumentQAAgent:
         # Serialize documents into context string
         context_parts = []
         for i, doc in enumerate(documents):
-            title = doc.get("title", f"Document {i+1}")
+            title = doc.get("title", f"Document {i + 1}")
             content = doc["content"]
             context_parts.append(f"=== {title} ===\n{content}\n")
 

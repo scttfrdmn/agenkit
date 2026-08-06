@@ -5,7 +5,7 @@ services:
   python-http-agent:
     build:
       context: .
-      dockerfile: Dockerfile.python
+      dockerfile: docker/agenkit-python.Dockerfile
     image: agenkit/python:0.1.0
     container_name: agenkit-python-http
     ports:
@@ -30,7 +30,7 @@ services:
   go-http-agent:
     build:
       context: .
-      dockerfile: Dockerfile.go
+      dockerfile: docker/agenkit-go.Dockerfile
     image: agenkit/go:0.1.0
     container_name: agenkit-go-http
     ports:
@@ -52,7 +52,7 @@ services:
   python-grpc-agent:
     build:
       context: .
-      dockerfile: Dockerfile.python
+      dockerfile: docker/agenkit-python.Dockerfile
     image: agenkit/python:0.1.0
     container_name: agenkit-python-grpc
     ports:
@@ -71,7 +71,7 @@ services:
   go-grpc-agent:
     build:
       context: .
-      dockerfile: Dockerfile.go
+      dockerfile: docker/agenkit-go.Dockerfile
     image: agenkit/go:0.1.0
     container_name: agenkit-go-grpc
     ports:

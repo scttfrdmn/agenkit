@@ -33,7 +33,9 @@ class AssistantAgent(Agent):
         if "hello" in content or "hi" in content:
             response = "Hello! I'm your assistant. How can I help you today?"
         elif "weather" in content:
-            response = "I don't have real-time weather data, but I can help you find weather information!"
+            response = (
+                "I don't have real-time weather data, but I can help you find weather information!"
+            )
         elif "help" in content:
             response = (
                 "I can assist with:\n"

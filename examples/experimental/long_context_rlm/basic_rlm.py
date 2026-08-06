@@ -63,7 +63,7 @@ class RecursiveREPLAgent:
             limiter = BudgetLimiter(
                 tracker,
                 session_budget=session_budget,
-                action="error"  # Stop if budget exceeded
+                action="error",  # Stop if budget exceeded
             )
             self.agent = limiter(agent)
             self.sub_agent = limiter(sub_agent or agent)
@@ -107,9 +107,7 @@ class RecursiveREPLAgent:
         conversation_history = []
         for iteration in range(self.max_iterations):
             # Get agent's next action (code or final answer)
-            prompt = self._build_iteration_prompt(
-                system_prompt, conversation_history, iteration
-            )
+            prompt = self._build_iteration_prompt(system_prompt, conversation_history, iteration)
 
             response = await self.agent.process(Message(role="user", content=prompt))
             conversation_history.append(("assistant", response.content))
@@ -195,12 +193,8 @@ Think step-by-step and use code to solve the problem systematically.
             elif role == "execution":
                 prompt_parts.append(f"\nExecution: {content}")
 
-        prompt_parts.append(
-            f"\n\n=== Iteration {iteration + 1}/{self.max_iterations} ==="
-        )
-        prompt_parts.append(
-            "\nWhat's your next action? (Write Python code or output FINAL answer)"
-        )
+        prompt_parts.append(f"\n\n=== Iteration {iteration + 1}/{self.max_iterations} ===")
+        prompt_parts.append("\nWhat's your next action? (Write Python code or output FINAL answer)")
 
         return "".join(prompt_parts)
 
@@ -227,6 +221,7 @@ Think step-by-step and use code to solve the problem systematically.
                     # Loop is already running, we're inside an async context
                     # This shouldn't happen in REPL, but handle it
                     import nest_asyncio
+
                     nest_asyncio.apply()
                     return loop.run_until_complete(llm_query_async(prompt))
             except RuntimeError:
@@ -249,9 +244,7 @@ Think step-by-step and use code to solve the problem systematically.
         matches = re.findall(pattern, text, re.DOTALL)
         return matches
 
-    def _extract_final_answer(
-        self, text: str, namespace: dict[str, Any]
-    ) -> str | None:
+    def _extract_final_answer(self, text: str, namespace: dict[str, Any]) -> str | None:
         """
         Extract final answer if agent outputs FINAL() or FINAL_VAR().
 
@@ -282,13 +275,16 @@ async def main():
     # Simulate a long context (in production, this would be 1M+ tokens)
     # For this demo, we'll use a smaller example
 
-    long_context = """
+    long_context = (
+        """
     Document 1: The company was founded in 2015.
     Document 2: The CEO's name is Alice Johnson.
     Document 3: Revenue grew 300% in 2023.
     Document 4: The product launched in March 2024.
     Document 5: Headquarters moved to Seattle in 2022.
-    """ * 100  # Repeat to simulate longer context
+    """
+        * 100
+    )  # Repeat to simulate longer context
 
     query = """
     Based on the documents above, answer:
@@ -355,7 +351,7 @@ Let me now query the sub-LLM to summarize the findings.
         sub_agent=sub_agent,
         max_iterations=10,
         session_budget=5.00,  # $5 budget limit
-        cost_tracker=tracker
+        cost_tracker=tracker,
     )
 
     print("Processing long context with RLM pattern...")

@@ -135,7 +135,7 @@ class ChatAgent(Agent):
 
         # Default response
         return (
-            f"I understand you said: \"{content[:100]}{'...' if len(content) > 100 else ''}\"\n\n"
+            f'I understand you said: "{content[:100]}{"..." if len(content) > 100 else ""}"\n\n'
             "As a demonstration agent, I'm showcasing AG-UI's streaming capabilities. "
             "Notice how this response appears smoothly, token by token? That's the power "
             "of AG-UI protocol enabling real-time user experiences.\n\n"

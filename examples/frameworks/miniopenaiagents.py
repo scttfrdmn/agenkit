@@ -323,7 +323,9 @@ async def example_triage_handoff() -> None:
     print("   from openai_agents import Agent, Runner, handoff")
     print("   billing = Agent(name='billing', instructions='...')")
     print("   tech    = Agent(name='tech_support', instructions='...')")
-    print("   triage  = Agent(name='triage', instructions='...', handoffs=[handoff(billing), handoff(tech)])")
+    print(
+        "   triage  = Agent(name='triage', instructions='...', handoffs=[handoff(billing), handoff(tech)])"
+    )
     print("   result  = Runner.run_sync(triage, 'My invoice is wrong')")
     print()
     print("   # Agenkit equivalent:")

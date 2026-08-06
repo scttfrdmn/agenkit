@@ -161,9 +161,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         # Log special events
                         event_type = event.__class__.__name__
                         if event_type == "Interrupt":
-                            logger.info(
-                                f"Emitted interrupt: {event.interrupt_id} - {event.reason}"
-                            )
+                            logger.info(f"Emitted interrupt: {event.interrupt_id} - {event.reason}")
                         elif event_type == "TextMessageComplete":
                             approval_status = event.metadata.get("approval_status")
                             if approval_status:

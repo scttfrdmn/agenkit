@@ -1,0 +1,105 @@
+name: Janus Disk Cleanup
+
+# Scheduled, conservative disk-space maintenance for the self-hosted janus
+# runners (janus, janus-2, janus-5, etc. — Rocky 9 + Docker, per CLAUDE.md).
+#
+# Why this exists (#877): 7 independently reproduced CI failures across a
+# ~48h window (Docker base-image builds, Trivy vulnerability-DB download, a Go
+# link step) all failed with "no space left on device" / Errno 28 on janus.
+# No existing workflow or script did any disk cleanup or monitoring there —
+# `docker system prune`/build-cache pruning appeared nowhere in
+# .github/workflows/ before this file. This workflow is the ongoing
+# safeguard so the failure mode stops recurring; it does NOT and CANNOT free
+# the space that is full on janus *right now* — that needs a human with SSH
+# access to the runner to clear space manually. See the PR description.
+#
+# Deliberately conservative: each prune below is scoped so a runner mid-build
+# never has its active cache pulled out from under it — Docker is age-filtered
+# (only images/containers/cache >=48h old), uv is limited to dangling/
+# unreferenced entries by the tool itself, and Go's build cache is left alone
+# entirely (see the step below for why `go clean -cache` is unsafe here).
+# This intentionally does NOT do an indiscriminate `docker system prune -af`
+# with no filter.
+#
+# Runner split: this is schedule/workflow_dispatch only, never pull_request,
+# so running on [self-hosted, Linux] does not expose the LAN runner to
+# untrusted fork code (same guardrail documented in CLAUDE.md and encoded in
+# every other workflow's runs-on:).
+
+on:
+  schedule:
+    - cron: "15 5 * * *" # daily, 05:15 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: janus-disk-cleanup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    name: Disk cleanup (janus)
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 20
+    steps:
+      - name: Disk usage before cleanup
+        run: |
+          echo "### Disk usage BEFORE cleanup" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          df -h >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          df -h
+
+      # Age-filtered, not "prune everything": only removes unused images,
+      # stopped containers, dangling build cache, and unused networks older
+      # than 48h. A runner with an in-progress build has its active layers
+      # and cache well inside that window and is left alone.
+      - name: Docker prune (unused, >=48h old)
+        run: |
+          if command -v docker >/dev/null 2>&1; then
+            docker system prune -af --filter "until=48h" || true
+          else
+            echo "docker not found on this runner; skipping"
+          fi
+
+      # Go module/build cache: the security.yml govulncheck job and test.yml
+      # smoke-test job both run `go build`/`go test` directly on this runner
+      # (cache: false in setup-go, by design — see security.yml's comment on
+      # why setup-go's tar-restore was disabled), so GOCACHE/GOMODCACHE do
+      # accumulate on janus's local disk across every run. Deliberately NOT
+      # pruned here: `go clean -cache` has no age-limited flag — per `go help
+      # cache` it "deletes all cached data" unconditionally, which is exactly
+      # the "prune everything" behavior this workflow avoids for Docker, and
+      # would evict a concurrent job's in-progress build cache. Go already
+      # self-manages this ("the go command periodically deletes cached data
+      # that has not been used recently"), so no manual step is needed or
+      # safe to add here.
+
+      # uv cache: test.yml's smoke-test job runs `uv sync` directly on this
+      # runner. `uv cache prune` only removes dangling/unreferenced entries
+      # (not the whole cache), so it is safe next to a concurrent `uv sync`.
+      - name: uv cache prune
+        run: |
+          if command -v uv >/dev/null 2>&1; then
+            uv cache prune || true
+          else
+            echo "uv not found on this runner; skipping"
+          fi
+
+      # npm, cargo, and JVM/sbt/Maven build activity for the remaining
+      # languages run on GitHub-hosted runners in test.yml's `lang-smoke`
+      # matrix (ubuntu-latest — see the comment there: "the self-hosted
+      # janus runners may not have Rust/Zig/.NET/JVM installed"), so those
+      # caches do not plausibly accumulate on janus and are intentionally
+      # left out of this workflow.
+
+      - name: Disk usage after cleanup
+        if: always()
+        run: |
+          echo "### Disk usage AFTER cleanup" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          df -h >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          df -h

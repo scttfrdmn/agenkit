@@ -117,6 +117,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      # Lightweight monitoring signal (#877): this job builds Docker images
+      # on the self-hosted janus runner on every push/schedule run, so it's
+      # frequent enough that its log becomes a de facto disk-usage trend
+      # even without a human remembering to check. Runs early, before the
+      # build step below, so usage is captured even if that step then fails
+      # (e.g. from a full disk). The actual scheduled cleanup lives in
+      # janus-disk-cleanup.yml; this step only reports, never prunes.
+      - name: Report disk usage (monitoring signal)
+        run: df -h || true
+
       # The images label themselves from the root VERSION file via --build-arg rather
       # than a hardcoded literal, which would be a 20th version declaration for the
       # #842 guard to police. Both read "0.1.0" for 86 releases.

@@ -71,11 +71,12 @@ class SequentialAgent(Agent):
         """Return the agent's identifier."""
         return "SequentialAgent"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the combined capabilities of all agents in the pipeline."""
         cap_set = set()
         for agent in self._agents:
-            cap_set.update(agent.capabilities())
+            cap_set.update(agent.capabilities)
 
         capabilities = list(cap_set)
         capabilities.extend(["sequential", "pipeline"])

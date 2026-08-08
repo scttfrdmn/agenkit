@@ -122,6 +122,23 @@ LOCKFILES = [
         r'\[\[package\]\]\nname = "agenkit"\nversion = "([^"]+)"',
         "Rust core lock",
     ),
+    # uv.lock records the root project's own version, and uv self-heals it on the
+    # next resolve rather than failing like `cargo --locked` does. That made it the
+    # 20th declaration nobody propagated (#868), and the self-healing is precisely
+    # what hid it: `release.sh` bumped pyproject.toml, committed, and only *then*
+    # ran `make test`, whose `uv run pytest` rewrote this file after the commit. So
+    # the v0.89.0 tag shipped `version = "0.87.0"` here, `make check-version`
+    # truthfully reported "All 19 agree" because this was not one of the 19, and the
+    # working tree was left dirty — which would trip the next release's own
+    # uncommitted-changes preflight.
+    #
+    # Anchored on `source = { editable = "." }` so it can only ever match the
+    # workspace root, never a hypothetical published `agenkit` pulled in as a dep.
+    Declaration(
+        "uv.lock",
+        r'\[\[package\]\]\nname = "agenkit"\nversion = "([^"]+)"\nsource = \{ editable = "\." \}',
+        "Python lock (uv)",
+    ),
 ]
 
 # MCP protocol clientInfo.version — transmitted to remote peers on handshake.
@@ -179,6 +196,25 @@ MCP_CONSTANTS = [
 ]
 
 ALL_DECLARATIONS = MANIFESTS + MCP_CONSTANTS + LOCKFILES
+
+# A floor on the list's own size. `cmd_check` prints "All N declarations agree", and
+# nothing asserted N was the right N — so when uv.lock turned out to be a 20th
+# declaration (#868), the guard reported complete success while missing one. The
+# reassuring count was the tell. Deleting a Declaration is now a deliberate act that
+# requires lowering this number, not an invisible narrowing of the guard.
+#
+# This does not catch a *new* manifest nobody adds here; nothing short of enumerating
+# the filesystem can, and every non-example manifest in the tree was checked by hand
+# when this was written (the harnesses and @agenkit/wasm carry their own independent
+# versions and are deliberately excluded). Raise it when you add one.
+_EXPECTED_DECLARATIONS = 20
+if len(ALL_DECLARATIONS) < _EXPECTED_DECLARATIONS:
+    raise SystemExit(
+        f"scripts/version.py tracks {len(ALL_DECLARATIONS)} declarations but expected at "
+        f"least {_EXPECTED_DECLARATIONS}. A declaration was removed from the lists above; "
+        "if that was deliberate, lower _EXPECTED_DECLARATIONS in the same commit and say "
+        "why. Silently shrinking this list is how #868 happened."
+    )
 
 
 def read_version() -> str:

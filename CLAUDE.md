@@ -71,6 +71,10 @@ CI **is** enabled, but it is supplementary to local testing, not a substitute.
   SBOM generation + Sigstore signing run on release in
   `release-security.yml`. These only deliver value in CI (SARIF → Security tab,
   release attestation), so they live there by design.
+  **Verify release attestation per release, don't assume it** — this workflow
+  failed on every release from v0.86.0 to v0.89.0 while this paragraph asserted it
+  worked, because nothing read the release page back (#867):
+  `gh release view vX.Y.Z --json assets --jq '.assets[].name'` should list 6.
 - Dependabot (alerts + automated security fixes + grouped version updates) and
   GitHub secret scanning + push protection are enabled at the repo level.
 

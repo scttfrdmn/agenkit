@@ -16,6 +16,16 @@ on:
     tags: ["v*"]
   workflow_dispatch:
 
+# A release cuts a tag AND publishes a release, so both triggers fire and two runs
+# race for the same artifact names. Grouped rather than left to chance: previously
+# one of the pair was cancelled non-deterministically, which made the run history
+# read as flaky when it was in fact 100% broken (#867). Not cancel-in-progress —
+# the `release` run is the one that attaches assets and must not be killed by a
+# later push.
+concurrency:
+  group: release-security-${{ github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
 permissions:
   contents: write # attach assets to the release
   id-token: write # cosign keyless (OIDC)
@@ -33,15 +43,34 @@ jobs:
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.1.2
+        with:
+          # Pin the cosign BINARY, not just the action. The action was already
+          # pinned, but it installs "latest" by default — so cosign v3's flag
+          # deprecations changed this job's failure mode between June and August
+          # with no commit in between (#867). A signing tool that moves under you
+          # is a supply-chain surface, not a convenience.
+          cosign-release: "v3.1.2"
 
       - name: Resolve version
         id: ver
         run: |
+          set -euo pipefail
           if [ "${{ github.event_name }}" = "release" ]; then
-            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+            tag="${{ github.event.release.tag_name }}"
           else
-            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            tag="${GITHUB_REF_NAME}"
           fi
+          # On workflow_dispatch, GITHUB_REF_NAME is whatever ref was chosen — a
+          # branch name if someone dispatched from `main`. Every artifact name and the
+          # `gh release upload` target derive from this, so reject a non-tag here with
+          # a clear message rather than producing `agenkit-main.cdx.json` and failing
+          # obscurely six steps later.
+          if ! printf '%s' "$tag" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "::error::'$tag' is not a vX.Y.Z tag. Dispatch this workflow against a"
+            echo "::error::release tag, not a branch."
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - name: Generate SBOMs (CycloneDX + SPDX)
         run: |
@@ -59,15 +88,61 @@ jobs:
         env:
           COSIGN_YES: "true"
         run: |
+          set -euo pipefail
           for f in \
             "agenkit-${{ steps.ver.outputs.tag }}.cdx.json" \
             "agenkit-${{ steps.ver.outputs.tag }}.spdx.json" \
             "agenkit-${{ steps.ver.outputs.tag }}.sha256"; do
+            # --bundle, NOT --output-signature/--output-certificate. Those two are
+            # deprecated in cosign v3 and, worse, are *ignored* under the new bundle
+            # format, after which cosign tries to write a bundle to the empty string:
+            #
+            #   Error: must specify --bundle with --new-bundle-format
+            #
+            # (`--use-signing-config` defaults to true and its own help text says it
+            # "Must provide --bundle".) That is why v0.86.0 and v0.87.0 failed. The
+            # bundle is a single file carrying signature + certificate + Rekor proof,
+            # so it replaces both outputs rather than sitting alongside them.
+            #
+            # --oidc-provider=github-actions is explicit on purpose: with it unset
+            # cosign tries every ambient provider in turn (spiffe, google,
+            # buildkite-agent, filesystem), and one of those returned a non-JSON body
+            # on the v0.89.0 run — "invalid character 'u' looking for beginning of
+            # value", i.e. it parsed something like `unauthorized` as JSON. Naming the
+            # provider means a failure here is a real GitHub OIDC failure with a real
+            # message, not a misparse from a provider that was never relevant.
             cosign sign-blob --yes \
-              --output-signature "${f}.sig" \
-              --output-certificate "${f}.pem" \
+              --oidc-provider=github-actions \
+              --bundle "${f}.sigstore.json" \
               "${f}"
           done
+
+      # Prove the signatures are usable rather than assuming a zero exit means
+      # verifiable output. This is the step whose absence let #867 run six times:
+      # every previous failure was in signing, but nothing downstream ever asserted
+      # the artifacts existed or verified, and the release page was empty for three
+      # releases without anyone noticing.
+      - name: Verify the signatures we just made
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          for f in \
+            "agenkit-${TAG}.cdx.json" \
+            "agenkit-${TAG}.spdx.json" \
+            "agenkit-${TAG}.sha256"; do
+            test -s "${f}.sigstore.json" \
+              || { echo "::error::${f}.sigstore.json is missing or empty"; exit 1; }
+            # Identity is pinned to this workflow at this ref, so a bundle signed by
+            # some other workflow (or a fork) does not satisfy the check.
+            cosign verify-blob \
+              --bundle "${f}.sigstore.json" \
+              --certificate-identity-regexp \
+                "^https://github.com/${GITHUB_REPOSITORY}/.github/workflows/release-security.yml@" \
+              --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+              "${f}"
+          done
+          echo "All three artifacts signed and verified."
 
       - name: Upload SBOMs + signatures as workflow artifacts
         uses: actions/upload-artifact@v7
@@ -77,19 +152,49 @@ jobs:
             agenkit-${{ steps.ver.outputs.tag }}.*
           retention-days: 90
 
+      # Attach on `release` (the event that has a release to attach to) and also when
+      # dispatched against an existing tag, so a botched release can be repaired
+      # without cutting a new version — the recovery path for the three releases that
+      # shipped with no assets at all (#867).
       - name: Attach to GitHub release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
         run: |
-          gh release upload "${{ steps.ver.outputs.tag }}" \
-            agenkit-${{ steps.ver.outputs.tag }}.cdx.json \
-            agenkit-${{ steps.ver.outputs.tag }}.spdx.json \
-            agenkit-${{ steps.ver.outputs.tag }}.sha256 \
-            agenkit-${{ steps.ver.outputs.tag }}.cdx.json.sig \
-            agenkit-${{ steps.ver.outputs.tag }}.cdx.json.pem \
-            agenkit-${{ steps.ver.outputs.tag }}.spdx.json.sig \
-            agenkit-${{ steps.ver.outputs.tag }}.spdx.json.pem \
-            agenkit-${{ steps.ver.outputs.tag }}.sha256.sig \
-            agenkit-${{ steps.ver.outputs.tag }}.sha256.pem \
+          set -euo pipefail
+          # .sig/.pem are gone: the .sigstore.json bundle contains the signature, the
+          # certificate, and the transparency-log proof in one file.
+          gh release upload "${TAG}" \
+            "agenkit-${TAG}.cdx.json" \
+            "agenkit-${TAG}.spdx.json" \
+            "agenkit-${TAG}.sha256" \
+            "agenkit-${TAG}.cdx.json.sigstore.json" \
+            "agenkit-${TAG}.spdx.json.sigstore.json" \
+            "agenkit-${TAG}.sha256.sigstore.json" \
             --clobber
+
+      # The assertion that would have caught #867 on the first release instead of the
+      # sixth: read back what the release actually has. Signing exiting 0 is not
+      # evidence; an empty release page was the ground truth for v0.86.0, v0.87.0 and
+      # v0.89.0 while this workflow was believed to provide attestation.
+      - name: Assert the release really has its assets
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" --json assets --jq '.assets[].name' | sort > /tmp/actual.txt
+          printf '%s\n' \
+            "agenkit-${TAG}.cdx.json" \
+            "agenkit-${TAG}.cdx.json.sigstore.json" \
+            "agenkit-${TAG}.sha256" \
+            "agenkit-${TAG}.sha256.sigstore.json" \
+            "agenkit-${TAG}.spdx.json" \
+            "agenkit-${TAG}.spdx.json.sigstore.json" | sort > /tmp/expected.txt
+          if ! diff -u /tmp/expected.txt /tmp/actual.txt; then
+            echo "::error::release $TAG is missing expected SBOM/signature assets"
+            exit 1
+          fi
+          echo "Release $TAG has all 6 expected assets."

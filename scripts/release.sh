@@ -150,6 +150,35 @@ fi
 echo "   ✓ All tests passed"
 echo ""
 
+# 3b. The suite must not have modified any tracked file.
+#
+# `make test` runs `uv run pytest`, and uv self-heals uv.lock on resolve. Because
+# the version bump was committed in step 2 and the suite runs here in step 3, a
+# generated file rewritten by the suite lands in the working tree *after* the
+# commit — so the tag ships the pre-suite content and the tree is left dirty.
+#
+# That is exactly how the v0.89.0 tag came to contain `version = "0.87.0"` in
+# uv.lock while VERSION said 0.89.0, and why `make check-version` could truthfully
+# report success (#868). uv.lock is now a tracked declaration in scripts/version.py,
+# so the specific case is fixed at the source — but the ordering hazard is general,
+# and any future generated artifact would repeat it silently. This makes it loud.
+#
+# Deliberately placed after the gate, not before: a file the suite regenerates is
+# only detectable once the suite has run.
+if ! git diff-index --quiet HEAD --; then
+    echo "❌ Release aborted: the test suite modified tracked files."
+    git status --short
+    echo ""
+    echo "   These changes are NOT in the tag, because the version-bump commit was"
+    echo "   made before the suite ran. A generated file (uv.lock, a lockfile, a"
+    echo "   fixture) is regenerated during testing and needs to be either committed"
+    echo "   before release or propagated by scripts/version.py — see #868."
+    echo ""
+    git reset --soft HEAD~1
+    echo "   The version-bump commit was undone; nothing was tagged or pushed."
+    exit 1
+fi
+
 # 4. Create git tag
 echo "🏷️  Creating git tag..."
 echo ""

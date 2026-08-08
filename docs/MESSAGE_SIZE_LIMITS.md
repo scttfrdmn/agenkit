@@ -969,7 +969,7 @@ For most use cases (messages < 1MB), validation overhead is negligible.
 ### Optimization Strategies
 
 1. **Lazy validation**: Only validate when needed (e.g., before serialization/transport)
-2. **Cached results**: Cache validation results for immutable messages
+2. **Cached results**: Cache validation results by content/metadata snapshot, not by object identity - `Message` is only shallow-frozen (field reassignment is blocked, but `metadata` is a mutable `dict` that patterns may modify in place), so a cache keyed on "this message object hasn't changed" can go stale
 3. **Streaming validation**: Validate during construction for early failure
 4. **Skip trusted sources**: Allow bypassing validation for trusted internal messages
 

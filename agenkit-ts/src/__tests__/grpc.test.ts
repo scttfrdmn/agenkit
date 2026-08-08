@@ -21,10 +21,17 @@ const createMockAgent = () => ({
   },
 });
 
+// None of the tests below ever bind a real listening socket for this
+// address — the client is either never connected, or is expected to fail
+// because no server is running. Port 0 keeps that intent honest (no real
+// port is ever claimed) instead of hardcoding an arbitrary literal that
+// reads as if it mattered.
+const UNUSED_ADDRESS = 'localhost:0';
+
 describe('GrpcAgent', () => {
   it('should create gRPC agent with default config', () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
     });
 
     expect(agent.name).toBe('test-agent');
@@ -32,7 +39,7 @@ describe('GrpcAgent', () => {
 
   it('should create gRPC agent with custom timeout', () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
       timeout: 5000,
     });
 
@@ -41,7 +48,7 @@ describe('GrpcAgent', () => {
 
   it('should create gRPC agent with TLS disabled', () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
       useTLS: false,
     });
 
@@ -50,7 +57,7 @@ describe('GrpcAgent', () => {
 
   it('should create gRPC agent with agent name for routing', () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
       agentName: 'my-agent',
     });
 
@@ -59,7 +66,7 @@ describe('GrpcAgent', () => {
 
   it('should handle connection lifecycle', async () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
     });
 
     // Should be able to connect
@@ -71,7 +78,7 @@ describe('GrpcAgent', () => {
 
   it('should auto-connect if not connected', async () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
     });
 
     // Process should auto-connect (will fail due to no server, but should not throw connection error)
@@ -85,7 +92,7 @@ describe('GrpcAgent', () => {
 
   it('should generate unique request IDs', async () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
     });
 
     const id1 = (agent as any).generateId();
@@ -97,7 +104,7 @@ describe('GrpcAgent', () => {
 
   it('should convert message to proto format', () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
     });
 
     const message = createMessage('user', 'Hello');
@@ -111,7 +118,7 @@ describe('GrpcAgent', () => {
 
   it('should convert proto to message format', () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
     });
 
     const proto = {
@@ -129,7 +136,7 @@ describe('GrpcAgent', () => {
 
   it('should handle empty metadata', () => {
     const agent = new GrpcAgent('test-agent', {
-      address: 'localhost:50051',
+      address: UNUSED_ADDRESS,
     });
 
     const proto = {
@@ -148,7 +155,7 @@ describe('GrpcServer', () => {
   it('should create gRPC server with agent', () => {
     const mockAgent = createMockAgent();
     const server = new GrpcServer(mockAgent, {
-      address: '0.0.0.0:50051',
+      address: '0.0.0.0:0',
     });
 
     expect(server).toBeDefined();
@@ -157,7 +164,7 @@ describe('GrpcServer', () => {
   it('should create gRPC server with TLS disabled', () => {
     const mockAgent = createMockAgent();
     const server = new GrpcServer(mockAgent, {
-      address: '0.0.0.0:50051',
+      address: '0.0.0.0:0',
       useTLS: false,
     });
 
@@ -166,8 +173,11 @@ describe('GrpcServer', () => {
 
   it('should start and stop server', async () => {
     const mockAgent = createMockAgent();
+    // Bind an ephemeral port (:0) and let the OS pick a free one. Hardcoded
+    // ports collide across parallel CI runs/workers (see #881, mirroring the
+    // Go fix in #621), so every server in this file uses dynamic allocation.
     const server = new GrpcServer(mockAgent, {
-      address: '0.0.0.0:50052', // Use different port to avoid conflicts
+      address: '127.0.0.1:0',
     });
 
     // Start server
@@ -180,14 +190,14 @@ describe('GrpcServer', () => {
   it('should handle process requests', async () => {
     const mockAgent = createMockAgent();
     const server = new GrpcServer(mockAgent, {
-      address: '0.0.0.0:50055',
+      address: '127.0.0.1:0',
     });
 
     await server.start();
 
-    // Create client to test
+    // Create client to test, using the port the OS actually assigned.
     const client = new GrpcAgent('test-client', {
-      address: 'localhost:50055',
+      address: server.address(),
     });
 
     try {
@@ -203,13 +213,13 @@ describe('GrpcServer', () => {
   it('should handle streaming requests', async () => {
     const mockAgent = createMockAgent();
     const server = new GrpcServer(mockAgent, {
-      address: '0.0.0.0:50054',
+      address: '127.0.0.1:0',
     });
 
     await server.start();
 
     const client = new GrpcAgent('test-client', {
-      address: 'localhost:50054',
+      address: server.address(),
     });
 
     try {
@@ -235,13 +245,13 @@ describe('GrpcServer', () => {
     };
 
     const server = new GrpcServer(errorAgent, {
-      address: '0.0.0.0:50055',
+      address: '127.0.0.1:0',
     });
 
     await server.start();
 
     const client = new GrpcAgent('test-client', {
-      address: 'localhost:50055',
+      address: server.address(),
     });
 
     try {
@@ -266,13 +276,13 @@ describe('GrpcServer', () => {
     };
 
     const server = new GrpcServer(nonStreamingAgent, {
-      address: '0.0.0.0:50056',
+      address: '127.0.0.1:0',
     });
 
     await server.start();
 
     const client = new GrpcAgent('test-client', {
-      address: 'localhost:50056',
+      address: server.address(),
     });
 
     try {
@@ -293,7 +303,7 @@ describe('GrpcServer', () => {
   it('should convert message formats correctly', () => {
     const mockAgent = createMockAgent();
     const server = new GrpcServer(mockAgent, {
-      address: '0.0.0.0:50051',
+      address: '0.0.0.0:0',
     });
 
     const message = createMessage('user', 'Test');

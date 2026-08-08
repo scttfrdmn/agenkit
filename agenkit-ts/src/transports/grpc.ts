@@ -371,6 +371,7 @@ export class GrpcServer {
   private server: grpc.Server;
   private proto: GrpcProtoPackage;
   private packageDefinition: protoLoader.PackageDefinition;
+  private boundPort: number | null = null;
 
   constructor(
     private agent: Agent,
@@ -415,6 +416,7 @@ export class GrpcServer {
           return;
         }
 
+        this.boundPort = port;
         this.server.start();
         resolve();
       });
@@ -430,6 +432,23 @@ export class GrpcServer {
         resolve();
       });
     });
+  }
+
+  /**
+   * The actual address the server is bound to, e.g. "127.0.0.1:54321".
+   *
+   * When `config.address` requests an ephemeral port (port `0`), the OS
+   * assigns the real port only once `bindAsync`'s callback fires, so this
+   * must be read back after `start()` resolves rather than assumed from
+   * the configured address.
+   */
+  address(): string {
+    if (this.boundPort === null) {
+      throw new Error('GrpcServer.address() called before start(); no port has been bound yet');
+    }
+
+    const host = this.config.address.slice(0, this.config.address.lastIndexOf(':'));
+    return `${host}:${this.boundPort}`;
   }
 
   /**

@@ -21,6 +21,25 @@ jobs:
     # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
     # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs (#892). This workflow had no
+    # concurrency block before this change, so the pull_request group key is
+    # made unique per run (via run_id) rather than per-PR — deliberately
+    # preserving "no dedup/cancel behavior on PRs", since adding that now
+    # would be an unrelated behavior change.
+    #
+    # Single outer format() whose ternary ARGUMENT has only plain-value
+    # branches (a number or a literal string — never a nested format() call
+    # on either side) — that is the one shape confirmed safe across every job
+    # in this incident. A bare `cond && format(...) || format(...)`, or even
+    # a ternary with one nested format() call as a branch, silently killed 5
+    # of 7 self-hosted jobs elsewhere on this same PR with no error surfaced
+    # anywhere (#894 postmortem). This job's OLD pull_request branch used
+    # run_id specifically so every PR run's key is unique; preserved here by
+    # putting run_id in its own format() argument slot instead of building
+    # the whole per-branch string inside the ternary.
+    concurrency:
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && 'pr-run' || 'push', github.event_name == 'pull_request' && github.run_id || 'parity-check') }}
+      cancel-in-progress: false
     timeout-minutes: 10
 
     steps:

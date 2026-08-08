@@ -1,6 +1,6 @@
 # Agenkit Agent Patterns Guide
 
-A comprehensive guide to the 11 agent patterns in Agenkit Python.
+A comprehensive guide to the 18 agent patterns in Agenkit Python.
 
 ## Table of Contents
 
@@ -21,6 +21,14 @@ A comprehensive guide to the 11 agent patterns in Agenkit Python.
   - [Autonomous](#autonomous)
   - [Multiagent](#multiagent)
   - [Memory Hierarchy](#memory-hierarchy)
+- [Reliability Patterns](#reliability-patterns)
+  - [Fallback](#fallback)
+  - [Supervisor](#supervisor)
+  - [Human in Loop](#human-in-loop)
+  - [Router](#router)
+  - [Orchestration](#orchestration)
+  - [Reasoning with Tools](#reasoning-with-tools)
+  - [Collaborative](#collaborative)
 - [Pattern Selection Guide](#pattern-selection-guide)
 - [Composing Patterns](#composing-patterns)
 - [Performance Considerations](#performance-considerations)
@@ -29,7 +37,7 @@ A comprehensive guide to the 11 agent patterns in Agenkit Python.
 
 ## Overview
 
-Agent patterns are reusable architectural templates that solve common problems in AI agent design. Agenkit provides 11 production-ready patterns that you can use immediately or combine for complex workflows.
+Agent patterns are reusable architectural templates that solve common problems in AI agent design. Agenkit provides 18 production-ready patterns that you can use immediately or combine for complex workflows.
 
 ### Why Patterns Matter
 
@@ -45,6 +53,7 @@ Agent patterns are reusable architectural templates that solve common problems i
 - **Enhancement** (Reflection, ReAct, Planning) - Improve agent quality
 - **Specialized** (Task, Conversational, Agents as Tools) - Domain-specific patterns
 - **Advanced** (Autonomous, Multiagent, Memory Hierarchy) - Complex behaviors
+- **Reliability** (Fallback, Supervisor, Human in Loop, Router, Orchestration, Reasoning with Tools, Collaborative) - Error recovery, oversight, and complex coordination
 
 ### Core Concepts
 

@@ -93,9 +93,11 @@ def __(agenkit):
     class EchoAgent(Agent):
         """Simple agent that echoes messages back."""
 
+        @property
         def name(self) -> str:
             return "echo-agent"
 
+        @property
         def capabilities(self) -> list[str]:
             return ["echo", "simple"]
 
@@ -107,8 +109,8 @@ def __(agenkit):
             return response
 
     echo_agent = EchoAgent()
-    print(f"✅ Created agent: {echo_agent.name()}")
-    print(f"   Capabilities: {echo_agent.capabilities()}")
+    print(f"✅ Created agent: {echo_agent.name}")
+    print(f"   Capabilities: {echo_agent.capabilities}")
     return Agent, EchoAgent, Message, echo_agent
 
 
@@ -153,9 +155,11 @@ def __(Agent, Message):
     class WordCounterAgent(Agent):
         """Agent that counts words in a message."""
 
+        @property
         def name(self) -> str:
             return "word-counter"
 
+        @property
         def capabilities(self) -> list[str]:
             return ["word-count", "analysis"]
 
@@ -172,7 +176,7 @@ def __(Agent, Message):
             return response
 
     counter_agent = WordCounterAgent()
-    print(f"✅ Created agent: {counter_agent.name()}")
+    print(f"✅ Created agent: {counter_agent.name}")
     return WordCounterAgent, counter_agent
 
 
@@ -183,7 +187,7 @@ def __(EchoAgent, WordCounterAgent):
     # Create pipeline: Echo first, then count words
     pipeline = SequentialAgent([EchoAgent(), WordCounterAgent()])
 
-    print(f"✅ Created pipeline: {pipeline.name()}")
+    print(f"✅ Created pipeline: {pipeline.name}")
     print(f"   Agents in pipeline: {len(pipeline.agents)}")
     return SequentialAgent, pipeline
 
@@ -363,7 +367,7 @@ async def __(EchoAgent, Message):
         print("✅ Test 2 passed: Correct role")
 
         # Test 3: Agent name
-        assert agent.name() == "echo-agent"
+        assert agent.name == "echo-agent"
         print("✅ Test 3 passed: Correct name")
 
         return "All tests passed! 🎉"

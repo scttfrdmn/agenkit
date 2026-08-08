@@ -37,7 +37,7 @@ pip install -e ".[dev]"
 
 ### 1. Messages
 
-Messages are immutable data containers for agent communication. They use a flexible `content` field that can hold any type.
+Messages are frozen data containers for agent communication: no field can be reassigned after construction. This immutability is shallow, not deep - `metadata` is a plain mutable `dict`, and several first-party patterns mutate it in place, so don't assume a `Message` you're holding can't change out from under you. They use a flexible `content` field that can hold any type.
 
 ```python
 from agenkit import Message
@@ -100,7 +100,7 @@ Patterns compose agents into workflows. Three core patterns:
 
 ### Message
 
-**Immutable data container for agent communication.**
+**Frozen (shallow-immutable) data container for agent communication.** Field reassignment is blocked, but `metadata` (and any mutable `content`) can still be mutated in place - see the class docstring in `agenkit/interfaces.py` for details.
 
 ```python
 @dataclass(frozen=True)
@@ -121,7 +121,7 @@ class Message:
 #### Validation
 
 - `role` cannot be empty (raises `ValueError`)
-- Messages are immutable (frozen dataclass)
+- Messages are frozen (field reassignment raises `FrozenInstanceError`), but this is shallow: `metadata` remains a mutable `dict` that can be modified in place
 
 #### Examples
 

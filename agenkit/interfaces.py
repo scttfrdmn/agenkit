@@ -176,7 +176,29 @@ class Message:
     - content: Flexible type - str, dict, list, or any serializable data
     - metadata: Extension point for framework-specific data
     - timestamp: UTC timestamp for ordering and debugging
-    - frozen: Immutable for thread safety and caching
+    - frozen: Reassigning a field (e.g. ``msg.content = x`` or
+      ``msg.metadata = x``) raises ``FrozenInstanceError``
+
+    Immutability here is shallow, not deep. ``frozen=True`` only blocks
+    rebinding a field to a different object; it does not stop mutation of
+    the object a field already points to. ``metadata`` is an ordinary
+    mutable ``dict``, and several first-party patterns (sequential,
+    fallback, parallel, router, collaborative, supervisor, human_in_loop,
+    orchestration) deliberately mutate ``message.metadata`` in place rather
+    than constructing a new ``Message`` - this is expected, supported usage,
+    not a workaround. ``content`` is typed ``Any``; if you pass it a mutable
+    object (list, dict, etc.), the same caveat applies to it.
+
+    Practical implications for API consumers:
+    - Holding a reference to a ``Message`` does not guarantee its
+      ``metadata``/``content`` won't change out from under you - the
+      "frozen" guarantee is limited to field reassignment, not the
+      transitive contents of mutable fields.
+    - Do not rely on this class for caching keys or set/dict membership:
+      because ``metadata`` is an unhashable ``dict``, ``hash(message)``
+      raises ``TypeError`` at call time, even though ``@dataclass(frozen=True)``
+      would otherwise auto-generate ``__hash__``. Two ``Message`` instances
+      with equal field values are ``==``, but neither is hashable.
 
     Usage:
         >>> msg = Message(role="user", content="Hello, agent!")

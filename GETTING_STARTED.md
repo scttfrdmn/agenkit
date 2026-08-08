@@ -19,7 +19,10 @@ Welcome to Agenkit! This guide will help you get up and running with the toolkit
 
 Agenkit is a production-ready toolkit for building distributed AI agent systems with:
 
-- **Cross-language support** - Python, TypeScript, Go, C++, Rust with 100% feature parity
+- **Cross-language support** - Nine language implementations (Python, Go, TypeScript,
+  Rust, C++, Zig, C#, Java, Scala) sharing the same core patterns, with varying
+  completeness for advanced subsystems — see [COMPATIBILITY.md](COMPATIBILITY.md) for
+  current per-language details
 - **Multiple transports** - HTTP (HTTP/1.1, HTTP/2, HTTP/3), gRPC, WebSocket
 - **Production middleware** - Circuit breaker, retry, timeout, rate limiting, caching, batching
 - **Autonomous agent building blocks** - Memory, budget tracking, checkpointing, safety, evaluation
@@ -42,7 +45,7 @@ cd agenkit
 pip install -e ".[dev]"
 ```
 
-**Requirements:** Python 3.10+
+**Requirements:** Python 3.12+ (`requires-python = ">=3.12"` in `pyproject.toml`)
 
 ### Go
 
@@ -68,7 +71,7 @@ npm install @agenkit/core
 yarn add @agenkit/core
 ```
 
-**Requirements:** Node.js 18+ or TypeScript 5.0+
+**Requirements:** Node.js 18+ (`"engines": {"node": ">=18.0.0"}` in `agenkit-ts/package.json`)
 
 ### C++
 
@@ -81,7 +84,9 @@ cmake ..
 make
 ```
 
-**Requirements:** C++17 compiler, CMake 3.15+, libcurl, nlohmann/json
+**Requirements:** C++17 compiler, CMake 3.16+ (`cmake_minimum_required(VERSION 3.16)` in
+`agenkit-cpp/CMakeLists.txt`), nlohmann/json, cpp-httplib (fetched automatically via CMake
+`FetchContent` if not found)
 
 ### Rust
 
@@ -95,7 +100,9 @@ cd agenkit/agenkit-rust
 cargo build --release
 ```
 
-**Requirements:** Rust 1.70+
+**Requirements:** Rust stable (`agenkit-rust/Cargo.toml` does not pin a `rust-version`/MSRV
+field, so "stable at release time" is the only documented floor — see COMPATIBILITY.md);
+edition 2021
 
 ## Your First Agent
 

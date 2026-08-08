@@ -8,6 +8,7 @@ Tests verify:
 """
 
 from datetime import datetime
+from typing import Any
 
 import pytest
 
@@ -211,8 +212,8 @@ class MockTool(Tool):
     def description(self) -> str:
         return "A mock tool for testing"
 
-    async def execute(self, **kwargs) -> ToolResult:
-        return ToolResult(success=True, data=kwargs)
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        return ToolResult(success=True, data=params)
 
 
 @pytest.mark.asyncio
@@ -223,7 +224,7 @@ async def test_tool_basic():
     assert tool.name == "mock_tool"
     assert tool.description == "A mock tool for testing"
 
-    result = await tool.execute(arg1="value1", arg2=42)
+    result = await tool.execute({"arg1": "value1", "arg2": 42})
     assert result.success is True
     assert result.data == {"arg1": "value1", "arg2": 42}
 
@@ -259,8 +260,8 @@ class ToolWithSchema(Tool):
             "required": ["query"],
         }
 
-    async def execute(self, **kwargs) -> ToolResult:
-        return ToolResult(success=True, data=kwargs)
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        return ToolResult(success=True, data=params)
 
 
 @pytest.mark.asyncio

@@ -26,6 +26,7 @@ class MockAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return self._capabilities
 
@@ -58,6 +59,7 @@ class FailingAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -118,7 +120,7 @@ def test_sequential_capabilities_combined():
     agent2 = MockAgent("agent2", capabilities=["write", "format"])
 
     seq = SequentialAgent(agents=[agent1, agent2])
-    caps = seq.capabilities()
+    caps = seq.capabilities
 
     # Should have all unique capabilities plus sequential/pipeline
     assert "search" in caps
@@ -135,7 +137,7 @@ def test_sequential_capabilities_deduplication():
     agent2 = MockAgent("agent2", capabilities=["search", "write"])
 
     seq = SequentialAgent(agents=[agent1, agent2])
-    caps = seq.capabilities()
+    caps = seq.capabilities
 
     # "search" should appear only once
     assert caps.count("search") == 1
@@ -373,6 +375,7 @@ async def test_sequential_metadata_initialization():
         def name(self):
             return "minimal"
 
+        @property
         def capabilities(self):
             return []
 

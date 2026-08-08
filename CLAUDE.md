@@ -57,15 +57,26 @@ make security     # Local security scan (trivy/govulncheck/semgrep) — optional
 
 #### CI policy (updated)
 CI **is** enabled, but it is supplementary to local testing, not a substitute.
-- **Self-hosted runners**: functional CI + security scans run on the
-  `[self-hosted, Linux]` runners (janus.local, Rocky 9 — 6 runners) for
-  `push`/`schedule`. Linux is required because container jobs (Semgrep, Trivy,
-  CodeQL build) only run on Linux runners — the macOS `orion` runners cannot
-  run `container:` jobs and serve as overflow for non-container work only.
+- **Self-hosted runners are suspended for now (#892, #374)**: `push`/`schedule`
+  CI on `test.yml`/`lint.yml`/`security.yml`/`parity-validation.yml` routes
+  unconditionally to `ubuntu-latest`, same as `pull_request`. Reason: a 9-PR
+  merge burst fired ~46 push-triggered runs in 30 minutes against
+  `[self-hosted, Linux]` (janus.local, Rocky 9 — 6 runner *slots* sharing one
+  disk), which exhausted it (`no space left on device` on Trivy/Docker/Go
+  jobs); the concurrency cap added in #894 prevents future bursts from piling
+  up, but a single ordinary push still failed against the already-full disk
+  afterward, until a manual `docker system prune` recovered ~32GB. Each job's
+  `runs-on:` has a comment with the exact self-hosted expression to restore;
+  #374 is where the "should push go back to self-hosted" topology question
+  gets decided (measured tradeoff: janus ran the same job ~2.5x faster than
+  `ubuntu-latest`, so this isn't cost-free — see #892 for the timing data).
+  `janus-disk-cleanup.yml`'s daily cron is likewise suspended (kept as
+  `workflow_dispatch`-only) since nothing runs on janus to accumulate disk
+  usage in the meantime.
   **Pull requests (incl. forks) run on GitHub-hosted runners** so untrusted
-  code never executes on the LAN runners — this split is encoded in every
-  workflow's `runs-on:` (`pull_request ? ubuntu-latest : [self-hosted, Linux]`)
-  and must be preserved.
+  code never executes on the LAN runners when self-hosted routing is
+  eventually restored — this split must be preserved in each job's `runs-on:`
+  comment even while the self-hosted branch is unused.
 - **Security scanning is the sanctioned exception** to "minimal CI": CodeQL,
   Trivy, govulncheck, and Semgrep run in `.github/workflows/security.yml`, and
   SBOM generation + Sigstore signing run on release in

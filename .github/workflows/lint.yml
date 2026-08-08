@@ -14,9 +14,10 @@ jobs:
   # Basic formatting checks only - detailed linting runs locally
   format-check:
     name: Format Check (Python ruff format + Go fmt)
-    # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
-    # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374) — see
+    # test.yml for why. To restore: runs-on: ${{ github.event_name ==
+    # 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # Queue behind this job's own prior push runs — see test.yml's matching
     # block for the full root-cause writeup: the pull_request group key here
     # must never collide with the workflow-level `<workflow>-<pr#>` key above,
@@ -114,7 +115,10 @@ jobs:
   # drift, which is the whole failure mode here.
   docker-build:
     name: Docker Base Images (build only)
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374) — see
+    # test.yml for why. To restore: runs-on: ${{ github.event_name ==
+    # 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # Queue behind this job's own prior push runs (#892) — matrix.image is
     # included on BOTH sides so the go/python legs stay independent lanes on
     # push (parallel, as today) and don't cancel each other on pull_request

@@ -27,8 +27,14 @@ name: Janus Disk Cleanup
 # every other workflow's runs-on:).
 
 on:
-  schedule:
-    - cron: "15 5 * * *" # daily, 05:15 UTC
+  # Scheduled trigger suspended (#892, #374): push CI no longer routes to
+  # janus (see the runs-on: comments in test.yml/lint.yml/security.yml/
+  # parity-validation.yml), so nothing accumulates disk usage there for this
+  # to clean up daily. workflow_dispatch stays available for an ad-hoc run
+  # (e.g. before restoring self-hosted routing) or if janus picks up other
+  # work in the meantime. To restore the schedule:
+  #   schedule:
+  #     - cron: "15 5 * * *" # daily, 05:15 UTC
   workflow_dispatch:
 
 concurrency:

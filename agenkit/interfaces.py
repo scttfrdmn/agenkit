@@ -277,7 +277,26 @@ class ToolResult:
     - data: The actual result (any type)
     - error: Optional error message if success=False
     - metadata: Extension point for execution details (timing, etc.)
-    - frozen: Immutable for thread safety
+    - frozen: Reassigning a field (e.g. ``result.data = x`` or
+      ``result.metadata = x``) raises ``FrozenInstanceError``
+
+    Immutability here is shallow, not deep. ``frozen=True`` only blocks
+    rebinding a field to a different object; it does not stop mutation of
+    the object a field already points to. ``metadata`` is an ordinary
+    mutable ``dict``, and ``data`` is typed ``Any`` - if a tool returns a
+    mutable object (list, dict, etc.) as ``data``, the same caveat applies
+    to it.
+
+    Practical implications for API consumers:
+    - Holding a reference to a ``ToolResult`` does not guarantee its
+      ``metadata``/``data`` won't change out from under you - the
+      "frozen" guarantee is limited to field reassignment, not the
+      transitive contents of mutable fields.
+    - Do not rely on this class for caching keys or set/dict membership:
+      because ``metadata`` is an unhashable ``dict``, ``hash(result)``
+      raises ``TypeError`` at call time, even though ``@dataclass(frozen=True)``
+      would otherwise auto-generate ``__hash__``. Two ``ToolResult`` instances
+      with equal field values are ``==``, but neither is hashable.
 
     Usage:
         >>> result = ToolResult(success=True, data={"answer": 42})

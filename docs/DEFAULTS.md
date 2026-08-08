@@ -6,14 +6,57 @@ this table to ensure consistency.
 
 ## Default Values by Setting
 
-| Setting | Python | Go | TypeScript | Rust | C++ | Zig |
-|---|---|---|---|---|---|---|
-| `max_history` | `10` | `10` | `10` | `10` | `10` | `10` |
-| `max_steps` | `10` | `10` | `10` | `10` | `10` | `10` |
-| `verbose` | `False` | `false` | `false` | `false` | `false` | `false` |
-| `include_system` | `True` | `true` | `true` | `true` | `true` | `true` |
-| `checkpoint max_depth` | `10` | `10` | `10` | `10` | `10` | `10` |
-| `default_key` / `route` | `None` | `nil` | `undefined` | `None` | `nullptr` | `null` |
+| Setting | Python | Go | TypeScript | Rust | C++ | Zig | C# | Java | Scala |
+|---|---|---|---|---|---|---|---|---|---|
+| `max_history` | `10` | `10` | `10` | `10` | `10` | `10` | `10` | `10` | `100` |
+| `max_steps` | `10` | `10` | `10` | `10` | `10` | `10` | `10` | `10` | `10` |
+| `verbose` | `False` | `false` | `false` | `false` | `false` | `false` | `false` | `false` | not implemented |
+| `include_system` | `True` | `true` | `true` | `true` | `true` | `true` | not implemented | not implemented | not implemented |
+| `checkpoint max_depth` | `10` | `10` | `10` | `10` | `10` | `10` | not implemented | not implemented | not implemented |
+| `default_key` / `route` | `None` | `nil` | `undefined` | `None` | `nullptr` | `null` | `null` | required (no default) | `None` |
+
+### Notes on the C#/Java/Scala columns
+
+- **`max_history` (Scala outlier — `100`, not `10`):** Scala's
+  `ConversationalAgent(name, llm, systemPrompt, maxHistorySize = 100)` (
+  `agenkit-scala/src/main/scala/io/agenkit/patterns/ConversationalAgent.scala`) diverges
+  from every other language's canonical default of `10`. C#'s
+  `ConversationalAgentConfig.MaxHistory = 10`
+  (`agenkit-cs/src/Agenkit/Patterns/ConversationalAgent.cs`) and Java's
+  `DEFAULT_MAX_HISTORY = 10`
+  (`agenkit-java/src/main/java/io/agenkit/patterns/ConversationalAgent.java`) both match
+  the canonical value.
+- **`max_steps`:** C#'s `ReActConfig.MaxSteps = 10`
+  (`agenkit-cs/src/Agenkit/Patterns/ReActAgent.cs`), Java's two-arg `ReActAgent`
+  convenience constructor delegates to `maxSteps = 10`
+  (`agenkit-java/src/main/java/io/agenkit/patterns/ReActAgent.java`), and Scala's
+  `ReActAgent(..., maxIterations: Int = 10)`
+  (`agenkit-scala/src/main/scala/io/agenkit/patterns/ReActAgent.scala`) all agree with
+  the canonical `10`.
+- **`verbose`:** C#'s `ReActConfig.Verbose = false` and Java's convenience constructor
+  (`this(name, llmClient, tools, 10, false)`) both match the canonical `false`. Scala's
+  `ReActAgent` has no `verbose` field at all — there is nothing to log step-by-step
+  reasoning, so the setting is not implemented rather than defaulted.
+- **`include_system`:** none of C#, Java, or Scala has an `include_system`-equivalent
+  flag on `ConversationalAgent`. Java's constructor always prepends the system prompt in
+  `buildMessages()` when non-empty; C#'s and Scala's constructors do the same
+  unconditionally when a system prompt is supplied — none of the three expose a way to
+  suppress it while still passing a `systemPrompt`.
+- **`checkpoint max_depth`:** none of C#, Java, or Scala implements a checkpoint-chain
+  traversal at all. All three `CheckpointManager` implementations
+  (`agenkit-cs/src/Agenkit/Checkpointing/CheckpointManager.cs`,
+  `agenkit-java/src/main/java/io/agenkit/checkpointing/CheckpointManager.java`,
+  `agenkit-scala/src/main/scala/io/agenkit/checkpointing/CheckpointManager.scala`) are
+  flat key-value stores (by name/agent-id/checkpoint-id) with no `parent_checkpoint_id`
+  field and no history-walking method, so there is no `max_depth` parameter to default.
+- **`default_key` / `route`:** C#'s `RouterAgent` constructor takes
+  `IAgent? defaultAgent = null` — same `null`-as-default shape as Go/Rust/C++/Zig. Java's
+  `RouterAgent(String, LlmClient, Map<String, Agent>, Agent defaultAgent)` has no
+  convenience constructor and no default value — callers must pass `null` explicitly for
+  "no default route," so there is no default *value* to record, only a required
+  parameter that accepts `null`. Scala's `RouterAgent(..., defaultAgent: Option[Agent] =
+  None)` uses `Option`, matching Python's `None` semantics more directly than the other
+  languages' nullable-reference approach.
 
 ## Equivalent Initialization Patterns
 

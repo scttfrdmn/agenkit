@@ -198,8 +198,8 @@ const baseAgent = new LocalAgent({
 
 // Apply retry and timeout middleware
 const robustAgent = applyMiddleware(baseAgent, [
-  retry({ maxAttempts: 3, initialDelay: 1000 }),
-  timeout({ timeout: 5000 }),
+  retry({ maxRetries: 3, initialDelayMs: 1000 }),
+  timeout({ timeoutMs: 5000 }),
 ]);
 
 const response = await robustAgent.process({
@@ -336,7 +336,7 @@ See `examples/` directory for complete, runnable examples:
 Run any example:
 
 ```bash
-npx ts-node examples/middleware-example.ts
+npx ts-node examples/other/middleware-example.ts
 ```
 
 ## Development
@@ -360,7 +360,7 @@ npm run format
 
 ## License
 
-MIT
+Apache-2.0
 
 ## Contributing
 

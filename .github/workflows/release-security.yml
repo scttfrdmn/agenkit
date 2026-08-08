@@ -15,6 +15,18 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: >
+          Release tag to sign for (e.g. v0.89.0). Leave empty to use the ref this
+          workflow was dispatched against. Needed to backfill a past release: this
+          job's own bugs are fixed on main, but `gh workflow run --ref vX.Y.Z` runs
+          the workflow file AS IT EXISTED AT THAT TAG, not the fixed one on main —
+          which is how the first backfill attempt for v0.89.0 re-ran the exact
+          pre-#867 deprecated-flag bug. Dispatch from main with this input set
+          instead of dispatching against the tag directly.
+        required: false
+        type: string
 
 # A release cuts a tag AND publishes a release, so both triggers fire and two runs
 # race for the same artifact names. Grouped rather than left to chance: previously
@@ -36,7 +48,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # Check out the TAG's tree, not whatever ref this workflow was dispatched
+      # against. Without `ref:` here, a `tag` input would still fix the job's own
+      # code (this file, already correct via the ref actions runs from) but SBOM
+      # main's source tree and slap a v0.89.0 label on it — silently wrong metadata,
+      # worse than the original bug because it wouldn't even fail.
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Install syft (SBOM generator)
         uses: anchore/sbom-action/download-syft@v0.24.0
@@ -55,7 +74,9 @@ jobs:
         id: ver
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "release" ]; then
+          if [ -n "${{ inputs.tag }}" ]; then
+            tag="${{ inputs.tag }}"
+          elif [ "${{ github.event_name }}" = "release" ]; then
             tag="${{ github.event.release.tag_name }}"
           else
             tag="${GITHUB_REF_NAME}"

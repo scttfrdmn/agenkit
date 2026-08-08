@@ -1,6 +1,6 @@
 # Getting Started with Agenkit
 
-Welcome to Agenkit! This guide will help you get up and running with the framework in minutes.
+Welcome to Agenkit! This guide will help you get up and running with the toolkit in minutes.
 
 ## Table of Contents
 
@@ -17,12 +17,12 @@ Welcome to Agenkit! This guide will help you get up and running with the framewo
 
 ## Overview
 
-Agenkit is a production-ready framework for building distributed AI agent systems with:
+Agenkit is a production-ready toolkit for building distributed AI agent systems with:
 
 - **Cross-language support** - Python, TypeScript, Go, C++, Rust with 100% feature parity
 - **Multiple transports** - HTTP (HTTP/1.1, HTTP/2, HTTP/3), gRPC, WebSocket
 - **Production middleware** - Circuit breaker, retry, timeout, rate limiting, caching, batching
-- **Autonomous agent framework** - Memory, budget tracking, checkpointing, safety, evaluation
+- **Autonomous agent building blocks** - Memory, budget tracking, checkpointing, safety, evaluation
 - **Full observability** - OpenTelemetry tracing, Prometheus metrics, structured logging
 - **Container ready** - Docker and Kubernetes deployment with HPA
 

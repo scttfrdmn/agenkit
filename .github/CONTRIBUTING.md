@@ -2,7 +2,7 @@
 
 Hi! Thanks for your interest in contributing to Agenkit. We're excited to have you here.
 
-Agenkit is a cross-language agent framework (Python + Go) with a focus on minimal abstractions, production readiness, and cross-language interoperability. This guide will help you contribute effectively.
+Agenkit is a cross-language toolkit for building agent frameworks and runtimes (Python, Go, TypeScript, Rust, C++, Zig, C#, Java, and Scala) with a focus on minimal abstractions, production readiness, and cross-language interoperability. This guide will help you contribute effectively.
 
 ---
 

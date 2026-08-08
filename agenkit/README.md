@@ -1,6 +1,6 @@
 # Agenkit Python
 
-**Production-ready AI agent framework for Python 3.10+**
+**Production-ready AI agent toolkit for Python 3.10+**
 
 The Python implementation of Agenkit provides the reference implementation with the most complete feature set and best developer experience.
 

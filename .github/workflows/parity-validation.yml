@@ -135,15 +135,20 @@ jobs:
               core.warning(`Could not post parity comment (read-only token?): ${error.message}`);
             }
 
-  # Optional: Block PR if parity regresses
+  # Informational only: this job never inspects parity-check's outcome and its
+  # step always succeeds, so it must not be named or worded like a gate — a
+  # step that reports success unconditionally cannot claim to have validated
+  # anything. Keeping the `parity-gate` job key stable since nothing else in
+  # the repo references it; only the display name and step text were
+  # misleading and are fixed here.
   parity-gate:
-    name: Parity Gate (Optional)
+    name: Parity Summary (informational, non-blocking)
     runs-on: ubuntu-latest
     needs: parity-check
     if: github.event_name == 'pull_request'
 
     steps:
-      - name: Check parity gate
+      - name: Parity summary marker
         run: |
-          echo "✅ Parity validation passed"
-          echo "This is an informational gate - local testing is primary validation"
+          echo "ℹ️ Parity summary complete — see the parity-check job above for actual results"
+          echo "This step does not block merges; it exists as a readable summary marker only."

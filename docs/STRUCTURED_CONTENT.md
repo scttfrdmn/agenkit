@@ -1,8 +1,8 @@
 # Structured Content in Agenkit
 
 This document describes how multimodal / multi-block responses are handled across
-Agenkit's language implementations, the interim approach in v0.58.0, and the full
-migration planned for v0.59.0.
+Agenkit's language implementations, including the Go `Content string` → `Content any`
+migration that shipped in v0.59.0 (#422).
 
 ---
 
@@ -26,23 +26,30 @@ invocations in `message.tool_calls`.
 
 ---
 
-## v0.58.0 Interim Approach (Go)
+## Go: `Content any` (shipped in v0.59.0)
 
-The Go `Message` struct's `Content` field is `string`.  Changing it to `any`
-(the correct long-term type) requires updating **85+ files** across the Go package
-and would be a large, high-risk codemod.  That migration is deferred to v0.59.0.
+The Go `Message` struct's `Content` field is `any` (`agenkit-go/agenkit/interfaces.go`).
+This replaced the v0.58.0 interim approach, where `Content` was `string` and structured
+blocks lived only in `Metadata["content_blocks"]`.
 
-In v0.58.0, the **adapter layer** stores multi-block responses in two places:
+```go
+type Message struct {
+    Role      string                 `json:"role"`
+    Content   any                    `json:"content"`
+    Metadata  map[string]interface{} `json:"metadata"`
+    Timestamp time.Time              `json:"timestamp"`
+}
+```
 
-1. **`Content string`** — contains all text blocks joined together.  This preserves
-   backward compatibility for every existing caller that reads `message.Content`.
+**Breaking change (Go only):** code that previously read `message.Content` as a
+`string` must now call `message.ContentString()` instead. All 143 read sites across
+`patterns/`, `memory/`, `middleware/`, `evaluation/`, `safety/`, `observability/`,
+`adapter/llm/`, `examples/`, and test files were updated to use `.ContentString()`
+as part of the migration.
 
-2. **`Metadata["content_blocks"] []interface{}`** — holds the raw, structured block
-   list for consumers that need the full multimodal response.
+### Accessing Content
 
-### Accessing Content Blocks
-
-Use the new `ContentBlocks()` accessor:
+Use `ContentString()` for plain-text access and `ContentBlocks()` for structured access:
 
 ```go
 response, err := llm.Complete(ctx, messages)
@@ -50,10 +57,12 @@ if err != nil {
     log.Fatal(err)
 }
 
-// Backward-compatible text access (always works)
-fmt.Println(response.Content)
+// Text access: type-switches over string / nil / other types
+fmt.Println(response.ContentString())
 
-// Structured access (non-nil only for multi-block responses)
+// Structured access: reads Content directly if it holds []interface{},
+// falling back to Metadata["content_blocks"] for backward compatibility
+// with v0.58.0-era adapter output
 if blocks := response.ContentBlocks(); blocks != nil {
     for _, b := range blocks {
         block := b.(map[string]interface{})
@@ -67,7 +76,12 @@ if blocks := response.ContentBlocks(); blocks != nil {
 }
 ```
 
-### Which Adapters Populate `content_blocks`
+`ContentString()` returns the string directly for `string` content, `""` for `nil`,
+and a `fmt.Sprintf("%v", ...)` representation for any other type. `ContentBlocks()`
+prefers a `[]interface{}` held directly in `Content`, then falls back to
+`Metadata["content_blocks"]` for compatibility with older adapter output.
+
+### Which Adapters Populate `content_blocks` (backward-compat path)
 
 | Adapter | Trigger |
 |---------|---------|
@@ -76,46 +90,10 @@ if blocks := response.ContentBlocks(); blocks != nil {
 
 ---
 
-## v0.59.0 Full Migration Plan
-
-The full migration changes `Content string` → `Content any` across the Go package.
-
-### Scope
-
-- `agenkit/interfaces.go`: `Message.Content string` → `Message.Content any`
-- `agenkit/interfaces.go`: `ContentString()` → reads from `Content` if string, else
-  marshals to JSON
-- `agenkit/interfaces.go`: `ContentBlocks()` → reads from `Content` if `[]interface{}`
-- All 85+ callers of `message.Content` or `agenkit.NewMessage(..., content)` updated
-  via codemod script
-
-### Codemod Strategy
-
-A `scripts/migrate_content_type.py` script will:
-
-1. Replace `message.Content` direct reads with `message.ContentString()` calls
-2. Replace `agenkit.NewMessage(role, str)` → `agenkit.NewMessage(role, str)` (no change)
-3. Replace `agenkit.NewMessage(role, nonStringValue)` → `agenkit.NewMessageWithBlocks(role, blocks)`
-4. Run `go build ./...` and `go vet ./...` to verify
-
-### Files Affected (85+)
-
-The affected files span:
-- `adapter/llm/*.go` — all LLM adapters
-- `patterns/*.go` — all pattern implementations
-- `middleware/*.go` — all middleware
-- `protocols/agui/*.go` — AG-UI protocol adapters
-- `tests/**/*.go` — all test files
-- `examples/**/*.go` — all examples
-
-This is intentionally deferred to give the migration script time to be built and
-tested in isolation, reducing risk to the broader codebase.
-
----
-
 ## Zig & Other Languages
 
-Zig, Rust, C++, and TypeScript already use proper union/variant types for content:
+Zig, Rust, C++, TypeScript, and Python already use proper union/variant types for content;
+Go now does too, via `any`.
 
 | Language | Type |
 |----------|------|
@@ -124,5 +102,4 @@ Zig, Rust, C++, and TypeScript already use proper union/variant types for conten
 | C++ | `std::variant<std::string, StructuredContent>` |
 | TypeScript | `string \| ContentBlock[]` |
 | Python | `str \| list[ContentBlock]` |
-| Go (v0.58.0) | `string` + `Metadata["content_blocks"]` (interim) |
-| Go (v0.59.0) | `any` |
+| Go | `any` |

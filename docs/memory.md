@@ -1,7 +1,7 @@
 # Memory Systems for Autonomous Agents
 
 > **Status**: Production Ready (v0.6.0+)
-> **Python**: ✅ | **Go**: 🚧 (Planned Q1 2026)
+> **Python**: ✅ | **Go**: ✅
 
 ## Overview
 

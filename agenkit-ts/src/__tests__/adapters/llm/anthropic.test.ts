@@ -123,7 +123,7 @@ describe('Anthropic Adapter: Unit Tests', () => {
     const message = getSimpleTestMessage();
     const response = await adapter.complete([message]);
 
-    expect(response.metadata.model).toBe('claude-3-5-sonnet-20241022');
+    expect(response.metadata.model).toBe('claude-sonnet-5');
     expect(response.metadata.stop_reason).toBe('end_turn');
     expect(response.metadata.id).toBe('msg_test123');
   });

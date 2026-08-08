@@ -10,7 +10,7 @@
  *
  * const adapter = new BedrockAdapter({
  *   region: 'us-east-1',
- *   modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+ *   modelId: 'anthropic.claude-sonnet-5',
  * });
  *
  * const response = await adapter.process({
@@ -42,7 +42,7 @@ export interface BedrockConfig {
   /** AWS region (default: 'us-east-1') */
   region?: string;
 
-  /** Bedrock model identifier (e.g., 'anthropic.claude-3-5-sonnet-20241022-v2:0') */
+  /** Bedrock model identifier (e.g., 'anthropic.claude-sonnet-5') */
   modelId?: string;
 
   /** AWS access key ID (optional - uses default credential chain if not provided) */
@@ -86,8 +86,8 @@ export interface BedrockConfig {
  * - System message support
  *
  * Popular model IDs:
- * - anthropic.claude-3-5-sonnet-20241022-v2:0 - Claude 3.5 Sonnet
- * - anthropic.claude-3-haiku-20240307-v1:0 - Claude 3 Haiku
+ * - anthropic.claude-sonnet-5 - Claude Sonnet 5
+ * - anthropic.claude-haiku-4-5 - Claude Haiku 4.5
  * - meta.llama3-70b-instruct-v1:0 - Llama 3 70B
  * - mistral.mistral-large-2402-v1:0 - Mistral Large
  * - amazon.titan-text-premier-v1:0 - Amazon Titan
@@ -104,7 +104,7 @@ export class BedrockAdapter implements Agent {
   constructor(config: BedrockConfig = {}) {
     this.config = {
       region: config.region || 'us-east-1',
-      modelId: config.modelId || 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+      modelId: config.modelId || 'anthropic.claude-sonnet-5',
       temperature: config.temperature ?? 0.7,
       maxTokens: config.maxTokens ?? 4096,
       topP: config.topP ?? 1.0,

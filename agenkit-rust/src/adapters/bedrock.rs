@@ -28,8 +28,8 @@ pub struct BedrockConfig {
 
     /// Bedrock model identifier
     /// Examples:
-    /// - "anthropic.claude-3-5-sonnet-20241022-v2:0"
-    /// - "anthropic.claude-3-haiku-20240307-v1:0"
+    /// - "anthropic.claude-sonnet-5"
+    /// - "anthropic.claude-haiku-4-5"
     /// - "meta.llama3-70b-instruct-v1:0"
     /// - "mistral.mistral-large-2402-v1:0"
     /// - "amazon.titan-text-premier-v1:0"
@@ -64,7 +64,7 @@ impl Default for BedrockConfig {
     fn default() -> Self {
         Self {
             region: "us-east-1".to_string(),
-            model: "anthropic.claude-3-5-sonnet-20241022-v2:0".to_string(),
+            model: "anthropic.claude-sonnet-5".to_string(),
             access_key_id: None,
             secret_access_key: None,
             session_token: None,
@@ -99,7 +99,7 @@ impl Default for BedrockConfig {
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let config = BedrockConfig {
 ///         region: "us-east-1".to_string(),
-///         model: "anthropic.claude-3-5-sonnet-20241022-v2:0".to_string(),
+///         model: "anthropic.claude-sonnet-5".to_string(),
 ///         ..Default::default()
 ///     };
 ///
@@ -423,7 +423,7 @@ impl BedrockAdapter {
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///     let config = BedrockConfig {
     ///         region: "us-east-1".to_string(),
-    ///         model: "anthropic.claude-3-5-sonnet-20241022-v2:0".to_string(),
+    ///         model: "anthropic.claude-sonnet-5".to_string(),
     ///         ..Default::default()
     ///     };
     ///
@@ -497,9 +497,9 @@ impl Agent for BedrockAdapter {
 /// Available Bedrock model identifiers.
 pub mod models {
     // Claude models
-    pub const CLAUDE_3_5_SONNET: &str = "anthropic.claude-3-5-sonnet-20241022-v2:0";
+    pub const CLAUDE_3_5_SONNET: &str = "anthropic.claude-sonnet-5";
     pub const CLAUDE_3_OPUS: &str = "anthropic.claude-3-opus-20240229-v1:0";
-    pub const CLAUDE_3_HAIKU: &str = "anthropic.claude-3-haiku-20240307-v1:0";
+    pub const CLAUDE_3_HAIKU: &str = "anthropic.claude-haiku-4-5";
 
     // Llama models
     pub const LLAMA_3_70B: &str = "meta.llama3-70b-instruct-v1:0";
@@ -533,7 +533,7 @@ mod tests {
     fn test_bedrock_config_default() {
         let config = BedrockConfig::default();
         assert_eq!(config.region, "us-east-1");
-        assert_eq!(config.model, "anthropic.claude-3-5-sonnet-20241022-v2:0");
+        assert_eq!(config.model, "anthropic.claude-sonnet-5");
         assert_eq!(config.temperature, Some(0.7));
         assert_eq!(config.max_tokens, Some(4096));
         assert_eq!(config.top_p, Some(1.0));
@@ -584,18 +584,12 @@ mod tests {
 
     #[test]
     fn test_model_constants() {
-        assert_eq!(
-            models::CLAUDE_3_5_SONNET,
-            "anthropic.claude-3-5-sonnet-20241022-v2:0"
-        );
+        assert_eq!(models::CLAUDE_3_5_SONNET, "anthropic.claude-sonnet-5");
         assert_eq!(
             models::CLAUDE_3_OPUS,
             "anthropic.claude-3-opus-20240229-v1:0"
         );
-        assert_eq!(
-            models::CLAUDE_3_HAIKU,
-            "anthropic.claude-3-haiku-20240307-v1:0"
-        );
+        assert_eq!(models::CLAUDE_3_HAIKU, "anthropic.claude-haiku-4-5");
         assert_eq!(models::LLAMA_3_70B, "meta.llama3-70b-instruct-v1:0");
         assert_eq!(models::MISTRAL_LARGE, "mistral.mistral-large-2402-v1:0");
         assert_eq!(models::TITAN_PREMIER, "amazon.titan-text-premier-v1:0");
@@ -605,7 +599,7 @@ mod tests {
     fn test_bedrock_config_with_credentials() {
         let config = BedrockConfig {
             region: "us-east-1".to_string(),
-            model: "anthropic.claude-3-5-sonnet-20241022-v2:0".to_string(),
+            model: "anthropic.claude-sonnet-5".to_string(),
             access_key_id: Some("test-key".to_string()),
             secret_access_key: Some("test-secret".to_string()),
             session_token: None,
@@ -620,7 +614,7 @@ mod tests {
     fn test_bedrock_config_without_credentials() {
         let config = BedrockConfig {
             region: "us-east-1".to_string(),
-            model: "anthropic.claude-3-5-sonnet-20241022-v2:0".to_string(),
+            model: "anthropic.claude-sonnet-5".to_string(),
             access_key_id: None,
             secret_access_key: None,
             session_token: None,

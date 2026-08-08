@@ -10,7 +10,7 @@ describe('AnthropicAdapter', () => {
   describe('initialization', () => {
     it('should create with default config', () => {
       const adapter = new AnthropicAdapter({ apiKey: 'test-key' });
-      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-sonnet-5');
     });
 
     it('should create with custom model', () => {
@@ -34,9 +34,9 @@ describe('AnthropicAdapter', () => {
     it('should return agent name with model', () => {
       const adapter = new AnthropicAdapter({
         apiKey: 'test-key',
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-5',
       });
-      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-sonnet-5');
     });
   });
 
@@ -46,7 +46,7 @@ describe('AnthropicAdapter', () => {
         apiKey: 'test-key',
         temperature: 0.5,
       });
-      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-sonnet-5');
     });
 
     it('should use custom maxTokens', () => {
@@ -54,7 +54,7 @@ describe('AnthropicAdapter', () => {
         apiKey: 'test-key',
         maxTokens: 2048,
       });
-      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-sonnet-5');
     });
 
     it('should use environment variable for API key', () => {
@@ -62,7 +62,7 @@ describe('AnthropicAdapter', () => {
       process.env.ANTHROPIC_API_KEY = 'env-test-key';
 
       const adapter = new AnthropicAdapter();
-      expect(adapter.name).toBe('anthropic-claude-3-5-sonnet-20241022');
+      expect(adapter.name).toBe('anthropic-claude-sonnet-5');
 
       if (oldKey) {
         process.env.ANTHROPIC_API_KEY = oldKey;
@@ -101,7 +101,7 @@ describe('AnthropicAdapter', () => {
   describe.skipIf(!process.env.ANTHROPIC_API_KEY)('integration tests', () => {
     it('should process a message with real API', async () => {
       const adapter = new AnthropicAdapter({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-5',
         temperature: 0.7,
         maxTokens: 100,
       });
@@ -123,7 +123,7 @@ describe('AnthropicAdapter', () => {
 
     it('should stream responses with real API', async () => {
       const adapter = new AnthropicAdapter({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-5',
         temperature: 0.7,
         maxTokens: 50,
       });
@@ -147,7 +147,7 @@ describe('AnthropicAdapter', () => {
 
     it('should handle system messages correctly', async () => {
       const adapter = new AnthropicAdapter({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-5',
         temperature: 0.7,
         maxTokens: 100,
       });
@@ -170,7 +170,7 @@ describe('AnthropicAdapter', () => {
 
     it('should handle multi-turn conversation', async () => {
       const adapter = new AnthropicAdapter({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-5',
         temperature: 0.7,
         maxTokens: 100,
       });

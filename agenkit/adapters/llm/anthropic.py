@@ -30,7 +30,7 @@ class AnthropicLLM(LLM):
     Args:
         api_key: Anthropic API key. If not provided, will use ANTHROPIC_API_KEY
             environment variable.
-        model: Model identifier (default: claude-sonnet-4-6)
+        model: Model identifier (default: claude-sonnet-5)
         **client_kwargs: Additional arguments passed to AsyncAnthropic client
 
     Example:
@@ -59,7 +59,7 @@ class AnthropicLLM(LLM):
     def __init__(
         self,
         api_key: str | None = None,
-        model: str = "claude-sonnet-4-6",
+        model: str = "claude-sonnet-5",
         **client_kwargs: Any,
     ):
         """Initialize Anthropic LLM adapter."""

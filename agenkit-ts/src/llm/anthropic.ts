@@ -14,8 +14,8 @@ export interface AnthropicConfig {
   /** Anthropic API key */
   apiKey: string;
 
-  /** Model to use (default: "claude-sonnet-4-6") */
-  /** @default "claude-sonnet-4-6" */
+  /** Model to use (default: "claude-sonnet-5") */
+  /** @default "claude-sonnet-5" */
   model?: string;
 
   /** Agent name (default: "claude") */
@@ -43,7 +43,7 @@ export interface AnthropicConfig {
  * Usage:
  *   const agent = new AnthropicAgent({
  *     apiKey: process.env.ANTHROPIC_API_KEY!,
- *     model: 'claude-sonnet-4-6',
+ *     model: 'claude-sonnet-5',
  *     temperature: 1.0,
  *   });
  *
@@ -65,7 +65,7 @@ export class AnthropicAgent implements Agent {
   constructor(config: AnthropicConfig) {
     this.name = config.name || 'claude';
     this.client = new Anthropic({ apiKey: config.apiKey });
-    this.model = config.model || 'claude-sonnet-4-6';
+    this.model = config.model || 'claude-sonnet-5';
 
     // Validate temperature
     const temperature = config.temperature !== undefined ? config.temperature : 1.0;

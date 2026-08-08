@@ -40,7 +40,7 @@ Full documentation is available in [agenkit-go/docs/](docs/):
 
 - [Getting Started](docs/GETTING_STARTED.md) — Installation, first agent, goroutine safety, testing
 - [API Reference](docs/API.md) — Complete Go API documentation
-- [Patterns](docs/PATTERNS.md) — 11 of the 14 agent patterns, with Go examples
+- [Patterns](docs/PATTERNS.md) — the 18 agent patterns, with Go examples
 - [Migration Guide](docs/MIGRATION.md) — Migrating to/from Go for 5 languages
 - [Observability](docs/OBSERVABILITY.md) — Tracing, metrics, structured logging
 - [Testing Framework](docs/TESTING_FRAMEWORK.md) — go test patterns, rapid property tests
@@ -365,7 +365,7 @@ agenkit-go/
 ├── agenkit/                 # Core package
 │   ├── interfaces.go        # Agent, Message, Tool interfaces
 │   └── introspection.go     # Introspection utilities
-├── patterns/                # 14 agent patterns
+├── patterns/                # 18 agent patterns
 │   ├── sequential.go        # Pipeline execution
 │   ├── parallel.go          # Concurrent execution
 │   ├── router.go            # Conditional routing
@@ -373,10 +373,14 @@ agenkit-go/
 │   ├── react.go             # Reasoning + Acting
 │   ├── reflection.go        # Self-critique loop
 │   ├── planning.go          # Task decomposition
+│   ├── task.go              # Single-shot task execution
 │   ├── autonomous.go        # Goal-driven agents
 │   ├── supervisor.go        # Planner + specialists
 │   ├── collaborative.go     # Peer collaboration
-│   ├── consensus.go         # Multi-agent agreement
+│   ├── multiagent.go        # Multi-agent orchestration
+│   ├── orchestration.go     # Orchestrator pattern
+│   ├── memory.go            # Memory-augmented agent
+│   ├── agents_as_tools.go   # Agents exposed as tools
 │   ├── fallback.go          # Ordered degradation
 │   ├── human_in_loop.go     # Approval gates
 │   └── reasoning_with_tools.go

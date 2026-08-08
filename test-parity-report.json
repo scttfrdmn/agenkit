@@ -1,51 +1,51 @@
 {
-  "generated_at": "2026-08-02T03:20:25Z",
+  "generated_at": "2026-08-08T07:05:56Z",
   "languages": {
     "python": {
-      "total": 2117,
+      "total": 2229,
       "categories": {
         "patterns": 443,
-        "techniques": 240,
+        "techniques": 268,
         "safety": 162,
         "adapters": 141,
         "evaluation": 134,
         "middleware": 92,
         "memory": 101,
         "routing": 34,
-        "chaos": 53,
+        "chaos": 58,
         "property": 37,
         "budget": 51,
         "observability": 48,
-        "integration": 90,
+        "integration": 96,
         "tools": 32,
         "composition": 40
       }
     },
     "go": {
-      "total": 1265,
+      "total": 1341,
       "categories": {
-        "patterns": 362,
-        "techniques": 107,
+        "patterns": 376,
+        "techniques": 120,
         "safety": 94,
         "adapters": 90,
-        "evaluation": 146,
+        "evaluation": 163,
         "middleware": 92,
         "memory": 18,
         "routing": 0,
         "chaos": 0,
         "property": 0,
         "tools": 17,
-        "observability": 41,
+        "observability": 44,
         "composition": 16
       }
     },
     "cpp": {
-      "total": 1076,
+      "total": 1133,
       "note": "C++ counts individual TEST() macros",
       "categories": {
         "patterns": 310,
-        "techniques": 116,
-        "unit": 130,
+        "techniques": 156,
+        "unit": 147,
         "integration": 65,
         "safety": 0,
         "adapters": 50,
@@ -55,13 +55,13 @@
       }
     },
     "rust": {
-      "total": 1274,
+      "total": 1352,
       "categories": {
-        "patterns": 133,
+        "patterns": 135,
         "techniques": 95,
         "adapters": 54,
-        "evaluation": 88,
-        "observability": 66,
+        "evaluation": 105,
+        "observability": 72,
         "safety": 60,
         "routing": 0,
         "chaos": 0,
@@ -69,17 +69,17 @@
       }
     },
     "zig": {
-      "total": 496,
+      "total": 671,
       "note": "Counted from the summary line of zig build test --summary all; in-code tests have no clear category separation",
       "categories": {}
     },
     "typescript": {
-      "total": 968,
-      "test_files": 121,
+      "total": 976,
+      "test_files": 122,
       "note": "Counts may be estimated from test files",
       "categories": {
         "patterns": 16,
-        "techniques": 216,
+        "techniques": 229,
         "safety": 135,
         "adapters": 79,
         "evaluation": 101,

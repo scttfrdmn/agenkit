@@ -71,4 +71,6 @@ dotnet test
 
 ## Version
 
-v0.71.0 — full parity with Python, Go, TypeScript, Rust, C++, and Zig implementations.
+See [`src/Agenkit/Agenkit.csproj`](src/Agenkit/Agenkit.csproj) for the current version
+(previously hardcoded here as v0.71.0, which drifted 18 releases stale — see #874).
+Full parity with Python, Go, TypeScript, Rust, C++, and Zig implementations.

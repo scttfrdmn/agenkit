@@ -11,7 +11,7 @@ Agenkit is a lightweight, cross-language toolkit for building distributed AI age
 [![Rust 1.75+](https://img.shields.io/badge/rust-1.75+-orange.svg)](https://www.rust-lang.org/)
 [![Zig 0.15.2+](https://img.shields.io/badge/zig-0.15.2+-F7A41D.svg)](https://ziglang.org/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Tests: 5000+ tests](https://img.shields.io/badge/tests-5000+%20passing-brightgreen.svg)](tests/)
+[![Tests: 8500+ tests](https://img.shields.io/badge/tests-8500+%20passing-brightgreen.svg)](tests/)
 [![9 Languages](https://img.shields.io/badge/languages-9%20implementations-success.svg)](README.md#status)
 
 ## Why Agenkit?
@@ -77,12 +77,12 @@ response = await agent.process(Message(role="user", content="Hello!"))
 ### Add Production Features in 3 Lines
 
 ```python
-from agenkit.middleware import RetryDecorator, CircuitBreakerDecorator
+from agenkit.middleware import RetryConfig, RetryDecorator, CircuitBreakerDecorator
 
-# Wrap with resilience (v0.50.0)
+# Wrap with resilience
 production_agent = RetryDecorator(
     CircuitBreakerDecorator(agent),
-    max_attempts=3
+    RetryConfig(max_retries=3),
 )
 
 # Now handles failures automatically
@@ -117,17 +117,26 @@ class Agent:
 ### 🔄 Production Middleware (Add What You Need)
 
 ```python
+from agenkit.middleware import (
+    CircuitBreakerConfig,
+    CircuitBreakerDecorator,
+    RetryConfig,
+    RetryDecorator,
+    TimeoutConfig,
+    TimeoutDecorator,
+)
+
 # Start simple
 agent = MyAgent()
 
 # Add retry logic
-agent = RetryDecorator(agent, max_attempts=3)
+agent = RetryDecorator(agent, RetryConfig(max_retries=3))
 
 # Add circuit breaker
-agent = CircuitBreakerDecorator(agent, failure_threshold=5)
+agent = CircuitBreakerDecorator(agent, CircuitBreakerConfig(failure_threshold=5))
 
-# Add timeouts (v0.50.0: timeout_ms for clarity)
-agent = TimeoutDecorator(agent, timeout_ms=30000)
+# Add timeouts (timeout_ms for clarity)
+agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=30000))
 
 # Stack as many as you need
 ```
@@ -246,12 +255,13 @@ def test_agent_state():
 ### 🚀 Multiple Transports
 
 ```python
-from agenkit.adapters.python import HTTPServer, GRPCServer, WebSocketServer
+from agenkit.adapters.python import GRPCServer, LocalAgent
+from agenkit.adapters.python.http_server import HTTPAgentServer
 
 # Same agent, different transports
-HTTPServer(agent, port=8080).start()       # REST API
-GRPCServer(agent, port=50051).start()      # High performance
-WebSocketServer(agent, port=8765).start()  # Bidirectional streaming
+await HTTPAgentServer(agent, port=8080).start()               # REST API
+await GRPCServer(agent, "localhost:50051").start()            # High performance
+await LocalAgent(agent, endpoint="ws://127.0.0.1:8765").start()  # Bidirectional streaming
 ```
 
 **Choose the right protocol for each use case.**
@@ -373,11 +383,12 @@ See [benchmarks/BASELINES.md](benchmarks/BASELINES.md) for detailed performance 
 
 ## Production Ready
 
-### 5000+ Tests Passing
+### 8500+ Tests Passing
 - Cross-language integration tests (Python ↔ Go ↔ C++)
 - Chaos engineering tests (network failures, crashes)
 - Property-based tests (invariant validation)
-- Thousands of unit and integration tests across 9 languages (Python alone: 2000+)
+- Thousands of unit and integration tests across 9 languages (Python alone: 2200+;
+  see [Test Parity](#test-parity) below for the current per-language breakdown)
 
 ### Security
 - Input validation
@@ -491,7 +502,6 @@ We provide 27+ examples covering common use cases:
 **Advanced:**
 - [Remote Agents](examples/adapters/01_basic_remote_agent.py) - Cross-process communication
 - [Streaming Responses](examples/adapters/03_streaming.py) - Server-sent events
-- [Custom Middleware](examples/middleware/custom_middleware_example.py) - Extend the toolkit
 
 [Browse all examples →](examples/README.md)
 
@@ -529,7 +539,8 @@ Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Status
 
-**v0.85.0 — 9 language implementations, Python reference**
+**v0.89.0 — 9 language implementations, Python reference** (see the root `VERSION`
+file for the current number — this line will drift again if hand-maintained)
 
 ### Language Support
 
@@ -540,24 +551,28 @@ skills, reasoning memory, full adapter set) are implemented.
 
 | Language | Patterns | LLM Adapters | Tests | Depth |
 |----------|----------|--------------|-------|-------|
-| **Python** | 18/18 | 7 | 2044 | Reference — all subsystems |
-| **Go** | 18/18 | 7 (+vLLM, SGLang) | 1244 | Complete — incl. reasoning memory, skills |
-| **Rust** | 18/18 | 6 | 1253 | Complete — incl. skills |
-| **C++** | 18/18 | 5 | 1034 | Broad — `safety/` not yet implemented |
-| **TypeScript** | 18/18 | 7 | 928 | Broad — no skills / reasoning memory |
-| **Zig** | 18/18 | 8 | 214 | Broad — no skills |
-| **C#** (.NET) | 15 | 2 (+mock) | — | Newer — no skills |
-| **Java** | 15 | 2 (+mock) | — | Newer — no skills |
-| **Scala** | 15 | mock only | — | Newest — LLM adapters are stubs |
+| **Python** | 18/18 | 7 | 2229 | Reference — all subsystems |
+| **Go** | 18/18 | 7 (+vLLM, SGLang) | 1330 | Complete — incl. reasoning memory, skills |
+| **Rust** | 18/18 | 6 | 1352 | Complete — incl. skills |
+| **C++** | 18/18 | 5 | 1133 | Broad — `safety/` not yet implemented |
+| **TypeScript** | 18/18 | 7 | 976 | Broad — no skills / reasoning memory |
+| **Zig** | 18/18 | 8 | 671 | Broad — no skills |
+| **C#** (.NET) | 15 | 2 (+mock) | 272 | Newer — no skills |
+| **Java** | 15 | 2 (+mock) | 358 | Newer — no skills |
+| **Scala** | 15 | mock only | 363 | Newest — LLM adapters are stubs |
 
 **18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): Task, Conversational, ReAct, Planning, Reflection, ReasoningWithTools, AgentsAsTools, Memory, Sequential, Parallel, Router, Fallback, Orchestration, Supervisor, Collaborative, HumanInLoop, MultiAgent, Autonomous
 
-### Recent Highlights (v0.81 – v0.85)
+### Recent Highlights (v0.85 – v0.89)
 
+- ✅ **Defect repair** (v0.89) — 82 commits fixing release-gate and CI bugs found by a
+  fleet audit (SBOM/signing, version-declaration drift, a test gate that couldn't fail)
+- ✅ **Typed cross-language token `Usage`** (v0.86–v0.87) — unified `Usage` struct across
+  all 9 language cores, plus Bedrock prompt-cache token counts
 - ✅ **Agent Skills** (v0.85) — `AgentSkill`, `SkillRegistry`, `SkillEnabledAgent` (Python, Go, Rust)
-- ✅ **Reasoning Memory** (v0.84) — `Verifier`, `ReasoningArtifact`, `ReasoningMemory` (Go; partial elsewhere)
-- ✅ **MCP support** (v0.82–v0.83) — Model Context Protocol client/server across all 9 languages
-- ✅ **Go local-LLM adapters** (v0.81) — `VllmLLM`, `SGLangLLM` with guided-decoding helpers
+
+v0.88.0 is intentionally skipped — reserved for the observability milestone (#715). See
+`CHANGELOG.md` for the full release history.
 
 ### Project Status
 
@@ -577,16 +592,17 @@ skills, reasoning memory, full adapter set) are implemented.
 Patterns are at full parity across languages; **test-count** parity varies — the
 secondary languages have fewer tests than the Python reference. Counts are
 regenerated via `scripts/test-parity.sh` (and surfaced by the Parity Validation
-CI workflow). Relative to Python's 2044 tests:
+CI workflow). Relative to Python's 2229 tests:
 
 | Language | Tests | vs Python |
 |----------|-------|-----------|
-| Rust | 1253 | 61% |
-| Go | 1244 | 61% |
-| C++ | 1034 | 51% |
-| TypeScript | 928 | 45% |
-| Zig | 214 | 10% |
-
-(C#, Java, and Scala are not yet tracked in the parity report.)
+| Rust | 1352 | 61% |
+| Go | 1330 | 60% |
+| C++ | 1133 | 51% |
+| TypeScript | 976 | 44% |
+| Zig | 671 | 30% |
+| Java | 358 | 16% |
+| Scala | 363 | 16% |
+| C# | 272 | 12% |
 
 Counts are regenerated via `scripts/test-parity.sh`.

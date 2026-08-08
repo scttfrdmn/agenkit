@@ -89,11 +89,12 @@ class ParallelAgent(Agent):
         """Return the agent's identifier."""
         return "ParallelAgent"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the combined capabilities of all agents."""
         cap_set = set()
         for agent in self._agents:
-            cap_set.update(agent.capabilities())
+            cap_set.update(agent.capabilities)
 
         capabilities = list(cap_set)
         capabilities.extend(["parallel", "ensemble"])

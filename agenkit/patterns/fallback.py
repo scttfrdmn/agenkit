@@ -94,12 +94,13 @@ class FallbackAgent(Agent):
         """Return the agent's identifier."""
         return "FallbackAgent"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the combined capabilities of all agents."""
         cap_set = set()
 
         for agent in self._agents:
-            cap_set.update(agent.capabilities())
+            cap_set.update(agent.capabilities)
 
         capabilities = list(cap_set)
         capabilities.extend(["fallback", "retry", "high-availability"])
@@ -242,9 +243,10 @@ class RecoveryAgent(Agent):
         """Return the agent's identifier."""
         return f"{self._agent.name}+Recovery"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the agent's capabilities plus recovery."""
-        caps = self._agent.capabilities()
+        caps = self._agent.capabilities
         return [*caps, "recovery", "error-handling"]
 
     async def process(self, message: Message) -> Message:

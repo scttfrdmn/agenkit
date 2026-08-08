@@ -26,6 +26,7 @@ class MockAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return self._capabilities
 
@@ -50,6 +51,7 @@ class FailingAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -75,6 +77,7 @@ class MockClassifier:
     def name(self):
         return "MockClassifier"
 
+    @property
     def capabilities(self):
         return ["classification"]
 
@@ -95,6 +98,7 @@ class FailingClassifier:
     def name(self):
         return "FailingClassifier"
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -185,7 +189,7 @@ def test_router_capabilities_combined():
 
     config = RouterConfig(classifier=classifier, agents={"cat1": agent1, "cat2": agent2})
     router = RouterAgent(config)
-    caps = router.capabilities()
+    caps = router.capabilities
 
     # Should have all capabilities plus router-specific
     assert "classification" in caps
@@ -456,6 +460,7 @@ async def test_llm_classifier_valid_category():
         def name(self):
             return "llm"
 
+        @property
         def capabilities(self):
             return []
 
@@ -481,6 +486,7 @@ async def test_llm_classifier_case_insensitive_match():
         def name(self):
             return "llm"
 
+        @property
         def capabilities(self):
             return []
 
@@ -521,6 +527,7 @@ async def test_llm_classifier_custom_prompt():
         def name(self):
             return "llm"
 
+        @property
         def capabilities(self):
             return []
 

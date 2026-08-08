@@ -36,6 +36,7 @@ class ClassifierAgent(Protocol):
         """Return the agent's name."""
         ...
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the agent's capabilities."""
         ...
@@ -157,16 +158,17 @@ class RouterAgent(Agent):
         """Return the agent's identifier."""
         return "RouterAgent"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the combined capabilities of all agents."""
         cap_set = set()
 
         # Add classifier capabilities
-        cap_set.update(self._classifier.capabilities())
+        cap_set.update(self._classifier.capabilities)
 
         # Add agent capabilities
         for agent in self._agents.values():
-            cap_set.update(agent.capabilities())
+            cap_set.update(agent.capabilities)
 
         capabilities = list(cap_set)
         capabilities.extend(["router", "conditional", "classification"])
@@ -273,9 +275,10 @@ class SimpleClassifier:
         """Return the classifier's identifier."""
         return "SimpleClassifier"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the classifier's capabilities."""
-        caps = self._agent.capabilities()
+        caps = self._agent.capabilities
         return [*caps, "classification", "keyword-matching"]
 
     async def process(self, message: Message) -> Message:
@@ -371,9 +374,10 @@ class LLMClassifier:
         """Return the classifier's identifier."""
         return "LLMClassifier"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the classifier's capabilities."""
-        caps = self._agent.capabilities()
+        caps = self._agent.capabilities
         return [*caps, "classification", "llm-classification"]
 
     async def process(self, message: Message) -> Message:

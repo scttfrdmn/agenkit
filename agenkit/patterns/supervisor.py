@@ -88,6 +88,7 @@ class PlannerAgent(Protocol):
         """Return the agent's name."""
         ...
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the agent's capabilities."""
         ...
@@ -257,16 +258,17 @@ class SupervisorAgent(Agent):
         """Return the agent's identifier."""
         return "SupervisorAgent"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the combined capabilities of planner and specialists."""
         cap_set = set()
 
         # Add planner capabilities
-        cap_set.update(self._planner.capabilities())
+        cap_set.update(self._planner.capabilities)
 
         # Add specialist capabilities
         for specialist in self._specialists.values():
-            cap_set.update(specialist.capabilities())
+            cap_set.update(specialist.capabilities)
 
         capabilities = list(cap_set)
         capabilities.extend(["supervisor", "hierarchical", "coordination"])
@@ -392,9 +394,10 @@ class SimplePlanner:
         """Return the planner's identifier."""
         return "SimplePlanner"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the planner's capabilities."""
-        caps = self._agent.capabilities()
+        caps = self._agent.capabilities
         return [*caps, "planning", "synthesis"]
 
     async def process(self, message: Message) -> Message:

@@ -24,6 +24,7 @@ class MockAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return []
 
@@ -45,6 +46,7 @@ class FailingAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return []
 
@@ -82,7 +84,7 @@ def test_fallback_capabilities():
     agent2 = MockAgent("agent2")
 
     fallback = FallbackAgent(agents=[agent1, agent2])
-    caps = fallback.capabilities()
+    caps = fallback.capabilities
 
     assert "fallback" in caps
     assert "retry" in caps

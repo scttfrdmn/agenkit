@@ -47,7 +47,7 @@ Prototype → Production
 └─────────────────────────────────────────────┘
 ```
 
-**Key Insight:** Write your agents once in Python. Deploy them in Go for 18x better performance. Same interface, zero rewrites.
+**Key Insight:** Write your agents once in Python. Deploy them in Go for up to 18x lower framework/transport overhead in our benchmarks (see [Performance](#performance) below) — the LLM call itself still dominates wall-clock time. Same interface, zero rewrites.
 
 ## Quick Start
 
@@ -146,8 +146,9 @@ agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=30000))
 ### 🌐 Cross-Language Support
 
 Write once. Deploy anywhere. **Nine language implementations** (Python is the
-reference; all nine share the same `Agent`/`Message`/`Tool` core and the 18
-patterns — see [Status](#status) for per-language depth):
+reference; all nine share the same `Agent`/`Message`/`Tool` core and most of
+the 18 core patterns — C#, Java, and Scala are missing `AgentsAsTools`; see
+[Status](#status) for the exact per-language pattern-class counts):
 
 ```python
 # Python - Prototype quickly with ML ecosystem
@@ -166,7 +167,7 @@ class MyAgent implements Agent {
 ```
 
 ```go
-// Go - Production scale (18x faster than Python)
+// Go - Production scale (up to 18x lower transport overhead vs Python in our benchmarks)
 type MyAgent struct{}
 
 func (a *MyAgent) Process(ctx context.Context, msg *Message) (*Message, error) {
@@ -185,7 +186,7 @@ public:
 ```
 
 ```rust
-// Rust - Memory safety + performance (20x faster than Python)
+// Rust - Memory safety + performance (up to 20x lower transport overhead vs Python in our benchmarks)
 struct MyAgent;
 
 impl Agent for MyAgent {
@@ -196,7 +197,7 @@ impl Agent for MyAgent {
 ```
 
 ```zig
-// Zig - Systems programming with safety (22x faster than Python)
+// Zig - Systems programming with safety (up to 22x lower transport overhead vs Python in our benchmarks)
 const MyAgent = struct {
     pub fn process(self: *MyAgent, message: Message) !Message {
         return processWithZigLibs(message);
@@ -371,9 +372,21 @@ pip install agenkit[all]
 
 **Transport Overhead:** <1% of total time in realistic LLM workloads
 
-**Language Performance:**
-- Go HTTP: 18.5x faster than Python (0.055ms vs 1.02ms)
+**Language Performance (framework/transport overhead, not general application
+performance):**
+- Go HTTP transport: 18.5x lower latency than Python's in the same benchmark
+  (0.055ms vs 1.02ms)
 - Middleware overhead: <0.01% of request time
+
+These figures — and the "18x"/"20x"/"22x" multipliers mentioned earlier in
+this README for Go/Rust/Zig — were measured in November 2025 against Python
+3.14.0 and Go 1.21–1.22 on Apple Silicon (see `benchmarks/BASELINES.md`).
+Both the Go toolchain and several dependency versions have since moved, so
+the exact multiplier should not be read as current; the qualitative
+conclusion that transport/framework overhead is a small fraction of a
+100–1000ms LLM call has held across every measurement to date. See
+[COMPATIBILITY.md](COMPATIBILITY.md#performance-characteristics) for the
+full caveat and how to regenerate current numbers.
 
 **Scale:**
 - Kubernetes autoscaling: 3-10 replicas based on load
@@ -544,24 +557,45 @@ file for the current number — this line will drift again if hand-maintained)
 
 ### Language Support
 
-Patterns are the shared core — all implementations expose the same 18 patterns
-and the `Agent`/`Message`/`Tool` interface. The "Tests" column is the test count
-from the parity report; "Depth" reflects how many advanced subsystems (memory,
-skills, reasoning memory, full adapter set) are implemented.
+The shared core is the `Agent`/`Message`/`Tool` interface plus 18 named
+patterns (listed below). The "Pattern classes" column is a raw class count
+from `feature-manifest.json` — it is **not** a conformance score against
+those 18 patterns. Languages differ in how many concrete classes back a given
+pattern for legitimate architectural reasons (Python ships config/streaming
+variants like `StreamingConversationalAgent` and `ConversationalAgentConfig`
+that other languages fold into one class; C++ has a couple of duplicate class
+names for the same pattern), so a lower number does not always mean a missing
+pattern. Regenerate it yourself with:
+`uv run python -c "import json; d=json.load(open('feature-manifest.json')); [print(l, len(v['patterns'])) for l,v in d['languages'].items()]"`.
+Two caveats on these specific numbers, found while re-deriving them for this
+table: (1) C#/Java/Scala's scanners
+(`scripts/parity/scanners/{csharp,java,scala}_scanner.py`) only walk each
+language's `Patterns/` directory, but those three languages implement
+`SequentialAgent`/`ParallelAgent` under a sibling `Composition/` directory
+that the scanner never visits — so their manifest counts (15) undercount by
+2; by direct source inspection all three actually have 17 of 18 patterns.
+(2) The one gap in C#/Java/Scala that *is* real: none of the three implement
+`AgentsAsTools` (verified by `grep -rl AgentTool` finding no hits under
+`agenkit-cs`/`agenkit-java`/`agenkit-scala`). See #913 for a planned move to a
+spec-conformance metric that would replace this class count with a
+per-pattern ✅/❌ table generated from `specs/patterns/*.yaml`. The "Tests"
+column is the test count from the parity report; "Depth" reflects how many
+advanced subsystems (memory, skills, reasoning memory, full adapter set) are
+implemented.
 
-| Language | Patterns | LLM Adapters | Tests | Depth |
-|----------|----------|--------------|-------|-------|
-| **Python** | 18/18 | 7 | 2229 | Reference — all subsystems |
-| **Go** | 18/18 | 7 (+vLLM, SGLang) | 1330 | Complete — incl. reasoning memory, skills |
-| **Rust** | 18/18 | 6 | 1352 | Complete — incl. skills |
-| **C++** | 18/18 | 5 | 1133 | Broad — `safety/` not yet implemented |
-| **TypeScript** | 18/18 | 7 | 976 | Broad — no skills / reasoning memory |
-| **Zig** | 18/18 | 8 | 671 | Broad — no skills |
-| **C#** (.NET) | 15 | 2 (+mock) | 272 | Newer — no skills |
-| **Java** | 15 | 2 (+mock) | 358 | Newer — no skills |
-| **Scala** | 15 | mock only | 363 | Newest — LLM adapters are stubs |
+| Language | Pattern classes (of 18 named patterns) | LLM Adapters | Tests | Depth |
+|----------|------------------------------------------|--------------|-------|-------|
+| **Python** | 24 (all 18 patterns) | 7 | 2229 | Reference — all subsystems |
+| **Go** | 17 (all 18 patterns) | 7 (+vLLM, SGLang) | 1330 | Complete — incl. reasoning memory, skills |
+| **TypeScript** | 17 (all 18 patterns) | 7 | 976 | Broad — no skills / reasoning memory |
+| **C++** | 18 (all 18 patterns) | 5 | 1133 | Broad — `safety/` not yet implemented |
+| **Rust** | 15 (all 18 patterns) | 6 | 1352 | Complete — incl. skills |
+| **Zig** | 13 (all 18 patterns) | 8 | 671 | Broad — no skills |
+| **C#** (.NET) | 15 in manifest / 17 actual (missing `AgentsAsTools`) | 2 (+mock) | 272 | Newer — no skills |
+| **Java** | 15 in manifest / 17 actual (missing `AgentsAsTools`) | 2 (+mock) | 358 | Newer — no skills |
+| **Scala** | 15 in manifest / 17 actual (missing `AgentsAsTools`) | mock only | 363 | Newest — LLM adapters are stubs |
 
-**18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): Task, Conversational, ReAct, Planning, Reflection, ReasoningWithTools, AgentsAsTools, Memory, Sequential, Parallel, Router, Fallback, Orchestration, Supervisor, Collaborative, HumanInLoop, MultiAgent, Autonomous
+**18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): Task, Conversational, ReAct, Planning, Reflection, ReasoningWithTools, AgentsAsTools, Memory, Sequential, Parallel, Router, Fallback, Orchestration, Supervisor, Collaborative, HumanInLoop, MultiAgent, Autonomous. Six languages (Python, Go, TypeScript, Rust, C++, Zig) implement all 18; C#, Java, and Scala implement 17 of 18 (missing `AgentsAsTools`).
 
 ### Recent Highlights (v0.85 – v0.89)
 
@@ -576,7 +610,7 @@ v0.88.0 is intentionally skipped — reserved for the observability milestone (#
 
 ### Project Status
 
-- ✅ Core toolkit + all 18 patterns across 9 languages
+- ✅ Core toolkit across 9 languages; 18 shared patterns in 6 of them, 17 of 18 in C#/Java/Scala (see [Status](#status))
 - ✅ MCP (Model Context Protocol) client/server in every language
 - ✅ Production middleware (retry, circuit breaker, timeout, rate limiting, caching, batching)
 - ✅ Multiple transports (HTTP/1.1, HTTP/2, HTTP/3, gRPC, WebSocket)

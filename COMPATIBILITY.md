@@ -1,22 +1,42 @@
-# AgentKit Compatibility Matrix
+# Agenkit Compatibility Matrix
 
-Comprehensive compatibility information for AgentKit across languages, platforms, and dependencies.
+Comprehensive compatibility information for Agenkit across languages, platforms, and dependencies.
 
-**Last Updated**: November 2025
-**Version**: v0.9.0
+**Last Updated**: August 2026
+**Version**: v0.89.0 (see the root [`VERSION`](VERSION) file for the current
+value — this document is not the source of truth for it)
+
+> **Scope note**: Agenkit ships **nine** language implementations —
+> Python, Go, TypeScript, Rust, C++, Zig, C#, Java, and Scala — all at full
+> pattern/middleware/adapter parity (see
+> [`feature-manifest.json`](feature-manifest.json)). This document historically
+> covered only Python and Go; it has been updated to reflect all nine, but the
+> per-feature detail below is necessarily uneven because that's where the
+> richest cross-language detail (transport protocol variants, dependency
+> pinning) already existed. For day-to-day "what's implemented where"
+> lookups, [`feature-manifest.json`](feature-manifest.json) and the
+> [Test Parity](README.md#test-parity) table in `README.md` are kept current
+> by tooling and are more likely to be accurate than a hand-maintained
+> narrative doc like this one — treat this file as platform/runtime
+> compatibility guidance, not the parity source of truth.
 
 ---
 
 ## Quick Reference
 
-| Component | Python Support | Go Support | Status |
-|-----------|---------------|------------|--------|
-| **Core Framework** | ✅ Full | ✅ Full | Production Ready |
-| **HTTP Transport** | ✅ Full | ✅ Full | Production Ready |
-| **WebSocket Transport** | ✅ Full | ✅ Full | Production Ready |
-| **gRPC Transport** | ✅ Full | ✅ Full | Production Ready |
-| **Middleware** | ✅ 8 types | ✅ 8 types | 100% Parity |
-| **Observability** | ✅ Full | ✅ Full | Production Ready |
+| Component | Status Across All 9 Languages |
+|-----------|-------------------------------|
+| **Core interfaces** (Agent, Message, Tool) | ✅ Full parity |
+| **Patterns** (18: 15 reasoning + 3 composition) | ✅ Full parity |
+| **Middleware** (8 types) | ✅ Full parity |
+| **Memory & checkpointing** | ✅ Full parity |
+| **Safety & evaluation** | ✅ Full parity |
+| **Observability (OpenTelemetry)** | ✅ Full parity |
+| **HTTP/WebSocket/gRPC transports** | ✅ Python, Go, TypeScript, Rust, C++, Zig — see [Transport Protocol Details](#transport-protocol-details) for exact per-language coverage (C#/Java/Scala do not ship these standalone transports; they expose MCP HTTP clients instead) |
+
+For the authoritative, tooling-generated list of exactly which pattern,
+middleware, adapter, memory, and technique classes exist per language, see
+[`feature-manifest.json`](feature-manifest.json).
 
 ---
 
@@ -26,18 +46,26 @@ Comprehensive compatibility information for AgentKit across languages, platforms
 
 | Python Version | Support Status | Notes |
 |----------------|---------------|-------|
-| **3.13** | ✅ **Recommended** | CI default; full suite verified |
-| **3.12** | ✅ Supported | Minimum supported version (`requires-python = ">=3.12"`) |
-| 3.14 | ✅ Verified | Full suite passes; not yet the CI default |
+| **3.13** | ✅ **CI default** | `uv python install 3.13` in `.github/workflows/test.yml` |
+| **3.12** | ✅ Supported | Minimum supported version (`requires-python = ">=3.12"` in `pyproject.toml`) |
+| 3.14 | ✅ Supported | Listed in `pyproject.toml` classifiers |
 | < 3.12 | ❌ Not supported | Below `requires-python` floor |
 
-**Key Dependencies**:
+**Key Dependencies** (from `pyproject.toml`):
 ```
+httpx[http2] >= 0.27.0
 aiohttp >= 3.9.0
+aioquic >= 1.0.0
+websockets >= 12.0
 grpcio >= 1.60.0
 protobuf >= 4.25.0
-websockets >= 12.0
 opentelemetry-api >= 1.20.0
+opentelemetry-sdk >= 1.20.0
+opentelemetry-exporter-otlp >= 1.20.0
+redis >= 4.5.0   (optional, [redis] extra)
+numpy >= 1.24.0
+scipy >= 1.11.0
+scikit-learn >= 1.3.0
 ```
 
 **Python Feature Requirements**:
@@ -51,17 +79,24 @@ opentelemetry-api >= 1.20.0
 
 | Go Version | Support Status | Notes |
 |------------|---------------|-------|
-| **1.22** | ✅ **Recommended** | Latest features |
-| **1.21** | ✅ **Recommended** | Stable, well-tested |
-| **1.20** | ✅ Supported | Minimum supported version |
-| < 1.20 | ❌ Not supported | Missing generics, workspace support |
+| **1.25.12** | ✅ **Required** | `go` directive in `agenkit-go/go.mod`; also the CI toolchain version |
+| < 1.25.12 | ❌ Not supported | Below the declared module floor |
 
-**Key Dependencies**:
+Note: `agenkit-go` is a nested module inside this monorepo
+(`github.com/scttfrdmn/agenkit/agenkit-go`), not a separately tagged
+submodule — see `docs/RELEASING_AGENKIT_GO.md` and issue #660 before assuming
+`agenkit-go/vX.Y.Z` tags exist.
+
+**Key Dependencies** (from `agenkit-go/go.mod`, abridged — see the file for
+the full indirect-dependency list):
 ```
-google.golang.org/grpc v1.76.0
-google.golang.org/protobuf v1.36.10
+google.golang.org/grpc v1.82.1
+google.golang.org/protobuf v1.36.11
 github.com/gorilla/websocket v1.5.3
-go.opentelemetry.io/otel v1.32.0
+github.com/quic-go/quic-go v0.61.0        // HTTP/3 (h3://) support
+go.opentelemetry.io/otel v1.44.0
+go.opentelemetry.io/otel/exporters/prometheus v0.66.0
+github.com/redis/go-redis/v9 v9.21.0
 ```
 
 **Go Feature Requirements**:
@@ -70,412 +105,233 @@ go.opentelemetry.io/otel v1.32.0
 - ✅ Context package
 - ✅ Goroutines & channels
 
+### TypeScript
+
+| Node Version | Support Status | Notes |
+|---------------|---------------|-------|
+| **22** | ✅ CI default | Used in `.github/workflows/test.yml` smoke jobs |
+| **18+** | ✅ Supported | `"engines": {"node": ">=18.0.0"}` in `agenkit-ts/package.json` |
+| < 18 | ❌ Not supported | Below the declared `engines` floor |
+
+Package: `@agenkit/core`. Key dependencies include `@grpc/grpc-js`,
+`@opentelemetry/*`, `chromadb`, and per-provider SDKs (`@anthropic-ai/sdk`,
+`@aws-sdk/client-bedrock-runtime`, `@google/generative-ai`) — see
+`agenkit-ts/package.json` for exact pinned ranges.
+
+### Rust
+
+| Rust Toolchain | Support Status | Notes |
+|-----------------|---------------|-------|
+| **stable** | ✅ Required | CI uses `dtolnay/rust-toolchain@stable`; `agenkit-rust/Cargo.toml` does not pin a `rust-version` (MSRV) field, so "stable at release time" is the only documented floor |
+
+Edition 2021 (`agenkit-rust/Cargo.toml`). The crate uses feature flags for
+optional transports (`tokio`, `reqwest`/`axum` for HTTP, `tokio-tungstenite`
+for WebSocket) — see `Cargo.toml` for the full dependency/feature matrix.
+`native` and `wasm` features are mutually exclusive; do not enable both.
+
+### C++
+
+| Standard | Support Status | Notes |
+|----------|---------------|-------|
+| **C++17** | ✅ Required | `set(CMAKE_CXX_STANDARD 17)` / `CMAKE_CXX_STANDARD_REQUIRED ON` in `agenkit-cpp/CMakeLists.txt` |
+
+Requires CMake and `nlohmann-json3-dev` (see CI install step). Verified to
+build under both Apple Clang and GCC/libstdc++ (Ubuntu 24.04 container) as of
+issue #742/#744 — see the C++ leg of `.github/workflows/test.yml` for the
+exact gate.
+
+### Zig
+
+| Zig Version | Support Status | Notes |
+|--------------|---------------|-------|
+| **0.16.0** | ✅ CI toolchain | Pinned in `.github/workflows/test.yml` (`mlugg/setup-zig@v2`) |
+| **0.15.2** | Declared floor | `.minimum_zig_version` in `agenkit-zig/build.zig.zon` — this predates the 0.16.0 migration (#646); the CI-verified version is 0.16.0, not 0.15.2 |
+
+Treat 0.16.0 as the version to actually use; the `build.zig.zon` floor has
+not been bumped to match the CI toolchain.
+
+### C#/.NET
+
+| Target Framework | Support Status | Notes |
+|-------------------|---------------|-------|
+| **net10.0** | ✅ Required | `<TargetFramework>net10.0</TargetFramework>` in `agenkit-cs/src/Agenkit/Agenkit.csproj` |
+
+Package: `Agenkit` (NuGet). CI uses `.NET 10.0.x` (`actions/setup-dotnet@v6`).
+
+### Java
+
+| Java Version | Support Status | Notes |
+|---------------|---------------|-------|
+| **17** | ✅ Required | `maven.compiler.source`/`maven.compiler.target` in `agenkit-java/pom.xml`; CI uses Temurin 17 |
+
+Maven artifact: `io.agenkit:agenkit`.
+
+### Scala
+
+| Scala Version | Support Status | Notes |
+|-----------------|---------------|-------|
+| **3.4.2** | ✅ Required | `scala3Version` in `agenkit-scala/build.sbt` |
+
+sbt artifact: `io.agenkit:agenkit-scala_3`. Built on a JDK 17 toolchain in CI
+(same JDK setup as the Java leg).
+
 ---
 
 ## Platform Support
 
 ### Operating Systems
 
-| Platform | Python | Go | Notes |
-|----------|--------|----|----|
-| **Linux** | ✅ Full | ✅ Full | Primary development platform |
-| **macOS** | ✅ Full | ✅ Full | Intel & Apple Silicon (M1/M2/M3) |
-| **Windows** | ✅ Full | ✅ Full | Windows 10+ (WSL2 recommended) |
-| **FreeBSD** | ⚠️ Untested | ✅ Full | Should work, community support |
-| **ARM64** | ✅ Full | ✅ Full | Raspberry Pi, AWS Graviton |
+Agenkit's CI matrix runs exclusively on `ubuntu-latest` (see
+`.github/workflows/test.yml`) — self-hosted macOS/Linux runners are
+temporarily suspended (see `CLAUDE.md`, issues #892/#374). The claims below
+about macOS/Windows/FreeBSD/ARM64 are **not independently CI-verified**;
+they reflect what the underlying toolchains (Python, Go, Node, cargo, cmake,
+zig, dotnet, mvn, sbt) support on those platforms, not an Agenkit-specific
+test run.
+
+| Platform | Expected support | Basis |
+|----------|-------------------|-------|
+| **Linux** | ✅ Full | CI-verified (all 9 languages) |
+| **macOS** | ✅ Full (Intel & Apple Silicon) | Not CI-verified; all toolchains used support macOS natively |
+| **Windows** | ⚠️ Likely, untested | Not CI-verified; Unix-socket-based code paths would need WSL2 or Windows-specific handling |
+| **FreeBSD** | ⚠️ Untested | Community support only |
+| **ARM64** | ✅ Likely | Not CI-verified; all underlying toolchains ship ARM64 builds |
 
 ### Container Platforms
 
-| Platform | Support | Notes |
-|----------|---------|-------|
-| **Docker** | ✅ Full | Official images available |
-| **Kubernetes** | ✅ Full | Production manifests included |
-| **Docker Compose** | ✅ Full | Full stack orchestration |
-| **Podman** | ✅ Compatible | OCI-compliant |
-| **AWS ECS/Fargate** | ✅ Compatible | Standard Docker images work |
-| **Azure ACI** | ✅ Compatible | Standard Docker images work |
-| **Google Cloud Run** | ✅ Compatible | HTTP/gRPC support built-in |
+`deploy/` contains Docker and Kubernetes manifests. These are maintained but
+not part of the automated CI gate described above — treat container-platform
+compatibility (Docker, Kubernetes, ECS/Fargate, Cloud Run, etc.) as
+best-effort rather than CI-verified.
 
 ### Cloud Platforms
 
-| Platform | Deployment | Notes |
-|----------|-----------|-------|
-| **AWS** | ✅ Full | ECS, EKS, Lambda, EC2 |
-| **Google Cloud** | ✅ Full | GKE, Cloud Run, GCE |
-| **Azure** | ✅ Full | AKS, Container Apps, VMs |
-| **Heroku** | ✅ Compatible | Standard buildpacks |
-| **Railway** | ✅ Compatible | Docker-based deployment |
-| **Fly.io** | ✅ Compatible | Global edge deployment |
-| **Vercel/Netlify** | ⚠️ Partial | Serverless functions only |
+No cloud-platform-specific CI exists in this repository. AWS Bedrock, Google
+Gemini, and OpenAI-compatible adapters are implemented and tested at the
+library level (see `agenkit-*/adapters` or `agenkit-*/src/adapter`), but
+full end-to-end deployment onto AWS/GCP/Azure/Heroku/Railway/Fly.io is not
+exercised by CI.
 
 ---
 
 ## Core Features
 
-### Feature Parity Matrix
+Feature parity across all nine languages (patterns, middleware, transports,
+composition, observability, memory, cost management, LLM adapters) is
+tracked programmatically in [`feature-manifest.json`](feature-manifest.json)
+and summarized in `README.md`'s [Test Parity](README.md#test-parity)
+section, both of which are regenerated by tooling
+(`scripts/test-parity.sh`, the Parity Validation CI workflow) rather than
+hand-maintained. Rather than duplicate an enumeration here that will drift,
+this document defers to those two sources for the current feature matrix.
 
-| Feature | Python | Go | Status |
-|---------|--------|-----|--------|
-| **Core Interfaces** |
-| Agent ABC | ✅ | ✅ | 100% parity |
-| Message | ✅ | ✅ | 100% parity |
-| Tool | ✅ | ✅ | 100% parity |
-| **Adapters** |
-| LocalAgent | ✅ | ✅ | 100% parity |
-| RemoteAgent | ✅ | ✅ | 100% parity |
-| HTTPAgent | ✅ | ✅ | 100% parity |
-| GRPCServer | ✅ | ✅ | 100% parity |
-| **Transports** |
-| HTTP/1.1 | ✅ | ✅ | 100% parity |
-| HTTP/2 (h2c) | ✅ | ✅ | 100% parity |
-| HTTP/3 (QUIC) | ✅ | ✅ | 100% parity |
-| WebSocket | ✅ | ✅ | 100% parity |
-| gRPC | ✅ | ✅ | 100% parity |
-| Unix Sockets | ✅ | ✅ | 100% parity |
-| **Middleware** |
-| Retry | ✅ | ✅ | 100% parity |
-| Circuit Breaker | ✅ | ✅ | 100% parity |
-| Rate Limiter | ✅ | ✅ | 100% parity |
-| Timeout | ✅ | ✅ | 100% parity |
-| Caching | ✅ | ✅ | 100% parity |
-| Batching | ✅ | ✅ | 100% parity |
-| Metrics | ✅ | ✅ | 100% parity |
-| Tracing | ✅ | ✅ | 100% parity |
-| **Composition** |
-| Sequential | ✅ | ✅ | 100% parity |
-| Parallel | ✅ | ✅ | 100% parity |
-| Fallback | ✅ | ✅ | 100% parity |
-| Conditional | ✅ | ✅ | 100% parity |
-| **Observability** |
-| OpenTelemetry | ✅ | ✅ | 100% parity |
-| Distributed Tracing | ✅ | ✅ | 100% parity |
-| Prometheus Metrics | ✅ | ✅ | 100% parity |
-| Structured Logging | ✅ | ✅ | 100% parity |
-| W3C Trace Context | ✅ | ✅ | Cross-language support |
-| **Memory & State** |
-| InMemory | ✅ | ✅ | 100% parity |
-| Redis | ✅ | ✅ | 100% parity |
-| Vector Store | ✅ | ✅ | 100% parity |
-| Checkpointing | ✅ | ✅ | 100% parity |
-| **Cost Management** |
-| Cost Tracking | ✅ | ✅ | 100% parity |
-| Budget Limiter | ✅ | ✅ | 100% parity |
-| Model Optimizer | ✅ | ⚠️ | Python recommended for LLMs |
-| **LLM Adapters** |
-| OpenAI | ✅ | ✅ | 100% parity |
-| Anthropic | ✅ | ✅ | 100% parity |
-| Custom Providers | ✅ | ✅ | Plugin system |
-
-**Legend**:
-- ✅ Full support
-- ⚠️ Partial support or recommended alternative
-- ❌ Not supported
+At a high level, as of v0.89.0:
+- All 18 patterns (15 reasoning + 3 composition) ship in all 9 languages.
+- All 8 middleware types ship in all 9 languages.
+- Memory, safety, observability, budget, evaluation, and checkpointing
+  subsystems ship in all 9 languages.
+- Standalone HTTP/WebSocket/gRPC **transport** implementations (for building
+  a remote agent server) exist in Python, Go, TypeScript, Rust, C++, and Zig.
+  C#, Java, and Scala currently expose MCP (Model Context Protocol) HTTP
+  clients/servers rather than the general-purpose transport layer the other
+  six languages have — see [Transport Protocol Details](#transport-protocol-details).
+- Reasoning **techniques** (Chain-of-Thought, Tree-of-Thought, etc., beyond
+  the core patterns) exist in Python, Go, TypeScript, Rust, C++, and Zig;
+  C#, Java, and Scala do not yet have a techniques subsystem.
 
 ---
 
 ## Transport Protocol Details
 
+This section covers the six languages that ship standalone HTTP/WebSocket/gRPC
+transports: Python, Go, TypeScript, Rust, C++, Zig.
+
 ### HTTP
 
-| Feature | Python | Go | Notes |
-|---------|--------|-----|----|
-| **HTTP/1.1** | ✅ | ✅ | Default, widest compatibility |
-| **HTTP/2 (h2c)** | ✅ | ✅ | Cleartext, no TLS required |
-| **HTTP/2 (TLS)** | ✅ | ✅ | HTTPS with connection multiplexing |
-| **HTTP/3 (QUIC)** | ✅ | ✅ | UDP-based, TLS 1.3 required |
-| **Streaming** | ✅ | ✅ | Server-sent events, chunked encoding |
-| **Keep-Alive** | ✅ | ✅ | Connection pooling |
-| **TLS 1.3** | ✅ | ✅ | Recommended |
-| **TLS 1.2** | ✅ | ✅ | Minimum supported |
-| **Client Certificates** | ✅ | ✅ | mTLS support |
+| Feature | Python | Go | TypeScript | Rust | C++ | Zig |
+|---------|--------|-----|-----|------|-----|-----|
+| HTTP/1.1 | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| HTTP/2 | ✅ (via `httpx[http2]`) | ✅ | ✅ (`http2` option) | — | — | — |
+| HTTP/3 (QUIC) | ✅ (`aioquic`, falls back to HTTP/2 since `httpx` lacks native HTTP/3) | ✅ (`quic-go/quic-go/http3`) | — | — | — | — |
 
-**Performance**:
-- Python: ~1.02ms avg latency (HTTP/1.1)
-- Go: ~0.055ms avg latency (HTTP/1.1)
-- **Go is 18.5x faster** for HTTP transport
+Zig does not currently have a standalone HTTP transport module under
+`agenkit-zig/src/transports/` (only gRPC and WebSocket exist there); C++ has
+an HTTP agent/server (`agenkit-cpp/src/transports/http_agent.cpp`,
+`http_server.cpp`) without documented HTTP/2 or HTTP/3 support. Rust's HTTP
+transport (`agenkit-rust/src/transports/http.rs`) is HTTP/1.1 via
+`reqwest`/`axum`; no HTTP/2 or HTTP/3-specific code was found in that file.
+
+Treat the previous version of this table (claiming full HTTP/1.1 through
+HTTP/3 parity between "Python and Go" alone) as inaccurate — it also omitted
+the other seven languages entirely.
 
 ### WebSocket
 
-| Feature | Python | Go | Notes |
-|---------|--------|-----|----|
-| **RFC 6455 Compliance** | ✅ | ✅ | Full WebSocket standard |
-| **Binary Frames** | ✅ | ✅ | Efficient message encoding |
-| **Text Frames** | ✅ | ✅ | JSON support |
-| **Ping/Pong** | ✅ | ✅ | Keepalive mechanism |
-| **Compression** | ✅ | ✅ | permessage-deflate |
-| **Auto-Reconnect** | ✅ | ✅ | Exponential backoff |
-| **TLS (WSS)** | ✅ | ✅ | Secure WebSocket |
-| **Subprotocols** | ✅ | ✅ | Custom protocols |
-
-**Libraries**:
-- Python: `websockets >= 12.0` (asyncio-native)
-- Go: `github.com/gorilla/websocket v1.5.3`
+Python, Go, TypeScript, Rust, and C++ all have WebSocket transport modules
+(`websocket_transport.py`, `websocket_transport.go`, `websocket.ts`,
+`websocket.rs`, `websocket_agent.cpp`). Zig has one
+(`agenkit-zig/src/transports/websocket.zig`). Exact feature coverage
+(compression, subprotocols, auto-reconnect) is not independently verified
+per language here — consult each language's transport source/tests.
 
 ### gRPC
 
-| Feature | Python | Go | Notes |
-|---------|--------|-----|----|
-| **Unary RPC** | ✅ | ✅ | Single request/response |
-| **Server Streaming** | ✅ | ✅ | One request, stream responses |
-| **Client Streaming** | ✅ | ✅ | Stream requests, one response |
-| **Bidirectional Streaming** | ✅ | ✅ | Both directions stream |
-| **Protocol Buffers** | ✅ | ✅ | Efficient serialization |
-| **HTTP/2 Multiplexing** | ✅ | ✅ | Multiple RPCs per connection |
-| **Metadata** | ✅ | ✅ | Headers/trailers |
-| **Deadlines** | ✅ | ✅ | Request timeout propagation |
-| **Cancellation** | ✅ | ✅ | Context-based |
-| **TLS** | ✅ | ✅ | Encrypted communication |
-
-**Libraries**:
-- Python: `grpcio >= 1.60.0`
-- Go: `google.golang.org/grpc v1.76.0`
+Python, Go, TypeScript, Rust, C++, and Zig all have gRPC transport modules
+generated against the shared `proto/` definitions
+(`agenkit-go/proto/agentpb`, etc.). C#, Java, and Scala do not.
 
 ---
 
-## Middleware Compatibility
+## Dependency Version Compatibility
 
-### Retry Middleware
+The dependency facts below are extracted directly from each language's
+manifest at the time this file was last verified (commands shown so a
+reviewer can re-run them):
 
-| Feature | Python | Go | Compatible |
-|---------|--------|-----|-----------|
-| Exponential Backoff | ✅ | ✅ | ✅ |
-| Max Attempts | ✅ | ✅ | ✅ |
-| Jitter | ✅ | ✅ | ✅ |
-| Retryable Errors | ✅ | ✅ | ✅ |
-| Metrics | ✅ | ✅ | ✅ |
+| Language | Command | Result |
+|----------|---------|--------|
+| Python | `grep requires-python pyproject.toml` | `>=3.12` |
+| Go | `grep '^go ' agenkit-go/go.mod` | `go 1.25.12` |
+| TypeScript | `grep -A2 '"engines"' agenkit-ts/package.json` | `"node": ">=18.0.0"` |
+| Rust | `grep '^edition' agenkit-rust/Cargo.toml` | `edition = "2021"` (no pinned MSRV) |
+| C++ | `grep CXX_STANDARD agenkit-cpp/CMakeLists.txt` | `CMAKE_CXX_STANDARD 17` |
+| Zig | `grep minimum_zig_version agenkit-zig/build.zig.zon` | `"0.15.2"` (CI actually uses 0.16.0) |
+| C# | `grep TargetFramework agenkit-cs/src/Agenkit/Agenkit.csproj` | `net10.0` |
+| Java | `grep maven.compiler.target agenkit-java/pom.xml` | `17` |
+| Scala | `grep scala3Version agenkit-scala/build.sbt` | `"3.4.2"` |
 
-**Test Coverage**: 10 tests (Python), 10 tests (Go) - 100% parity
-
-### Circuit Breaker Middleware
-
-| Feature | Python | Go | Compatible |
-|---------|--------|-----|-----------|
-| CLOSED/OPEN/HALF_OPEN | ✅ | ✅ | ✅ |
-| Failure Threshold | ✅ | ✅ | ✅ |
-| Recovery Timeout | ✅ | ✅ | ✅ |
-| Success Threshold | ✅ | ✅ | ✅ |
-| Metrics | ✅ | ✅ | ✅ |
-
-**Test Coverage**: 8 tests (Python), 8 tests (Go) - 100% parity
-
-### Rate Limiter Middleware
-
-| Feature | Python | Go | Compatible |
-|---------|--------|-----|-----------|
-| Token Bucket Algorithm | ✅ | ✅ | ✅ |
-| Configurable Rate | ✅ | ✅ | ✅ |
-| Burst Capacity | ✅ | ✅ | ✅ |
-| Wait-based Throttling | ✅ | ✅ | ✅ |
-| Metrics | ✅ | ✅ | ✅ |
-
-**Test Coverage**: 8 tests (Python), 8 tests (Go) - 100% parity
-
-### Caching Middleware
-
-| Feature | Python | Go | Compatible |
-|---------|--------|-----|-----------|
-| LRU Eviction | ✅ | ✅ | ✅ |
-| TTL Expiration | ✅ | ✅ | ✅ |
-| Custom Key Generator | ✅ | ✅ | ✅ |
-| Cache Invalidation | ✅ | ✅ | ✅ |
-| Metrics | ✅ | ✅ | ✅ |
-
-**Test Coverage**: 17 tests (Python), 17 tests (Go) - 100% parity
-
-### Timeout Middleware
-
-| Feature | Python | Go | Compatible |
-|---------|--------|-----|-----------|
-| Request Timeout | ✅ | ✅ | ✅ |
-| Configurable Duration | ✅ | ✅ | ✅ |
-| Graceful Cancellation | ✅ | ✅ | ✅ |
-| Metrics | ✅ | ✅ | ✅ |
-
-**Test Coverage**: 18 tests (Python), 15 tests (Go) - Full coverage
-
-### Batching Middleware
-
-| Feature | Python | Go | Compatible |
-|---------|--------|-----|-----------|
-| Size-based Batching | ✅ | ✅ | ✅ |
-| Time-based Batching | ✅ | ✅ | ✅ |
-| Partial Failure Handling | ✅ | ✅ | ✅ |
-| Individual Response Distribution | ✅ | ✅ | ✅ |
-| Metrics | ✅ | ✅ | ✅ |
-
-**Test Coverage**: 21 tests (Python), 15 tests (Go) - Full coverage
-
----
-
-## Observability Compatibility
-
-### OpenTelemetry Support
-
-| Component | Python | Go | Cross-Language |
-|-----------|--------|-----|----------------|
-| **Tracing** |
-| W3C Trace Context | ✅ | ✅ | ✅ Full propagation |
-| Span Creation | ✅ | ✅ | ✅ Compatible |
-| Span Attributes | ✅ | ✅ | ✅ Compatible |
-| Parent-Child Relationships | ✅ | ✅ | ✅ Cross-language |
-| OTLP Exporter | ✅ | ✅ | ✅ Compatible |
-| Console Exporter | ✅ | ✅ | ✅ Compatible |
-| **Metrics** |
-| Prometheus Format | ✅ | ✅ | ✅ Compatible |
-| Counters | ✅ | ✅ | ✅ Compatible |
-| Histograms | ✅ | ✅ | ✅ Compatible |
-| Gauges | ✅ | ✅ | ✅ Compatible |
-| OTLP Metrics | ✅ | ✅ | ✅ Compatible |
-| **Logging** |
-| Structured Logging | ✅ | ✅ | ✅ Compatible |
-| JSON Format | ✅ | ✅ | ✅ Compatible |
-| Trace Correlation | ✅ | ✅ | ✅ Cross-language |
-| Log Levels | ✅ | ✅ | ✅ Compatible |
-
-**Test Coverage**:
-- Python: 25 tests (tracing, metrics, logging)
-- Go: 28 tests (tracing, metrics, logging)
-- Cross-Language: 7 integration tests
-
-### Monitoring Stack Compatibility
-
-| Stack | Python | Go | Notes |
-|-------|--------|-----|-------|
-| **Jaeger** | ✅ | ✅ | Distributed tracing |
-| **Prometheus** | ✅ | ✅ | Metrics collection |
-| **Grafana** | ✅ | ✅ | Dashboards & visualization |
-| **Zipkin** | ✅ | ✅ | Alternative to Jaeger |
-| **New Relic** | ✅ | ✅ | OTLP exporter |
-| **Datadog** | ✅ | ✅ | OTLP exporter |
-| **Honeycomb** | ✅ | ✅ | OTLP exporter |
-| **Elastic APM** | ✅ | ✅ | OTLP exporter |
-
----
-
-## Dependencies
-
-### Python Required Dependencies
-
-```python
-# Core
-aiohttp >= 3.9.0           # HTTP client/server
-typing-extensions >= 4.9.0  # Backports for older Python
-
-# Transports
-grpcio >= 1.60.0           # gRPC support
-protobuf >= 4.25.0         # Protocol Buffers
-websockets >= 12.0         # WebSocket support
-
-# Observability
-opentelemetry-api >= 1.20.0        # OpenTelemetry tracing
-opentelemetry-sdk >= 1.20.0        # OpenTelemetry SDK
-opentelemetry-exporter-otlp >= 1.20.0  # OTLP exporter
-
-# Optional
-redis >= 5.0.0             # Redis memory backend
-numpy >= 1.24.0            # Vector operations
-```
-
-### Go Required Dependencies
-
-```go
-// Core
-(standard library only)
-
-// Transports
-google.golang.org/grpc v1.76.0              // gRPC support
-google.golang.org/protobuf v1.36.10         // Protocol Buffers
-github.com/gorilla/websocket v1.5.3         // WebSocket support
-github.com/quic-go/quic-go v0.42.0          // QUIC/HTTP3 support
-
-// Observability
-go.opentelemetry.io/otel v1.32.0                     // OpenTelemetry
-go.opentelemetry.io/otel/exporters/prometheus v0.54.0 // Prometheus
-go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.32.0 // OTLP
-
-// Optional
-github.com/redis/go-redis/v9 v9.0.5         // Redis memory
-```
-
-### Dependency Version Compatibility
-
-| Dependency | Minimum | Recommended | Maximum Tested |
-|------------|---------|-------------|----------------|
-| **Python** |
-| Python | 3.12 | 3.13 | 3.14 |
-| aiohttp | 3.9.0 | 3.9.x | 3.9.5 |
-| grpcio | 1.60.0 | 1.60.x | 1.66.0 |
-| websockets | 12.0 | 12.0 | 13.0 |
-| opentelemetry | 1.20.0 | 1.20.x | 1.30.0 |
-| **Go** |
-| Go | 1.20 | 1.21-1.22 | 1.22 |
-| grpc | 1.60.0 | 1.70.x | 1.76.0 |
-| protobuf | 1.31.0 | 1.36.x | 1.36.10 |
-| otel | 1.20.0 | 1.30.x | 1.32.0 |
+For the full pinned dependency list of any language, read that language's
+manifest directly (`pyproject.toml`, `agenkit-go/go.mod`,
+`agenkit-ts/package.json`, `agenkit-rust/Cargo.toml`,
+`agenkit-cpp/CMakeLists.txt`, `agenkit-zig/build.zig.zon`,
+`agenkit-cs/src/Agenkit/Agenkit.csproj`, `agenkit-java/pom.xml`,
+`agenkit-scala/build.sbt`) rather than this document — dependency pins
+change frequently (Dependabot keeps them current) and a static table here
+goes stale quickly.
 
 ---
 
 ## Performance Characteristics
 
-### Latency by Transport (Go vs Python)
+The specific latency/throughput numbers that previously lived in this
+section (e.g. "Go is 18.5x faster than Python for HTTP transport") were
+measured in November 2025 against Python 3.14.0 / Go 1.21–1.22 on Apple
+Silicon, as recorded in `benchmarks/BASELINES.md`. Both the Go toolchain
+version and several dependency versions have since moved (see the
+[Dependency Version Compatibility](#dependency-version-compatibility)
+section above), so those exact figures should not be read as current.
 
-| Transport | Python Latency | Go Latency | Go Speedup |
-|-----------|---------------|------------|------------|
-| HTTP/1.1 | 1.02 ms | 0.055 ms | **18.5x faster** |
-| HTTP/2 | 1.01 ms | 0.057 ms | **17.7x faster** |
-| HTTP/3 | 3.47 ms | 0.181 ms | **19.2x faster** |
-| WebSocket | ~513 ms* | ~502 ms* | Similar |
-| gRPC | 0.95 ms | 0.048 ms | **19.8x faster** |
+For current, regenerable performance data:
+- Run the benchmark suites directly: `benchmarks/test_middleware_overhead.py`,
+  `benchmarks/test_transport_overhead.py`, `benchmarks/test_composition_overhead.py`,
+  `benchmarks/adapter_overhead.py`.
+- See `benchmarks/BASELINES.md` for the methodology and the most recent
+  point-in-time measurements, each dated.
 
-\* For 10 chunks @ 50ms delay (streaming scenario)
-
-### Middleware Overhead
-
-| Middleware | Python Overhead | Go Overhead |
-|------------|----------------|-------------|
-| Retry | 0.7µs | 0.08µs |
-| Circuit Breaker | 14.5µs | 0.74µs |
-| Rate Limiter | 6.1µs | 0.56µs |
-| Timeout | 2.1µs | 1.5µs |
-| Caching (miss) | 5.8µs | 0.89µs |
-| Batching | 12µs | 1.3µs |
-
-**Note**: In production with LLM calls (100-1000ms), middleware overhead is <0.01% of total time.
-
-### Concurrent Performance
-
-| Scenario | Python Throughput | Go Throughput | Go Advantage |
-|----------|------------------|---------------|--------------|
-| 1 concurrent | ~980 req/s | ~18,200 req/s | 18.6x |
-| 10 concurrent | ~2,450 req/s | ~45,000 req/s | 18.4x |
-| 50 concurrent | ~3,200 req/s | ~58,000 req/s | 18.1x |
-| 100 concurrent | ~3,400 req/s | ~62,000 req/s | 18.2x |
-
----
-
-## Breaking Changes & Migration
-
-### v0.9.0 → v1.0.0 (Planned)
-
-**Breaking Changes**:
-- None expected. v1.0.0 will be backward compatible with v0.9.x
-
-**Deprecations**:
-- Python 3.9 support (end of life Oct 2025)
-
-**New Requirements**:
-- Go 1.25.12+ (declared floor in `agenkit-go/go.mod`)
-- Python 3.10+ (for match statements, improved typing)
-
-### Upgrade Path
-
-```bash
-# Python
-pip install --upgrade agenkit>=1.0.0
-
-# Go
-go get github.com/scttfrdmn/agenkit-go@v1.0.0
-```
+The qualitative conclusion that has held across every measurement to date —
+that framework/middleware overhead is a small fraction (well under 1%) of a
+typical LLM call's 100–1000ms latency — is still the right way to think
+about this, independent of the exact multiplier on any given day.
 
 ---
 
@@ -483,90 +339,82 @@ go get github.com/scttfrdmn/agenkit-go@v1.0.0
 
 ### Platform-Specific Issues
 
-**Windows**:
-- Unix sockets not supported (Windows-specific implementation planned)
-- QUIC/HTTP3 requires Windows 10 1809+ or Windows Server 2019+
+**Windows**: Not CI-verified (see [Platform Support](#platform-support)).
+Unix-socket-based transports would need Windows-specific handling or WSL2.
 
-**macOS ARM (M1/M2/M3)**:
-- All features fully supported
-- Native ARM64 builds available
-
-**Linux**:
-- No known limitations
-- Recommended for production deployments
+**macOS / Linux**: No known Agenkit-specific limitations; Linux is the only
+CI-verified platform (`ubuntu-latest`).
 
 ### Feature-Specific Limitations
 
-**HTTP/3 (QUIC)**:
-- Requires UDP port access (may be blocked by some firewalls)
-- TLS 1.3 is mandatory (no plaintext QUIC)
-- Certificate validation more strict than HTTP/1.1
+**HTTP/3 (QUIC)**: Only implemented in Python (`aioquic`, with a fallback to
+HTTP/2 since `httpx` has no native HTTP/3 client) and Go
+(`quic-go/quic-go/http3`). Requires UDP port access and TLS 1.3.
 
-**gRPC**:
-- Binary protocol (not browser-compatible without grpc-web)
-- Requires protobuf schema generation
+**gRPC**: Binary protocol (not browser-compatible without grpc-web). Not
+implemented in C#, Java, or Scala.
 
-**WebSocket**:
-- Stateful connections (requires connection management)
-- Some proxies/load balancers may not support
+**Techniques subsystem** (Chain-of-Thought, Tree-of-Thought, etc., beyond the
+15+3 core patterns): Not implemented in C#, Java, or Scala as of v0.89.0.
 
 ---
 
 ## Testing Compatibility
 
-### Test Coverage
+### Test Counts
 
-| Category | Python Tests | Go Tests | Total |
-|----------|-------------|----------|-------|
-| **Core** | 45 | 38 | 83 |
-| **Transports** | 62 | 53 | 115 |
-| **Middleware** | 90 | 81 | 171 |
-| **Composition** | 32 | 10 | 42 |
-| **Observability** | 25 | 28 | 53 |
-| **Integration** | 47 | 0 | 47 |
-| **Chaos Engineering** | 53 | 0 | 53 |
-| **Property-Based** | 37 | 0 | 37 |
-| **Total** | **391** | **210** | **601** |
+Test counts vary significantly by language and change every release; a
+fixed table here goes stale immediately. Current counts are regenerated by
+`scripts/test-parity.sh` into `test-parity-report.json` and summarized in
+`README.md`'s [Test Parity](README.md#test-parity) table. Run
+`./scripts/test-parity.sh` (or read `test-parity-report.json`'s
+`generated_at` timestamp) for the current, dated numbers rather than trusting
+any number reproduced in this file.
 
-### CI/CD Testing Matrix
+Per-language pattern/middleware/composition **parity** (does the feature
+exist at all in this language) is full across all 9 languages as of
+v0.89.0 for the core pattern/middleware/composition/memory/safety/
+observability/budget/evaluation/checkpointing subsystems — see
+[Core Features](#core-features) above for the caveats on transports and
+techniques.
 
-**GitHub Actions** (single configuration, not a matrix — local `make test` is the
-primary gate and CI is a safety net; see CLAUDE.md):
-- Python: 3.13
-- Go: 1.25
-- OS: Ubuntu (`ubuntu-latest` for pull requests, self-hosted Linux for push/schedule)
+### CI
 
-**Test Execution**:
-- Average runtime: ~5-8 minutes
-- Parallel execution across matrix
-- Automatic test parity checking (warns if >30% divergence)
+CI runs on GitHub-hosted `ubuntu-latest` runners for all workflows
+(self-hosted routing is temporarily suspended — see `CLAUDE.md` and issues
+#892/#374). Toolchain versions pinned in CI:
+
+| Language | CI Toolchain Version |
+|----------|----------------------|
+| Python | 3.13 (`uv python install 3.13`) |
+| Go | 1.25.12 |
+| TypeScript/Node | 22 |
+| Rust | `stable` (rolling) |
+| Zig | 0.16.0 |
+| C#/.NET | 10.0.x |
+| Java | 17 (Temurin) |
+| Scala | Scala 3.4.2 on JDK 17 |
+
+**Local testing is primary, not CI** — see `CLAUDE.md`'s Testing Policy
+section. Run `make test` before committing; CI is a safety net, not the
+gate.
 
 ---
 
 ## Support & Maintenance
 
-### Version Support Policy
+### Versioning
 
-| Version Type | Support Duration | Updates |
-|-------------|-----------------|---------|
-| **Latest Stable** | Ongoing | Bug fixes, security, features |
-| **Previous Major** | 6 months | Critical security only |
-| **Beta (0.9.x)** | Until v1.0.0 | Bug fixes, security |
-| **Pre-release (<0.9)** | No support | Upgrade recommended |
+Agenkit follows [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html)
+(see `RELEASING.md`). The project has never shipped a v1.0.0 — it moved
+directly from the v0.9.0 era into the current v0.x release train without a
+1.0 milestone (see `ROADMAP.md`'s note on milestones #52/#53, both closed
+2026-03-16 with zero issues ever tracked against them). Breaking changes are
+documented per release in `CHANGELOG.md` (search for "BREAKING").
 
-### Release Cadence
-
-- **Major releases** (x.0.0): Annual, with breaking changes
-- **Minor releases** (0.x.0): Quarterly, new features
-- **Patch releases** (0.0.x): As needed, bug fixes & security
-
-### Deprecation Policy
-
-Features marked for deprecation:
-1. Announced 6 months before removal
-2. Warnings added to documentation and logs
-3. Migration guide provided
-4. Removed in next major version
+For the current version, always read the root [`VERSION`](VERSION) file —
+`make check-version` asserts all version declarations across the repo agree
+with it.
 
 ---
 
@@ -577,30 +425,36 @@ Features marked for deprecation:
 If you encounter compatibility problems:
 
 1. **Check this document** for known limitations
-2. **Search GitHub Issues**: https://github.com/scttfrdmn/agenkit/issues
-3. **Ask in Discussions**: https://github.com/scttfrdmn/agenkit/discussions
-4. **Report a bug**: Include OS, versions, and error details
+2. **Check `feature-manifest.json`** for exact per-language pattern/middleware/adapter coverage
+3. **Search GitHub Issues**: https://github.com/scttfrdmn/agenkit/issues
+4. **Ask in Discussions**: https://github.com/scttfrdmn/agenkit/discussions
+5. **Report a bug**: Include OS, language toolchain version, and error details
 
 ### Version-Specific Information
 
 ```bash
 # Check installed versions
 python -c "import agenkit; print(agenkit.__version__)"
-go list -m github.com/scttfrdmn/agenkit-go
+go list -m github.com/scttfrdmn/agenkit/agenkit-go
 
-# Check Python/Go versions
+# Check language toolchain versions
 python --version
 go version
+node --version
+cargo --version
+zig version
+dotnet --version
+java -version
+scala --version
 
-# Check dependency versions
-pip show agenkit grpcio aiohttp
-go list -m all | grep -E "grpc|otel|websocket"
+# Check the repo's declared version (single source of truth)
+cat VERSION
 ```
 
 ---
 
 **Need more information?**
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup or [SECURITY.md](SECURITY.md) for security considerations.
+See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) for development setup or [SECURITY.md](SECURITY.md) for security considerations.
 
-**Last Updated**: November 2025
-**Maintainers**: AgentKit Core Team
+**Last Updated**: August 2026
+**Maintainers**: Agenkit Core Team

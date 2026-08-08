@@ -29,6 +29,7 @@ class MockAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return self._capabilities
 
@@ -53,6 +54,7 @@ class FailingAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -130,7 +132,7 @@ def test_parallel_capabilities_combined():
     agent2 = MockAgent("agent2", capabilities=["write", "format"])
 
     parallel = ParallelAgent(agents=[agent1, agent2], aggregator=simple_first_aggregator)
-    caps = parallel.capabilities()
+    caps = parallel.capabilities
 
     # Should have all unique capabilities plus parallel/ensemble
     assert "search" in caps
@@ -147,7 +149,7 @@ def test_parallel_capabilities_deduplication():
     agent2 = MockAgent("agent2", capabilities=["search", "write"])
 
     parallel = ParallelAgent(agents=[agent1, agent2], aggregator=simple_first_aggregator)
-    caps = parallel.capabilities()
+    caps = parallel.capabilities
 
     # "search" should appear only once
     assert caps.count("search") == 1

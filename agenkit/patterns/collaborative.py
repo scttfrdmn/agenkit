@@ -120,12 +120,13 @@ class CollaborativeAgent(Agent):
         """Return the agent's identifier."""
         return "CollaborativeAgent"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return the combined capabilities of all agents."""
         cap_set = set()
 
         for agent in self._agents:
-            cap_set.update(agent.capabilities())
+            cap_set.update(agent.capabilities)
 
         capabilities = list(cap_set)
         capabilities.extend(["collaborative", "iterative", "consensus"])

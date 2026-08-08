@@ -34,6 +34,7 @@ class MockAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return self._capabilities
 
@@ -63,6 +64,7 @@ class FailingAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -205,7 +207,7 @@ def test_collaborative_capabilities_combined():
         agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate
     )
     collab = CollaborativeAgent(config)
-    caps = collab.capabilities()
+    caps = collab.capabilities
 
     # Should have all agent capabilities plus collaborative-specific
     assert "search" in caps
@@ -226,7 +228,7 @@ def test_collaborative_capabilities_deduplication():
         agents=[agent1, agent2], merge_func=default_merge_funcs.concatenate
     )
     collab = CollaborativeAgent(config)
-    caps = collab.capabilities()
+    caps = collab.capabilities
 
     # "search" should appear only once
     assert caps.count("search") == 1

@@ -28,6 +28,7 @@ class MockAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return self._capabilities
 
@@ -52,6 +53,7 @@ class FailingAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -81,6 +83,7 @@ class MockPlanner:
     def name(self):
         return "MockPlanner"
 
+    @property
     def capabilities(self):
         return ["planning", "synthesis"]
 
@@ -111,6 +114,7 @@ class FailingPlanner:
     def name(self):
         return "FailingPlanner"
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -212,7 +216,7 @@ def test_supervisor_capabilities_combined():
     tester = MockAgent("tester", capabilities=["test"])
 
     supervisor = SupervisorAgent(planner=planner, specialists={"coder": coder, "tester": tester})
-    caps = supervisor.capabilities()
+    caps = supervisor.capabilities
 
     # Should have planner, specialist, and supervisor-specific capabilities
     assert "planning" in caps
@@ -231,7 +235,7 @@ def test_supervisor_capabilities_deduplication():
     agent2 = MockAgent("agent2", capabilities=["search"])
 
     supervisor = SupervisorAgent(planner=planner, specialists={"agent1": agent1, "agent2": agent2})
-    caps = supervisor.capabilities()
+    caps = supervisor.capabilities
 
     # "search" should appear only once
     assert caps.count("search") == 1
@@ -487,7 +491,7 @@ def test_simple_planner_capabilities():
     agent = MockAgent("base", capabilities=["llm", "reasoning"])
     planner = SimplePlanner(agent)
 
-    caps = planner.capabilities()
+    caps = planner.capabilities
 
     # Should have agent capabilities plus planning/synthesis
     assert "llm" in caps

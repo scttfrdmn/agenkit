@@ -110,9 +110,11 @@ jobs:
     # Queue behind this job's own prior push runs (#892) — this is one of the
     # three jobs that actually failed in the incident: Trivy's vulnerability-DB
     # download hit "no space left on device" when a merge burst ran multiple
-    # copies at once. See test.yml for the group-key collision root cause.
+    # copies at once. Literal job-name suffix, not `github.job` — see the
+    # govulncheck job below for why (that context evaluated to empty for two
+    # of this file's jobs on PR #894, for reasons not fully isolated).
     concurrency:
-      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', 'trivy') }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
     steps:
@@ -141,9 +143,15 @@ jobs:
     name: govulncheck (Go)
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
     # Queue behind this job's own prior push runs (#892). See test.yml for
-    # the group-key collision root cause.
+    # the group-key collision root cause. The job-name suffix is a LITERAL
+    # ('govulncheck'), not `github.job` — that context evaluated to an empty
+    # string for this specific job on PR #894 (group came back as
+    # "Security-894-" with a trailing hyphen and nothing after), while the
+    # identical construction worked in test.yml and lint.yml. Root cause not
+    # fully isolated; a literal sidesteps whatever the inconsistency is rather
+    # than relying on a context that silently produced empty strings once.
     concurrency:
-      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', 'govulncheck') }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 15
     steps:
@@ -184,10 +192,10 @@ jobs:
   semgrep:
     name: Semgrep SAST
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
-    # Queue behind this job's own prior push runs (#892). See test.yml for
-    # the group-key collision root cause.
+    # Queue behind this job's own prior push runs (#892). Literal job-name
+    # suffix, not `github.job` — see the govulncheck job above for why.
     concurrency:
-      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', 'semgrep') }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
     steps:

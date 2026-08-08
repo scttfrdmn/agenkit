@@ -21,9 +21,10 @@ jobs:
     # block for the full root-cause writeup: the pull_request group key here
     # must never collide with the workflow-level `<workflow>-<pr#>` key above,
     # or the job is silently killed with zero steps and no error (#892 / PR
-    # #894 postmortem). github.job is appended on both branches so it can't.
+    # #894 postmortem). Literal job-name suffix, not `github.job` — that
+    # context evaluated to empty for two jobs elsewhere with no clear cause.
     concurrency:
-      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', 'format-check') }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 5
     env:

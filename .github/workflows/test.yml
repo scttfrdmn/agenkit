@@ -43,17 +43,21 @@ jobs:
     # workflow-level block above already provides — this override must not
     # change PR concurrency semantics, only add the push-side serialization.
     concurrency:
-      # ACTUAL root cause found on PR #894: this job's pull_request group key
-      # must never equal the workflow-level group above (`<workflow>-<pr#>`),
-      # or GitHub Actions silently kills the job before any step runs — no
-      # error anywhere, 0s duration, 0 steps. My first two attempts collided
-      # exactly (`format('{0}-{1}', workflow, pr#)` IS the workflow-level
-      # key). Fix: always append `github.job` as a distinguishing suffix, on
-      # BOTH branches, so this key can never match the 2-part workflow-level
-      # one. matrix-based jobs elsewhere (codeql, docker-build) already do
-      # this by construction, via their matrix-value suffix — that's why they
-      # were unaffected while every non-matrix job here failed identically.
-      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
+      # Root cause found on PR #894, in two parts:
+      # 1. This job's pull_request group key must never equal the
+      #    workflow-level group above (`<workflow>-<pr#>`), or GitHub Actions
+      #    silently kills the job before any step runs — no error anywhere,
+      #    0s duration, 0 steps. My first attempt collided exactly
+      #    (`format('{0}-{1}', workflow, pr#)` IS the workflow-level key).
+      # 2. The obvious fix — append `github.job` as a distinguishing suffix —
+      #    worked here and in lint.yml, but `github.job` evaluated to an
+      #    EMPTY string for two specific jobs in security.yml (group came
+      #    back as "<workflow>-<pr#>-" with a trailing hyphen, cancelled with
+      #    "higher priority waiting request" — a different, also-undiagnosed
+      #    failure mode of the same context). Used a literal job-name string
+      #    ('smoke-test') instead, everywhere, once that inconsistency showed
+      #    up — don't trust `github.job` inside `concurrency:` at all.
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', 'smoke-test') }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 15
     env:

@@ -35,8 +35,11 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-agenkit = { version = "0.48.0", features = ["native"] }
+agenkit = { version = "0.89.0", features = ["native"] }
 ```
+
+(See [`agenkit-rust/Cargo.toml`](../agenkit-rust/Cargo.toml) for the current version —
+this line previously pinned 0.48.0 and had drifted 41 releases stale; see #874.)
 
 The `native` feature includes all OpenTelemetry dependencies.
 
@@ -756,5 +759,6 @@ This will generate and open the full rustdoc documentation for all modules.
 
 ---
 
-**Last Updated:** January 2026
-**Version:** 0.48.0
+**Last Updated:** August 2026
+**Version:** see [`agenkit-rust/Cargo.toml`](../agenkit-rust/Cargo.toml) (not restated
+here — it rots; see #874, following the #842 precedent)

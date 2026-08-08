@@ -8,13 +8,17 @@
 
 This document outlines the development roadmap for agenkit, organized by phases and milestones.
 
-## Current Status (June 2026)
+## Current Status (August 2026)
 
 ### 🚀 Strategic Context: Production Infrastructure Complete
 
-**June 2026** — v0.85.0 shipped. Nine language implementations (Python, Go, TypeScript,
-Rust, C++, Zig, C#, Java, Scala), MCP support, Reasoning Memory, and Agent Skills.
-See GitHub milestones for per-release detail (the authoritative source).
+**August 2026** — v0.89.0 shipped (2026-08-06). Nine language implementations (Python, Go,
+TypeScript, Rust, C++, Zig, C#, Java, Scala), MCP support, Reasoning Memory, and Agent
+Skills landed by v0.85.0 (2026-03-18); v0.86.0/v0.87.0 added a typed cross-language token
+`Usage` struct; v0.88.0 is intentionally skipped (reserved for the observability
+milestone, #715); v0.89.0 was a defect-repair release (82 commits) closing out several
+release-gate and CI bugs. See `CHANGELOG.md` for full per-release detail and GitHub
+milestones for the authoritative work-tracking source.
 
 1. **30-Hour Autonomous Operation**: Infrastructure ready for extended agent sessions
 2. **Production Infrastructure**: Checkpointing, budget tracking, and memory systems complete
@@ -1656,80 +1660,15 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 
 ---
 
-### v0.9.0 - Release Candidate (Due: May 5, 2026) 🎯
-
-**Status**: 🚧 Planned | **Priority**: 🔴 Critical
-
-**Goal**: Feature-complete beta for external testing
-
-**What Will Be Included**:
-- 100% feature parity across all 6 languages (from v0.48.0)
-- Core Reasoning Techniques (CoT, ToT, Self-Consistency) - Already complete ✅
-- Comprehensive evaluation framework - Already complete ✅
-- Complete documentation with API references
-- Cross-language verified
-- Performance validated
-- All tests passing
-
-**Release Prep**:
-- Comprehensive release notes and changelog
-- Final end-to-end testing across all platforms
-- API stability review
-- Conference demo preparation
-
-**Milestone**: [#52 v0.9.0 - Release Candidate](https://github.com/scttfrdmn/agenkit/milestone/52) (3 issues)
-
----
-
-### External Beta Testing Period (May 6-26, 2026)
-
-**Duration**: 2-3 weeks
-**Focus**: External validation and feedback collection
-
-**Activities**:
-- Public announcement of v0.9.0 beta
-- Community testing across all languages and platforms
-- Bug reports and feature requests collection
-- Performance validation in production environments
-- API usability feedback
-- Documentation review
-
-**Channels**:
-- GitHub Issues and Discussions
-- Direct user feedback
-- Community testing reports
-- Production deployment feedback
-
----
-
-### v1.0.0 - Stable Release (Due: May 27, 2026) 🚀
-
-**Status**: 🚧 Planned | **Priority**: 🔴 Critical
-
-**Goal**: Production-ready stable release with API stability guarantee
-
-**Final Polish**:
-- Incorporate external feedback from v0.9.0 testing
-- Final API stability review and lock
-- Bug fixes and refinements from beta testing
-- Official v1.0.0 release and announcement across all channels
-
-**API Stability Guarantee**:
-- Semantic versioning commitment begins
-- No breaking changes in v1.x releases
-- Backward compatibility maintained
-- Long-term support (LTS)
-
-**Production Ready**:
-- External testing complete
-- Known issues resolved
-- Performance validated at scale
-- Documentation battle-tested
-- API locked and stable
-
-**Milestone**: [#53 v1.0.0 - Stable Release](https://github.com/scttfrdmn/agenkit/milestone/53) (3 issues)
-
----
+> **Note:** This roadmap previously carried a "v0.9.0 - Release Candidate" /
+> "v1.0.0 - Stable Release" plan here (milestones #52 and #53, both due May
+> 2026). That plan was abandoned, not delayed: both milestones closed
+> 2026-03-16 with 0 issues ever tracked against them, and versioning went
+> straight past v0.9.0/v1.0.0 to the current release train (see the root
+> `VERSION` file for the current number, and `CHANGELOG.md` for the release
+> history — v0.89.0 as of this edit). The `v0.9.0` git tag that exists in
+> this repo points at an unrelated 2025-11-15 release reusing that version
+> number, not this plan.
 
 ### Post-v1.0 Work - v1.1.0+ (Techniques Library)
 
@@ -1840,23 +1779,12 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 - **Priority**: 🟡 Medium (Expansion, not blocking v1.0)
 - **Milestone**: [#63 v0.50.0 - Service Connectors & Framework Examples](https://github.com/scttfrdmn/agenkit/milestone/63)
 
-**v0.9.0 (May 5, 2026):** Release Candidate 🎯
-- Feature-complete beta for external testing
-- API stability review
-- Conference demo preparation
-- 3 issues tracked in milestone #52
-
-**External Beta Testing (May 6-26, 2026):**
-- 2-3 week public testing period
-- Community feedback and bug fixes
-
-**v1.0.0 (May 27, 2026):** Stable Release 🚀
-- Production-ready with API stability guarantee
-- 100% feature parity across 6 languages
-- Core Reasoning Techniques complete (CoT, ToT, Self-Consistency)
-- Comprehensive evaluation framework
-- Complete documentation and cross-language verification
-- 3 issues tracked in milestone #53
+> **Note:** The "v0.9.0 Release Candidate" / "v1.0.0 Stable Release" plan that
+> previously appeared here (milestones #52 and #53) was abandoned, not
+> delayed — both milestones closed 2026-03-16 with 0 issues ever tracked
+> against them. The project went straight past v0.9.0/v1.0.0 to the current
+> release train; see the root `VERSION` file and `CHANGELOG.md` for the
+> actual history.
 
 #### Post-v1.0 (Q2-Q4 2026)
 
@@ -1880,4 +1808,6 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: January 16, 2026 (v0.49.0 Observability COMPLETE: All 4 languages ✅ - Rust (66 tests), C++ (63 tests), Zig (66 tests), TypeScript (76 tests) = 268 total observability tests! 🎉 Exceeds Python + Go combined. Performance optimization: 600x faster test counting. v0.49.0 remaining: Memory Systems Phase 2 + Advanced Reasoning (in progress). v0.50.0 (Service Connectors) planned Q2. v1.0.0 on track for May 27, 2026.)
+Last updated: 2026-08-06, tracking v0.89.0 (see `VERSION` and `CHANGELOG.md` for
+the current release — this line will drift again if hand-maintained, so treat
+those two files as authoritative and this one as historical narrative only).

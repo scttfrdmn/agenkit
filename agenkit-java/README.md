@@ -21,7 +21,9 @@ mvn package     # build the jar
 <dependency>
   <groupId>io.agenkit</groupId>
   <artifactId>agenkit</artifactId>
-  <version>0.72.0</version>
+  <!-- See pom.xml for the current version (previously hardcoded here as 0.72.0,
+       which drifted 17 releases stale -- see #874) -->
+  <version>0.89.0</version>
 </dependency>
 ```
 

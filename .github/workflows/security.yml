@@ -41,6 +41,13 @@ jobs:
   codeql:
     name: CodeQL (${{ matrix.language }})
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs (#892) — matrix.language is
+    # included on BOTH sides so the 4 language legs stay independent lanes on
+    # push (parallel, as today) and don't cancel each other on pull_request
+    # (also as today); only reruns of the SAME language serialize.
+    concurrency:
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', matrix.language) }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 30
     env:
       # The self-hosted runner has an older system `go` (1.22) earlier on PATH
@@ -100,6 +107,13 @@ jobs:
   trivy:
     name: Trivy filesystem scan
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs (#892) — this is one of the
+    # three jobs that actually failed in the incident: Trivy's vulnerability-DB
+    # download hit "no space left on device" when a merge burst ran multiple
+    # copies at once.
+    concurrency:
+      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
@@ -126,6 +140,10 @@ jobs:
   govulncheck:
     name: govulncheck (Go)
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs (#892).
+    concurrency:
+      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
@@ -165,6 +183,10 @@ jobs:
   semgrep:
     name: Semgrep SAST
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs (#892).
+    concurrency:
+      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7

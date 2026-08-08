@@ -21,6 +21,14 @@ jobs:
     # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
     # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs (#892). This workflow had no
+    # concurrency block before this change, so the pull_request group key is
+    # made unique per run (via run_id) rather than per-PR — deliberately
+    # preserving "no dedup/cancel behavior on PRs", since adding that now
+    # would be an unrelated behavior change.
+    concurrency:
+      group: ${{ github.event_name == 'pull_request' && format('{0}-pr-run-{1}', github.workflow, github.run_id) || format('janus-push-{0}', github.job) }}
+      cancel-in-progress: false
     timeout-minutes: 10
 
     steps:

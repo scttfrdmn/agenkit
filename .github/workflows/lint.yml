@@ -17,6 +17,12 @@ jobs:
     # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
     # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs — see the matching block in
+    # test.yml for the full rationale and why it's scoped per-job, not global
+    # (#892: a merge burst ran N copies of the same job at once on one disk).
+    concurrency:
+      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 5
     env:
       GOTOOLCHAIN: local # pin installed Go; never auto-fetch an old toolchain
@@ -106,6 +112,13 @@ jobs:
   docker-build:
     name: Docker Base Images (build only)
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Queue behind this job's own prior push runs (#892) — matrix.image is
+    # included on BOTH sides so the go/python legs stay independent lanes on
+    # push (parallel, as today) and don't cancel each other on pull_request
+    # (also as today); only reruns of the SAME image serialize.
+    concurrency:
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', matrix.image) }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
 
     strategy:

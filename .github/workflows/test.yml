@@ -18,6 +18,33 @@ jobs:
     # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
     # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # On push/schedule (self-hosted janus), queue this job behind its OWN
+    # prior runs rather than letting a burst of pushes run N copies of it at
+    # once — the workflow-level concurrency group above only dedups repeated
+    # pushes to the SAME workflow+ref, so it did nothing when 9 squash-merges
+    # in ~30 minutes each fired a fresh copy of every self-hosted job
+    # simultaneously (#892): Trivy's DB download, a Docker build, and a Go
+    # link step all failed with "no space left on device" within the same two
+    # minutes, because e.g. 9 concurrent Go link steps were all writing to the
+    # same shared disk at once.
+    #
+    # Scoped per JOB, not one global lane across all self-hosted jobs — a
+    # single global lane would serialize test.yml + lint.yml + security.yml +
+    # parity-validation.yml behind each other on every ordinary push too,
+    # ballooning normal per-push wall time from ~30 min (today, all parallel)
+    # to a worst case of ~4 hours (sum of every job's timeout). Per-job
+    # scoping caps a burst's disk pressure to one instance of each job type
+    # running at a time, while a single push's own distinct jobs still run in
+    # parallel with each other exactly as before.
+    #
+    # cancel-in-progress: false queues rather than kills, per the #863 lesson
+    # (killing an in-progress scan is worse than a delayed one). On
+    # pull_request, fall through to the identical group/cancel behavior the
+    # workflow-level block above already provides — this override must not
+    # change PR concurrency semantics, only add the push-side serialization.
+    concurrency:
+      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 15
     env:
       GOTOOLCHAIN: local # pin installed Go; never auto-fetch an old toolchain

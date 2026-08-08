@@ -110,9 +110,9 @@ jobs:
     # Queue behind this job's own prior push runs (#892) — this is one of the
     # three jobs that actually failed in the incident: Trivy's vulnerability-DB
     # download hit "no space left on device" when a merge burst ran multiple
-    # copies at once.
+    # copies at once. See test.yml for the group-key collision root cause.
     concurrency:
-      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
     steps:
@@ -140,9 +140,10 @@ jobs:
   govulncheck:
     name: govulncheck (Go)
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
-    # Queue behind this job's own prior push runs (#892).
+    # Queue behind this job's own prior push runs (#892). See test.yml for
+    # the group-key collision root cause.
     concurrency:
-      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 15
     steps:
@@ -183,9 +184,10 @@ jobs:
   semgrep:
     name: Semgrep SAST
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
-    # Queue behind this job's own prior push runs (#892).
+    # Queue behind this job's own prior push runs (#892). See test.yml for
+    # the group-key collision root cause.
     concurrency:
-      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 20
     steps:

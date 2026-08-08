@@ -43,7 +43,17 @@ jobs:
     # workflow-level block above already provides — this override must not
     # change PR concurrency semantics, only add the push-side serialization.
     concurrency:
-      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      # ACTUAL root cause found on PR #894: this job's pull_request group key
+      # must never equal the workflow-level group above (`<workflow>-<pr#>`),
+      # or GitHub Actions silently kills the job before any step runs — no
+      # error anywhere, 0s duration, 0 steps. My first two attempts collided
+      # exactly (`format('{0}-{1}', workflow, pr#)` IS the workflow-level
+      # key). Fix: always append `github.job` as a distinguishing suffix, on
+      # BOTH branches, so this key can never match the 2-part workflow-level
+      # one. matrix-based jobs elsewhere (codeql, docker-build) already do
+      # this by construction, via their matrix-value suffix — that's why they
+      # were unaffected while every non-matrix job here failed identically.
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 15
     env:

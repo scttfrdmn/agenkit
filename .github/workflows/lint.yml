@@ -17,11 +17,13 @@ jobs:
     # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
     # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
     runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
-    # Queue behind this job's own prior push runs — see the matching block in
-    # test.yml for the full rationale and why it's scoped per-job, not global
-    # (#892: a merge burst ran N copies of the same job at once on one disk).
+    # Queue behind this job's own prior push runs — see test.yml's matching
+    # block for the full root-cause writeup: the pull_request group key here
+    # must never collide with the workflow-level `<workflow>-<pr#>` key above,
+    # or the job is silently killed with zero steps and no error (#892 / PR
+    # #894 postmortem). github.job is appended on both branches so it can't.
     concurrency:
-      group: ${{ github.event_name == 'pull_request' && format('{0}-{1}', github.workflow, github.event.pull_request.number) || format('janus-push-{0}', github.job) }}
+      group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name == 'pull_request' && github.event.pull_request.number || 'push', github.job) }}
       cancel-in-progress: ${{ github.event_name == 'pull_request' }}
     timeout-minutes: 5
     env:

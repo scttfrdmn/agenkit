@@ -15,9 +15,15 @@ jobs:
   # Minimal smoke test - local testing is primary validation
   smoke-test:
     name: Smoke Test (Python 3.13 + Go 1.25)
-    # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
-    # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374): a
+    # 9-PR merge burst exhausted its shared disk, and even with the
+    # concurrency cap above, a single ordinary push still failed here right
+    # after cleanup because the disk started this incident already full.
+    # Routing everything through ubuntu-latest until the janus topology
+    # question in #374 is resolved. To restore: runs-on: ${{
+    # github.event_name == 'pull_request' && 'ubuntu-latest' ||
+    # fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # On push/schedule (self-hosted janus), queue this job behind its OWN
     # prior runs rather than letting a burst of pushes run N copies of it at
     # once — the workflow-level concurrency group above only dedups repeated

@@ -40,7 +40,10 @@ jobs:
   # ---------------------------------------------------------------------------
   codeql:
     name: CodeQL (${{ matrix.language }})
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374) — see
+    # test.yml for why. To restore: runs-on: ${{ github.event_name ==
+    # 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # Queue behind this job's own prior push runs (#892) — matrix.language is
     # included on BOTH sides so the 4 language legs stay independent lanes on
     # push (parallel, as today) and don't cancel each other on pull_request
@@ -106,7 +109,10 @@ jobs:
   # ---------------------------------------------------------------------------
   trivy:
     name: Trivy filesystem scan
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374) — see
+    # test.yml for why. To restore: runs-on: ${{ github.event_name ==
+    # 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # Queue behind this job's own prior push runs (#892) — this is one of the
     # three jobs that actually failed in the incident: Trivy's vulnerability-DB
     # download hit "no space left on device" when a merge burst ran multiple
@@ -141,7 +147,10 @@ jobs:
   # ---------------------------------------------------------------------------
   govulncheck:
     name: govulncheck (Go)
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374) — see
+    # test.yml for why. To restore: runs-on: ${{ github.event_name ==
+    # 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # Queue behind this job's own prior push runs (#892). See test.yml for
     # the group-key collision root cause. The job-name suffix is a LITERAL
     # ('govulncheck'), not `github.job` — that context evaluated to an empty
@@ -191,7 +200,10 @@ jobs:
   # ---------------------------------------------------------------------------
   semgrep:
     name: Semgrep SAST
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374) — see
+    # test.yml for why. To restore: runs-on: ${{ github.event_name ==
+    # 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # Queue behind this job's own prior push runs (#892). Literal job-name
     # suffix, not `github.job` — see the govulncheck job above for why.
     concurrency:

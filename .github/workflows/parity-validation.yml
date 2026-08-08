@@ -18,9 +18,10 @@ permissions:
 jobs:
   parity-check:
     name: Feature Parity Validation
-    # push/schedule -> self-hosted Linux (janus, fast); PRs (incl. forks) ->
-    # GitHub-hosted, so untrusted PR code never runs on the LAN runner.
-    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    # Self-hosted (janus) push routing suspended for now (#892, #374) — see
+    # test.yml for why. To restore: runs-on: ${{ github.event_name ==
+    # 'pull_request' && 'ubuntu-latest' || fromJSON('["self-hosted","Linux"]') }}
+    runs-on: ubuntu-latest
     # Queue behind this job's own prior push runs (#892). This workflow had no
     # concurrency block before this change, so the pull_request group key is
     # made unique per run (via run_id) rather than per-PR — deliberately

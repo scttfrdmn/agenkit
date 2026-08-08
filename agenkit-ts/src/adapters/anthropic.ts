@@ -10,7 +10,7 @@
  *
  * const adapter = new AnthropicAdapter({
  *   apiKey: process.env.ANTHROPIC_API_KEY,
- *   model: 'claude-3-5-sonnet-20241022',
+ *   model: 'claude-sonnet-5',
  *   temperature: 0.7,
  *   maxTokens: 1024,
  * });
@@ -34,7 +34,7 @@ export interface AnthropicConfig {
   /** Anthropic API key. If not provided, uses ANTHROPIC_API_KEY environment variable */
   apiKey?: string;
 
-  /** Model to use (e.g., 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229') */
+  /** Model to use (e.g., 'claude-sonnet-5', 'claude-opus-5') */
   model?: string;
 
   /** Temperature for sampling (0.0 - 1.0) */
@@ -75,7 +75,7 @@ export class AnthropicAdapter implements Agent {
    */
   constructor(config: AnthropicConfig = {}) {
     this.config = {
-      model: config.model || 'claude-3-5-sonnet-20241022',
+      model: config.model || 'claude-sonnet-5',
       temperature: config.temperature ?? 0.7,
       maxTokens: config.maxTokens ?? 1024,
       topP: config.topP ?? 1.0,

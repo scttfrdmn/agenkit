@@ -52,7 +52,7 @@ export function getMockAnthropicResponse() {
         text: getExpectedResponseContent(),
       },
     ],
-    model: 'claude-3-5-sonnet-20241022',
+    model: 'claude-sonnet-5',
     stop_reason: 'end_turn',
     usage: {
       input_tokens: 10,
@@ -85,7 +85,7 @@ export function* getMockAnthropicStreamEvents() {
       type: 'message',
       role: 'assistant',
       content: [],
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-5',
       usage: { input_tokens: 10, output_tokens: 0 },
     },
   };

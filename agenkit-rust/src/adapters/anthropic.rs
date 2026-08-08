@@ -18,7 +18,7 @@ pub struct AnthropicConfig {
     /// API key (required) - get from https://console.anthropic.com/
     pub api_key: String,
 
-    /// Model to use (default: claude-sonnet-4-6)
+    /// Model to use (default: claude-sonnet-5)
     pub model: String,
 
     /// Maximum tokens to generate (default: 4096)
@@ -47,7 +47,7 @@ impl Default for AnthropicConfig {
     fn default() -> Self {
         Self {
             api_key: std::env::var("ANTHROPIC_API_KEY").unwrap_or_default(),
-            model: "claude-sonnet-4-6".to_string(),
+            model: "claude-sonnet-5".to_string(),
             max_tokens: 4096,
             temperature: 1.0,
             top_p: 1.0,
@@ -199,7 +199,7 @@ struct MessageDeltaData {
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let config = AnthropicConfig {
 ///         api_key: std::env::var("ANTHROPIC_API_KEY")?,
-///         model: "claude-sonnet-4-6".to_string(),
+///         model: "claude-sonnet-5".to_string(),
 ///         ..Default::default()
 ///     };
 ///
@@ -616,7 +616,7 @@ mod tests {
     #[test]
     fn test_default_config_values() {
         let config = AnthropicConfig::default();
-        assert_eq!(config.model, "claude-sonnet-4-6");
+        assert_eq!(config.model, "claude-sonnet-5");
         assert_eq!(config.max_tokens, 4096);
         assert!((config.temperature - 1.0).abs() < f64::EPSILON);
         assert_eq!(config.api_version, "2023-06-01");
@@ -636,7 +636,7 @@ mod tests {
                 "type": "message",
                 "role": "assistant",
                 "content": [{"type": "text", "text": "Paris is the capital of France."}],
-                "model": "claude-sonnet-4-6",
+                "model": "claude-sonnet-5",
                 "stop_reason": "end_turn",
                 "usage": {"input_tokens": 15, "output_tokens": 10}
             }"#,
@@ -654,7 +654,7 @@ mod tests {
         let response = agent.process(msg).await.unwrap();
 
         assert!(response.content_as_str().unwrap_or("").contains("Paris"));
-        assert_eq!(response.metadata["model"], "claude-sonnet-4-6");
+        assert_eq!(response.metadata["model"], "claude-sonnet-5");
         assert!(response.metadata.contains_key("stop_reason"));
         assert!(response.metadata.contains_key("usage"));
         mock.assert_async().await;
@@ -722,7 +722,7 @@ mod tests {
                 "type": "message",
                 "role": "assistant",
                 "content": [{"type": "text", "text": "42"}],
-                "model": "claude-sonnet-4-6",
+                "model": "claude-sonnet-5",
                 "stop_reason": "end_turn",
                 "usage": {"input_tokens": 5, "output_tokens": 2}
             }"#,
@@ -766,7 +766,7 @@ mod tests {
                 "type": "message",
                 "role": "assistant",
                 "content": [{"type": "text", "text": "I am a helpful assistant."}],
-                "model": "claude-sonnet-4-6",
+                "model": "claude-sonnet-5",
                 "stop_reason": "end_turn",
                 "usage": {"input_tokens": 20, "output_tokens": 8}
             }"#,

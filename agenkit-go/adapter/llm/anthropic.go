@@ -20,7 +20,7 @@ import (
 //
 // Example:
 //
-//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-4-6")
+//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-5")
 //	messages := []*agenkit.Message{
 //	    agenkit.NewMessage("user", "Hello!"),
 //	}
@@ -67,7 +67,7 @@ type AnthropicOption func(*AnthropicLLM)
 //
 // Example:
 //
-//	llm := NewAnthropicLLM("key", "claude-sonnet-4-6", WithBaseURL("https://my-proxy.internal/v1"))
+//	llm := NewAnthropicLLM("key", "claude-sonnet-5", WithBaseURL("https://my-proxy.internal/v1"))
 func WithBaseURL(baseURL string) AnthropicOption {
 	return func(a *AnthropicLLM) {
 		a.baseURL = baseURL
@@ -78,16 +78,16 @@ func WithBaseURL(baseURL string) AnthropicOption {
 //
 // Parameters:
 //   - apiKey: Anthropic API key
-//   - model: Model identifier (e.g., "claude-sonnet-4-6")
+//   - model: Model identifier (e.g., "claude-sonnet-5")
 //   - opts: Optional AnthropicOptions (e.g., WithBaseURL)
 //
 // Example:
 //
-//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-4-6")
-//	llm := NewAnthropicLLM("key", "claude-sonnet-4-6", WithBaseURL("https://proxy.internal/v1"))
+//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-5")
+//	llm := NewAnthropicLLM("key", "claude-sonnet-5", WithBaseURL("https://proxy.internal/v1"))
 func NewAnthropicLLM(apiKey, model string, opts ...AnthropicOption) *AnthropicLLM {
 	if model == "" {
-		model = "claude-sonnet-4-6"
+		model = "claude-sonnet-5"
 	}
 	a := &AnthropicLLM{
 		apiKey:     apiKey,
@@ -455,7 +455,7 @@ func (a *AnthropicLLM) makeRequest(ctx context.Context, req anthropicRequest) (*
 //
 // Example:
 //
-//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-4-6")
+//	llm := NewAnthropicLLM("sk-ant-...", "claude-sonnet-5")
 //	client := llm.Unwrap().(*http.Client)
 //	// Use for custom requests
 func (a *AnthropicLLM) Unwrap() interface{} {

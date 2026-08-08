@@ -28,25 +28,25 @@ import (
 //
 //	// Use IAM role (ECS/EKS/EC2)
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+//	    ModelID: "anthropic.claude-sonnet-5",
 //	})
 //
 //	// Use AWS profile
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+//	    ModelID: "anthropic.claude-sonnet-5",
 //	    Profile: "production",
 //	})
 //
 //	// Use explicit credentials
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID:         "anthropic.claude-3-5-sonnet-20241022-v2:0",
+//	    ModelID:         "anthropic.claude-sonnet-5",
 //	    AccessKeyID:     "...",
 //	    SecretAccessKey: "...",
 //	})
 //
 // Popular model IDs:
-//   - anthropic.claude-3-5-sonnet-20241022-v2:0 - Claude 3.5 Sonnet
-//   - anthropic.claude-3-haiku-20240307-v1:0 - Claude 3 Haiku
+//   - anthropic.claude-sonnet-5 - Claude Sonnet 5
+//   - anthropic.claude-haiku-4-5 - Claude Haiku 4.5
 //   - meta.llama3-70b-instruct-v1:0 - Llama 3 70B
 //   - mistral.mistral-large-2402-v1:0 - Mistral Large
 //   - amazon.titan-text-premier-v1:0 - Amazon Titan
@@ -57,7 +57,7 @@ type BedrockLLM struct {
 
 // BedrockConfig holds configuration for creating a Bedrock LLM adapter.
 type BedrockConfig struct {
-	// ModelID is the Bedrock model identifier (e.g., "anthropic.claude-3-5-sonnet-20241022-v2:0")
+	// ModelID is the Bedrock model identifier (e.g., "anthropic.claude-sonnet-5")
 	ModelID string
 
 	// Region is the AWS region (default: us-east-1)
@@ -92,7 +92,7 @@ type BedrockConfig struct {
 // Example:
 //
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID: "anthropic.claude-3-5-sonnet-20241022-v2:0",
+//	    ModelID: "anthropic.claude-sonnet-5",
 //	    Region:  "us-west-2",
 //	})
 //	if err != nil {
@@ -101,7 +101,7 @@ type BedrockConfig struct {
 func NewBedrockLLM(ctx context.Context, cfg BedrockConfig) (*BedrockLLM, error) {
 	// Set defaults
 	if cfg.ModelID == "" {
-		cfg.ModelID = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+		cfg.ModelID = "anthropic.claude-sonnet-5"
 	}
 	if cfg.Region == "" {
 		cfg.Region = "us-east-1"

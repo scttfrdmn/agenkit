@@ -337,7 +337,7 @@ pip install agenkit[all]
 
 ## What's Included?
 
-### Core Framework
+### Core Components
 - **Minimal interfaces** - Agent, Message, Tool (50 lines total)
 - **Orchestration patterns** - Sequential, Parallel, Router, Fallback
 - **Type safety** - Full type hints (Python), compile-time checks (Go)

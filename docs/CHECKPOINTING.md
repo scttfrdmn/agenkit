@@ -43,6 +43,9 @@ Checkpointing enables long-running agents to persist their state at key points, 
 - ✅ **Rust** - Zero-cost abstractions, async/await
 - ✅ **C++** - Modern C++17, header-only option
 - ✅ **Zig** - Systems-level, manual memory management
+- ✅ **C#** - `System.Text.Json` file storage, async/await (see [note below](#csharp-java-scala-checkpointing-baseline))
+- ✅ **Java** - `Jackson` file storage + in-memory cache, `CompletableFuture` (see [note below](#csharp-java-scala-checkpointing-baseline))
+- ✅ **Scala** - In-memory only, `Future`/`ExecutionContext` (see [note below](#csharp-java-scala-checkpointing-baseline))
 
 ---
 
@@ -182,6 +185,9 @@ Capabilities:
 **Rust**: `Arc<Mutex<>>` for thread safety
 **C++**: `std::mutex` for concurrent access
 **Zig**: `std.Thread.Mutex` manual management
+**C#**: No explicit locking — `CheckpointManager` (`agenkit-cs/src/Agenkit/Checkpointing/CheckpointManager.cs`) does a plain `File.WriteAllTextAsync`/`File.ReadAllTextAsync` per call; concurrent writers to the same checkpoint name can race
+**Java**: `ConcurrentHashMap` for the in-memory cache (`agenkit-java/src/main/java/io/agenkit/checkpointing/CheckpointManager.java`); the JSON file write via Jackson is unsynchronized
+**Scala**: `java.util.concurrent.ConcurrentHashMap` (`agenkit-scala/src/main/scala/io/agenkit/checkpointing/CheckpointManager.scala`) — in-memory only, no file I/O to race on
 
 ---
 
@@ -896,6 +902,85 @@ pub const DurableAgent = struct {
     pub fn getSessionStats(self: *DurableAgent, session_id: []const u8) !std.json.Value;
 };
 ```
+
+### C#/Java/Scala Checkpointing Baseline
+
+C#, Java, and Scala implement checkpointing, but with a much smaller surface than the
+`CheckpointManager`/`CheckpointStorage`/`DurableAgent` contract described above — they
+predate a `Checkpoint` type with `session_id`, `step_number`, `parent_checkpoint_id`, or
+any pluggable `CheckpointStorage` backend. None of the three has `list_checkpoints`,
+`get_latest`, `prune_old_checkpoints`, `get_session_stats`, or `should_checkpoint`.
+
+**C#** (`agenkit-cs/src/Agenkit/Checkpointing/CheckpointManager.cs`):
+```csharp
+public class CheckpointManager
+{
+    public CheckpointManager(string directory = "checkpoints");
+    public Task SaveAsync(string name, object state, CancellationToken ct = default);
+    public Task<T?> LoadAsync<T>(string name, CancellationToken ct = default);
+    public bool Exists(string name);
+    public void Delete(string name);
+    public IReadOnlyList<string> ListCheckpoints();
+}
+```
+Checkpoints are keyed by an arbitrary `name` (not a session/step pair) and persisted as
+one JSON file per name — `System.Text.Json`, no in-memory cache.
+`DurableAgent(IAgent inner, CheckpointManager manager, string? checkpointName = null)`
+(`agenkit-cs/src/Agenkit/Checkpointing/DurableAgent.cs`) checkpoints **after every single
+message** — there is no `auto_checkpoint_interval`, so the canonical "checkpoint every N
+steps" default doesn't apply; N is implicitly `1`.
+
+**Java** (`agenkit-java/src/main/java/io/agenkit/checkpointing/CheckpointManager.java`):
+```java
+public final class CheckpointManager {
+    public CheckpointManager(Path checkpointDir);
+    public CheckpointManager();  // defaults to {java.io.tmpdir}/agenkit-checkpoints
+    public void save(String agentId, Object state);
+    public Optional<Object> load(String agentId);
+    public void delete(String agentId);
+    public boolean exists(String agentId);
+}
+```
+Keyed by `agentId`, backed by both a `ConcurrentHashMap` (read-through cache) and a
+Jackson-serialized JSON file. `DurableAgent(Agent inner, CheckpointManager
+checkpointManager)` (`agenkit-java/src/main/java/io/agenkit/checkpointing/DurableAgent.java`)
+also checkpoints after every message (accumulating an `interactionLog`, not a `state`
+dict) — no configurable interval, same as C#.
+
+**Scala** (`agenkit-scala/src/main/scala/io/agenkit/checkpointing/CheckpointManager.scala`):
+```scala
+case class Checkpoint(
+  id: String,
+  agentName: String,
+  messages: List[Message],
+  metadata: Map[String, Any],
+  createdAt: Instant = Instant.now()
+)
+
+class CheckpointManager:
+  def save(checkpoint: Checkpoint): Unit
+  def load(id: String): Option[Checkpoint]
+  def list(agentName: String): List[Checkpoint]
+  def delete(id: String): Boolean
+  def count: Int
+```
+Scala is the only one of the three with a real `Checkpoint` case class (closer in shape
+to the canonical one) and the only one with a configurable interval: `DurableAgent(inner:
+Agent, checkpointManager: CheckpointManager, checkpointInterval: Int = 10)`
+(`agenkit-scala/src/main/scala/io/agenkit/checkpointing/DurableAgent.scala`) — **default
+`10`**, matching the canonical "every 10 steps" default used in the Quick Start examples
+above. Storage is in-memory only (`ConcurrentHashMap`); there is no file or database
+backend, so `count` and `list(agentName)` are the closest analogs to
+`get_session_stats`/`list_checkpoints`, and both lose all data on restart.
+
+| | C# | Java | Scala |
+|---|---|---|---|
+| Checkpoint key | `name` (string) | `agentId` (string) | `id` (string, UUID in `DurableAgent`) |
+| Storage backend | File (JSON) | File (JSON) + in-memory cache | In-memory only |
+| `auto_checkpoint_interval` default | not implemented (every message) | not implemented (every message) | `10` |
+| Checkpoint chain / `parent_checkpoint_id` | not implemented | not implemented | not implemented |
+| Retention / pruning | not implemented | not implemented | not implemented |
+| Thread safety | none (file I/O unsynchronized) | `ConcurrentHashMap` (cache only) | `ConcurrentHashMap` |
 
 ---
 
@@ -1820,6 +1905,6 @@ Checkpointing is essential for production-grade agent systems. Key takeaways:
 
 ---
 
-**Last Updated:** January 14, 2026
-**Applies to:** Agenkit v0.44.0+
-**Languages:** Python, Go, TypeScript, Rust, C++, Zig
+**Last Updated:** August 2026
+**Applies to:** Agenkit v0.44.0+ (C#/Java/Scala baseline notes added in v0.89.0+, #879)
+**Languages:** Python, Go, TypeScript, Rust, C++, Zig, C#, Java, Scala

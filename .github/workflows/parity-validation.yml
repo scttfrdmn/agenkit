@@ -61,6 +61,22 @@ jobs:
         run: |
           uv run python scripts/parity/feature_scanner.py
 
+      # Diffs a fresh regenerate against the committed docs/parity/*.md
+      # BEFORE the next step overwrites them, so this fails the build when a
+      # scanner/generator change hasn't been accompanied by a regenerated
+      # commit -- the gap that let docs/parity/GAPS_ANALYSIS.md go five
+      # months stale while this workflow stayed green throughout (#902).
+      - name: Verify generated parity docs are current
+        run: |
+          uv run python scripts/parity/matrix_generator.py --check
+
+      # Same staleness-gate idea, applied to marker-delimited blocks in
+      # hand-written docs (README.md's "18 Core Patterns" list, sourced from
+      # specs/patterns/*.yaml) rather than whole generated files (#902).
+      - name: Verify generated docs facts are current
+        run: |
+          uv run python scripts/docs_facts.py check
+
       - name: Generate parity matrix
         run: |
           uv run python scripts/parity/matrix_generator.py

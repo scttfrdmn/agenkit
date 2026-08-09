@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins check-release-gate
+.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins check-release-gate check-docs-facts
 
 # Default target
 .DEFAULT_GOAL := help
@@ -30,6 +30,10 @@ check-tool-pins: ## Fail if ruff is pinned inconsistently or invoked bare (#793)
 
 check-release-gate: ## Fail if release.sh could tag a release with a red suite (#863)
 	@./scripts/check-release-gate.sh
+
+check-docs-facts: ## Fail if generated docs/parity/*.md or README.md blocks are stale (#902)
+	@uv run python scripts/parity/matrix_generator.py --check
+	@uv run python scripts/docs_facts.py check
 
 sync-version: ## Rewrite every version declaration from the root VERSION file
 	@python3 scripts/version.py sync

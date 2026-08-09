@@ -274,10 +274,10 @@ async def test_parallel_agent_basic():
     parallel = ParallelAgent("parallel", [agent1, agent2])
     msg = Message(role="user", content="test")
 
-    # Note: ParallelAgent has a bug in _combine_responses trying to assign
-    # to frozen Message.metadata. This test documents the current behavior.
-    with pytest.raises(Exception):  # FrozenInstanceError
-        await parallel.process(msg)
+    response = await parallel.process(msg)
+
+    assert "[echo1]: Echo: test" in response.content
+    assert "[echo2]: Echo: test" in response.content
 
 
 @pytest.mark.asyncio
@@ -287,10 +287,9 @@ async def test_parallel_agent_single_agent():
     parallel = ParallelAgent("parallel", [agent])
     msg = Message(role="user", content="test")
 
-    # Note: ParallelAgent has a bug in _combine_responses trying to assign
-    # to frozen Message.metadata. This test documents the current behavior.
-    with pytest.raises(Exception):  # FrozenInstanceError
-        await parallel.process(msg)
+    response = await parallel.process(msg)
+
+    assert response.content == "[echo]: Echo: test"
 
 
 @pytest.mark.asyncio
@@ -303,10 +302,11 @@ async def test_parallel_agent_multiple_agents():
     parallel = ParallelAgent("parallel", [agent1, agent2, agent3])
     msg = Message(role="user", content="test")
 
-    # Note: ParallelAgent has a bug in _combine_responses trying to assign
-    # to frozen Message.metadata. This test documents the current behavior.
-    with pytest.raises(Exception):  # FrozenInstanceError
-        await parallel.process(msg)
+    response = await parallel.process(msg)
+
+    assert "[a1]: test from a1" in response.content
+    assert "[a2]: test from a2" in response.content
+    assert "[a3]: test from a3" in response.content
 
 
 @pytest.mark.asyncio
@@ -318,10 +318,10 @@ async def test_parallel_agent_metadata_merge():
     parallel = ParallelAgent("parallel", [agent1, agent2])
     msg = Message(role="user", content="test")
 
-    # Note: ParallelAgent has a bug in _combine_responses trying to assign
-    # to frozen Message.metadata. This test documents the current behavior.
-    with pytest.raises(Exception):  # FrozenInstanceError
-        await parallel.process(msg)
+    response = await parallel.process(msg)
+
+    assert response.metadata["a1.source"] == "agent1"
+    assert response.metadata["a2.source"] == "agent2"
 
 
 @pytest.mark.asyncio

@@ -156,9 +156,8 @@ class ParallelAgent(Agent):
         # Aggregate successful results
         aggregated = self._aggregator(successes)
 
-        # Add parallel execution metadata
-        if aggregated.metadata is None:
-            aggregated.metadata = {}
+        # Add parallel execution metadata (Message.metadata is always a
+        # dict, never None -- normalized at construction, #919)
         aggregated.metadata["parallel_agents"] = len(self._agents)
         aggregated.metadata["successful_agents"] = len(successes)
         if errors:
@@ -229,8 +228,8 @@ class DefaultAggregators:
         winner_content, max_votes = winner
 
         result = msg_by_content[winner_content]
-        if result.metadata is None:
-            result.metadata = {}
+        # Message.metadata is always a dict, never None -- normalized at
+        # construction, #919
         result.metadata["votes"] = max_votes
         result.metadata["total_agents"] = len(messages)
 

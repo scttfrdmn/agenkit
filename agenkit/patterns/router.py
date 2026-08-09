@@ -227,9 +227,8 @@ class RouterAgent(Agent):
         except Exception as e:
             raise RuntimeError(f"agent '{agent.name}' (category: {category}) failed: {e}") from e
 
-        # Add routing metadata
-        if result.metadata is None:
-            result.metadata = {}
+        # Add routing metadata (Message.metadata is always a dict, never
+        # None -- normalized at construction, #919)
         result.metadata["routed_category"] = category
         result.metadata["routed_agent"] = agent.name
         result.metadata["available_routes"] = len(self._agents)

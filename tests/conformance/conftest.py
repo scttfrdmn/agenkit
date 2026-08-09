@@ -15,14 +15,12 @@ class ContractAgent(Agent):
     """Minimal, contract-correct Agent double for tests that need a real
     instance rather than a class under test.
 
-    Returns ``metadata={}`` by default, not ``metadata=None``. This is a
-    deliberate choice, not an oversight: several patterns do
-    ``if x.metadata is None: x.metadata = {}``, which raises
-    ``FrozenInstanceError`` against a frozen ``Message`` (#919) -- a double
-    that returned ``metadata=None`` would trip all of those sites at once
-    and turn this suite into an unplanned 13-file behavioral refactor. See
-    ``test_metadata_none_known_gap.py`` for the explicit,
-    non-parametrized acknowledgment of that known gap.
+    Returns ``metadata={}`` explicitly, though this is no longer required
+    for correctness: ``Message.__post_init__`` normalizes ``metadata=None``
+    to ``{}`` at construction (#919 fix), so ``metadata`` is never
+    observably ``None`` regardless of what a double returns. See
+    ``test_metadata_none_known_gap.py`` for the regression test that
+    covers the fixed behavior.
     """
 
     def __init__(self, name: str = "contract-agent", response: str = "ok") -> None:

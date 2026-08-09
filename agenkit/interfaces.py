@@ -174,7 +174,11 @@ class Message:
     Design decisions:
     - role: Identifies message source ("user", "agent", "system", "tool")
     - content: Flexible type - str, dict, list, or any serializable data
-    - metadata: Extension point for framework-specific data
+    - metadata: Extension point for framework-specific data. Normalized to
+      ``{}`` at construction if passed explicitly as ``None`` -- ``None`` is
+      never a legal, observable value of this field (#919). Always
+      construct a ``Message`` (rather than bypassing ``__init__``) to get
+      this guarantee.
     - timestamp: UTC timestamp for ordering and debugging
     - frozen: Reassigning a field (e.g. ``msg.content = x`` or
       ``msg.metadata = x``) raises ``FrozenInstanceError``
@@ -213,6 +217,26 @@ class Message:
 
     def __post_init__(self) -> None:
         """Validate message after initialization."""
+        # Normalize metadata: None is not a legal, distinguishable state.
+        # ``metadata`` defaults to ``{}`` via ``default_factory``, but callers
+        # can still pass ``metadata=None`` explicitly (or a composed agent can
+        # return it). Every first-party pattern that touches ``metadata``
+        # assumes it is always a dict and rebinds it with
+        # ``x.metadata = {}`` when it sees ``None`` -- which raises
+        # ``FrozenInstanceError`` against this frozen dataclass (#919).
+        # Normalizing here, at construction, makes that downstream guard
+        # unreachable instead of broken: ``object.__setattr__`` is required
+        # because ``frozen=True`` blocks ordinary attribute assignment, even
+        # from within ``__post_init__``. mypy's static type says this branch
+        # is unreachable (the annotated type is ``dict[str, Any]``, never
+        # ``Optional``), but a caller not covered by mypy -- untyped code,
+        # ``**kwargs`` construction, or a composed agent across a language
+        # boundary -- can and does pass ``None`` at runtime; this is the
+        # same static-vs-runtime gap as ``Agent.stream``'s
+        # ``type: ignore[unreachable]`` a few hundred lines down.
+        if self.metadata is None:
+            object.__setattr__(self, "metadata", {})  # type: ignore[unreachable]
+
         # Role validation
         if not self.role:
             raise ValueError("Message role cannot be empty")

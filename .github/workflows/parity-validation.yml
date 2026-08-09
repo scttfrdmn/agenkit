@@ -61,6 +61,15 @@ jobs:
         run: |
           uv run python scripts/parity/feature_scanner.py
 
+      # Spec-presence conformance (#909 rung 1): does a source file
+      # implementing pattern X exist per language, per specs/patterns/*.yaml.
+      # A secondary, structural signal distinct from feature_scanner.py's
+      # class-count metric above -- see spec_conformance.py's module
+      # docstring for why this is a new module rather than a retrofit.
+      - name: Check spec-presence conformance
+        run: |
+          uv run python scripts/parity/spec_conformance.py --check
+
       # Diffs a fresh regenerate against the committed docs/parity/*.md
       # BEFORE the next step overwrites them, so this fails the build when a
       # scanner/generator change hasn't been accompanied by a regenerated
@@ -80,6 +89,10 @@ jobs:
       - name: Generate parity matrix
         run: |
           uv run python scripts/parity/matrix_generator.py
+
+      - name: Generate spec conformance
+        run: |
+          uv run python scripts/parity/spec_conformance.py
 
       - name: Run parity tests
         run: |
@@ -108,6 +121,7 @@ jobs:
           name: parity-reports
           path: |
             feature-manifest.json
+            spec-conformance.json
             docs/parity/FEATURE_MATRIX.md
             docs/parity/GAPS_ANALYSIS.md
           retention-days: 30

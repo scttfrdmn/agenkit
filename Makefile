@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins check-release-gate check-docs-facts
+.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins check-release-gate check-docs-facts check-spec-conformance
 
 # Default target
 .DEFAULT_GOAL := help
@@ -34,6 +34,9 @@ check-release-gate: ## Fail if release.sh could tag a release with a red suite (
 check-docs-facts: ## Fail if generated docs/parity/*.md or README.md blocks are stale (#902)
 	@uv run python scripts/parity/matrix_generator.py --check
 	@uv run python scripts/docs_facts.py check
+
+check-spec-conformance: ## Fail if spec-conformance.json is stale vs. a fresh regenerate (#909)
+	@uv run python scripts/parity/spec_conformance.py --check
 
 sync-version: ## Rewrite every version declaration from the root VERSION file
 	@python3 scripts/version.py sync

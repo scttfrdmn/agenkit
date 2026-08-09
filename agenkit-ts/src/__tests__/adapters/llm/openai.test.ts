@@ -156,6 +156,19 @@ describe('OpenAI Adapter: Unit Tests', () => {
     expect((customAdapter as any).client.baseURL).toBe('https://custom.api.com/v1');
   });
 
+  it('should forward seed and stop via processWith (#818)', async () => {
+    const message = getSimpleTestMessage();
+
+    await adapter.processWith(message, { seed: 918273645, stop: ['END', 'STOP'] });
+
+    expect(mockClient.chat.completions.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        seed: 918273645,
+        stop: ['END', 'STOP'],
+      })
+    );
+  });
+
   it('should support frequency and presence penalties', async () => {
     const message = getSimpleTestMessage();
 

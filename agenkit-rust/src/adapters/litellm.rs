@@ -3,7 +3,7 @@
 //! Provides integration with LiteLLM, a universal LLM gateway that offers
 //! an OpenAI-compatible API for 100+ LLM providers. Supports both completion
 //! and streaming modes.
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use futures::Stream;
 use serde::{Deserialize, Serialize};
@@ -73,6 +73,12 @@ struct LiteLLMRequest {
     top_p: Option<f32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     stream: Option<bool>,
+    /// LiteLLM's proxy normalizes `seed`/`stop` to whatever the routed provider
+    /// supports, forwarding as-is (#818).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    seed: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop: Option<Vec<String>>,
 }
 
 /// LiteLLM chat completion response.
@@ -157,7 +163,11 @@ impl LiteLLMAdapter {
 
     /// Call LiteLLM API with messages.
     #[cfg(feature = "native")]
-    async fn call_api(&self, messages: Vec<LiteLLMMessage>) -> Result<LiteLLMResponse, AgentError> {
+    async fn call_api(
+        &self,
+        messages: Vec<LiteLLMMessage>,
+        options: &CallOptions,
+    ) -> Result<LiteLLMResponse, AgentError> {
         let request = LiteLLMRequest {
             model: self.config.model.clone(),
             messages,
@@ -165,6 +175,8 @@ impl LiteLLMAdapter {
             max_tokens: self.config.max_tokens,
             top_p: self.config.top_p,
             stream: None,
+            seed: options.seed,
+            stop: options.stop.clone(),
         };
 
         let url = format!("{}/chat/completions", self.config.base_url);
@@ -372,18 +384,8 @@ impl Agent for LiteLLMAdapter {
         "litellm"
     }
 
-    #[cfg(feature = "native")]
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        let litellm_message = self.message_to_litellm_message(&message);
-        let response = self.call_api(vec![litellm_message]).await?;
-        Ok(self.response_to_message(response))
-    }
-
-    #[cfg(not(feature = "native"))]
-    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::Transport(
-            "LiteLLM adapter requires 'native' feature".to_string(),
-        ))
+        self.process_with(message, &CallOptions::new()).await
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -393,6 +395,35 @@ impl Agent for LiteLLMAdapter {
             "litellm".to_string(),
             "universal-gateway".to_string(),
         ]
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for LiteLLMAdapter {
+    #[cfg(feature = "native")]
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        let litellm_message = self.message_to_litellm_message(&message);
+        let response = self.call_api(vec![litellm_message], options).await?;
+        Ok(self.response_to_message(response))
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn process_with(
+        &self,
+        _message: Message,
+        _options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        Err(AgentError::Transport(
+            "LiteLLM adapter requires 'native' feature".to_string(),
+        ))
     }
 }
 
@@ -549,5 +580,94 @@ mod tests {
         );
         assert_eq!(models::GEMINI_PRO, "gemini/gemini-pro");
         assert_eq!(models::OLLAMA_LLAMA2, "ollama/llama2");
+    }
+
+    #[tokio::test]
+    async fn test_process_with_forwards_seed_and_stop() {
+        // #818: LiteLLM's proxy normalizes seed/stop to whatever the routed
+        // provider supports; the Rust adapter's job is to forward both
+        // unconditionally, same as its OpenAI-shaped request already does for
+        // temperature/max_tokens/top_p.
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/chat/completions")
+            .match_body(mockito::Matcher::PartialJson(json!({
+                "seed": 42,
+                "stop": ["\n", "END"],
+            })))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "id": "chatcmpl-seeded",
+                "model": "gpt-3.5-turbo",
+                "choices": [{
+                    "message": {"role": "assistant", "content": "ok"},
+                    "finish_reason": "stop"
+                }],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = LiteLLMConfig {
+            base_url: server.url(),
+            ..Default::default()
+        };
+        let adapter = LiteLLMAdapter::new(config);
+        let options = CallOptions::new()
+            .with_seed(42)
+            .with_stop(vec!["\n".to_string(), "END".to_string()]);
+
+        let response = adapter
+            .process_with(Message::with_text("user", "hello"), &options)
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_process_does_not_forward_seed_or_stop_when_unset() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/chat/completions")
+            .match_request(|request| {
+                let body = request.utf8_lossy_body().unwrap_or_default();
+                !body.contains("\"seed\"") && !body.contains("\"stop\"")
+            })
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "id": "chatcmpl-noopts",
+                "model": "gpt-3.5-turbo",
+                "choices": [{
+                    "message": {"role": "assistant", "content": "ok"},
+                    "finish_reason": "stop"
+                }],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = LiteLLMConfig {
+            base_url: server.url(),
+            ..Default::default()
+        };
+        let adapter = LiteLLMAdapter::new(config);
+
+        let response = adapter
+            .process(Message::with_text("user", "hello"))
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
     }
 }

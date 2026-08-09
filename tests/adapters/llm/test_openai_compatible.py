@@ -260,6 +260,41 @@ class TestComplete:
             assert response.metadata["finish_reason"] == "length"
 
     @pytest.mark.asyncio
+    async def test_complete_forwards_seed_and_stop(self):
+        """
+        seed and stop must reach the outgoing request (#818).
+
+        OpenAICompatibleLLM wraps the same AsyncOpenAI SDK as OpenAILLM, which
+        supports both "seed" and "stop" natively under those exact names, so
+        vLLM/llama.cpp/SGLang/etc. servers that honor them receive the values
+        unchanged.
+        """
+        llm = OpenAICompatibleLLM(
+            base_url="http://localhost:8000/v1",
+            model="llama-2-7b",
+        )
+
+        mock_choice = MagicMock()
+        mock_choice.message.content = "Response"
+        mock_choice.finish_reason = "stop"
+
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.model = "llama-2-7b"
+        mock_response.usage = None
+        mock_response.id = "test-id"
+
+        mock_create = AsyncMock(return_value=mock_response)
+
+        with patch.object(llm._client.chat.completions, "create", mock_create):
+            messages = [Message(role="user", content="Hello")]
+            await llm.complete(messages, seed=918273645, stop=["END", "STOP"])
+
+            call_kwargs = mock_create.call_args.kwargs
+            assert call_kwargs["seed"] == 918273645
+            assert call_kwargs["stop"] == ["END", "STOP"]
+
+    @pytest.mark.asyncio
     async def test_complete_without_usage(self):
         """Test completion when service doesn't return usage stats."""
         llm = OpenAICompatibleLLM(

@@ -212,6 +212,11 @@ add_executable(test_openai_compatible_adapter test_openai_compatible_adapter.cpp
 target_link_libraries(test_openai_compatible_adapter agenkit gtest_main)
 add_test(NAME openai_compatible_adapter_tests COMMAND test_openai_compatible_adapter)
 
+# Adapter tests - Ollama
+add_executable(test_ollama_adapter test_ollama_adapter.cpp)
+target_link_libraries(test_ollama_adapter agenkit gtest_main)
+add_test(NAME ollama_adapter_tests COMMAND test_ollama_adapter)
+
 # Validation tests - LLM parameter validation
 add_executable(test_validation test_validation.cpp)
 target_link_libraries(test_validation agenkit gtest_main)

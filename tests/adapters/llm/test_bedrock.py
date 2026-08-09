@@ -28,6 +28,50 @@ async def test_complete_success(mock_bedrock_response, simple_test_message):
         assert response.metadata["usage"]["completion_tokens"] == 15
 
 
+@pytest.mark.asyncio
+async def test_complete_translates_stop_to_stopsequences(
+    mock_bedrock_response, simple_test_message
+):
+    """
+    stop must reach the Converse request as inferenceConfig.stopSequences (#818).
+
+    Bedrock's Converse API has no top-level "stop" parameter -- it would raise
+    ParamValidationError against the real API -- only inferenceConfig.stopSequences,
+    so the portable CallOptions field must be renamed.
+    """
+    llm = BedrockLLM(model_id="anthropic.claude-3-haiku-20240307-v1:0")
+
+    with patch.object(llm._client, "converse", return_value=mock_bedrock_response) as mock_converse:
+        await llm.complete(simple_test_message, stop=["END", "STOP"])
+
+        call_kwargs = mock_converse.call_args.kwargs
+        assert call_kwargs["inferenceConfig"]["stopSequences"] == ["END", "STOP"]
+        assert "stop" not in call_kwargs
+
+
+@pytest.mark.asyncio
+async def test_complete_warns_and_drops_unsupported_seed(
+    mock_bedrock_response, simple_test_message
+):
+    """
+    seed has no Bedrock Converse equivalent; it must warn rather than silently
+    drop (#818).
+
+    Forwarding "seed" as a top-level parameter raises ParamValidationError against
+    the real API, so it is popped before the request is built -- but popping it
+    without a warning recreates the "accepted and dropped" failure #818 exists to
+    remove.
+    """
+    llm = BedrockLLM(model_id="anthropic.claude-3-haiku-20240307-v1:0")
+
+    with patch.object(llm._client, "converse", return_value=mock_bedrock_response) as mock_converse:
+        with pytest.warns(UserWarning, match="does not support 'seed'"):
+            await llm.complete(simple_test_message, seed=918273645)
+
+        call_kwargs = mock_converse.call_args.kwargs
+        assert "seed" not in call_kwargs
+
+
 def test_message_conversion(test_messages):
     """Test Agenkit Message to Bedrock format conversion."""
     llm = BedrockLLM(model_id="anthropic.claude-3-haiku-20240307-v1:0")

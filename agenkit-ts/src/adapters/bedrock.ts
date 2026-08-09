@@ -34,6 +34,7 @@ import {
   ConversationRole,
 } from '@aws-sdk/client-bedrock-runtime';
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
+import type { CallOptions } from '../core/call-options';
 
 /**
  * Configuration for Bedrock adapter.
@@ -152,19 +153,55 @@ export class BedrockAdapter implements Agent {
    * @returns Promise resolving to response message
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Builds the `inferenceConfig` block, applying per-call options over the
+   * adapter's configured defaults (#818).
+   *
+   * `options.stop` maps to Bedrock's `stopSequences` — the Converse API's
+   * `InferenceConfiguration` has no field named `stop`. `seed` has no
+   * equivalent anywhere in the Converse API (no `inferenceConfig` field, and
+   * passing it as a top-level parameter raises `ValidationException`), so a
+   * caller who set one is warned rather than left to discover — empirically,
+   * via non-reproducible output — that it had no effect.
+   */
+  private buildInferenceConfig(options: CallOptions): InferenceConfiguration {
+    if (options.seed !== undefined) {
+      console.warn(
+        `BedrockAdapter does not support 'seed': the Converse API has no ` +
+          'sampling-seed parameter. The value was not sent to the provider.',
+      );
+    }
+
+    const inferenceConfig: InferenceConfiguration = {
+      temperature: options.temperature ?? this.config.temperature,
+      maxTokens: options.maxTokens ?? this.config.maxTokens,
+      topP: options.topP ?? this.config.topP,
+    };
+
+    const stopSequences = options.stop ?? this.config.stopSequences;
+    if (stopSequences.length > 0) {
+      inferenceConfig.stopSequences = stopSequences;
+    }
+
+    return inferenceConfig;
+  }
+
+  /**
+   * Processes a message with per-call inference options (#818).
+   *
+   * @param message - Input message
+   * @param options - Per-call inference options
+   * @returns Promise resolving to response message
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     validateMessage(message);
 
     const { messages, system } = this.convertToBedrockFormat([message]);
 
-    const inferenceConfig: InferenceConfiguration = {
-      temperature: this.config.temperature,
-      maxTokens: this.config.maxTokens,
-      topP: this.config.topP,
-    };
-
-    if (this.config.stopSequences.length > 0) {
-      inferenceConfig.stopSequences = this.config.stopSequences;
-    }
+    const inferenceConfig = this.buildInferenceConfig(options);
 
     const input: ConverseCommandInput = {
       modelId: this.config.modelId,

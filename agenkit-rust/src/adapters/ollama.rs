@@ -2,7 +2,7 @@
 //!
 //! This module provides an adapter for calling Ollama's local LLM API.
 //! Supports all Ollama models including Llama, Mistral, and others.
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use futures::Stream;
 use serde::{Deserialize, Serialize};
@@ -59,6 +59,12 @@ struct ChatRequest {
 #[derive(Debug, Serialize)]
 struct ChatOptions {
     temperature: f64,
+    /// Ollama's `options` object supports both natively (the real Python Ollama
+    /// SDK's `Options` TypedDict lists both `seed` and `stop` as keys) (#818).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    seed: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop: Option<Vec<String>>,
 }
 
 /// Ollama chat response.
@@ -142,13 +148,19 @@ impl OllamaAgent {
 
     /// Call Ollama API with messages.
     #[cfg(feature = "native")]
-    async fn call_api(&self, messages: Vec<OllamaMessage>) -> Result<ChatResponse, AgentError> {
+    async fn call_api(
+        &self,
+        messages: Vec<OllamaMessage>,
+        options: &CallOptions,
+    ) -> Result<ChatResponse, AgentError> {
         let request = ChatRequest {
             model: self.config.model.clone(),
             messages,
             stream: false,
             options: Some(ChatOptions {
                 temperature: self.config.temperature,
+                seed: options.seed,
+                stop: options.stop.clone(),
             }),
         };
 
@@ -319,18 +331,8 @@ impl Agent for OllamaAgent {
         "ollama"
     }
 
-    #[cfg(feature = "native")]
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        let ollama_message = self.message_to_ollama_message(&message);
-        let response = self.call_api(vec![ollama_message]).await?;
-        Ok(self.response_to_message(response))
-    }
-
-    #[cfg(not(feature = "native"))]
-    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::Transport(
-            "Ollama adapter requires 'native' feature".to_string(),
-        ))
+        self.process_with(message, &CallOptions::new()).await
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -340,6 +342,35 @@ impl Agent for OllamaAgent {
             "ollama".to_string(),
             "local".to_string(),
         ]
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for OllamaAgent {
+    #[cfg(feature = "native")]
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        let ollama_message = self.message_to_ollama_message(&message);
+        let response = self.call_api(vec![ollama_message], options).await?;
+        Ok(self.response_to_message(response))
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn process_with(
+        &self,
+        _message: Message,
+        _options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        Err(AgentError::Transport(
+            "Ollama adapter requires 'native' feature".to_string(),
+        ))
     }
 }
 
@@ -383,5 +414,86 @@ mod tests {
         assert!(caps.contains(&"llm".to_string()));
         assert!(caps.contains(&"ollama".to_string()));
         assert!(caps.contains(&"local".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_process_with_forwards_seed_and_stop() {
+        // #818: Ollama's /api/chat `options` object supports seed/stop natively;
+        // both must reach the outgoing request body.
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/api/chat")
+            .match_body(mockito::Matcher::PartialJson(json!({
+                "options": {
+                    "seed": 42,
+                    "stop": ["\n", "END"],
+                }
+            })))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "model": "llama2",
+                "message": {"role": "assistant", "content": "ok"},
+                "done": true
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = OllamaConfig {
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OllamaAgent::new(config);
+        let options = CallOptions::new()
+            .with_seed(42)
+            .with_stop(vec!["\n".to_string(), "END".to_string()]);
+
+        let response = agent
+            .process_with(Message::with_text("user", "hello"), &options)
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_process_does_not_forward_seed_or_stop_when_unset() {
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/api/chat")
+            .match_request(|request| {
+                let body = request.utf8_lossy_body().unwrap_or_default();
+                !body.contains("\"seed\"") && !body.contains("\"stop\"")
+            })
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "model": "llama2",
+                "message": {"role": "assistant", "content": "ok"},
+                "done": true
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = OllamaConfig {
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OllamaAgent::new(config);
+
+        let response = agent
+            .process(Message::with_text("user", "hello"))
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
     }
 }

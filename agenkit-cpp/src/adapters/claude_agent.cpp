@@ -7,6 +7,7 @@
 #include "agenkit/adapters/validation.hpp"
 #include "agenkit/core/sse_parser.hpp"
 #include <httplib.h>
+#include <iostream>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <sstream>
@@ -35,12 +36,25 @@ std::string ClaudeAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 ClaudeAgent::process(core::Message message) {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+ClaudeAgent::process_with(core::Message message, const core::CallOptions& options) {
+    // seed has no Anthropic equivalent: the Messages API exposes no
+    // sampling-seed parameter. Warn rather than silently drop it, so a caller
+    // doesn't have to discover this empirically via non-reproducible output.
+    if (options.seed.has_value()) {
+        std::cerr << "ClaudeAgent: 'seed' is not supported by the Anthropic Messages API "
+                  << "and was not sent to the provider." << std::endl;
+    }
+
     // Convert message to Claude API format
     json messages = json::array();
     messages.push_back(message_to_json(message));
 
     // Make API call
-    auto result = call_api(messages);
+    auto result = call_api(messages, options);
 
     if (result.is_err()) {
         return core::make_ready_future(
@@ -77,23 +91,39 @@ void ClaudeAgent::set_config(const ClaudeConfig& config) {
     config_ = config;
 }
 
+json ClaudeAgent::build_request_body(const json& messages, const core::CallOptions& options) const {
+    // Build request body
+    json request_body = {
+        {"model", config_.model},
+        {"max_tokens", options.max_tokens.value_or(config_.max_tokens)},
+        {"messages", messages}
+    };
+
+    double temperature = options.temperature.value_or(config_.temperature);
+    if (temperature != 1.0) {
+        request_body["temperature"] = temperature;
+    }
+
+    // stop -> stop_sequences: the Messages API has no field named `stop`.
+    // seed is intentionally never added here: the Messages API has no
+    // sampling-seed parameter at all, so there is no wire name to translate
+    // it to. process_with() warns about this; this method only builds the
+    // request that will actually be sent.
+    if (options.stop.has_value()) {
+        request_body["stop_sequences"] = options.stop.value();
+    }
+
+    return request_body;
+}
+
 core::Result<nlohmann::json, core::AgentError>
-ClaudeAgent::call_api(const json& messages) {
+ClaudeAgent::call_api(const json& messages, const core::CallOptions& options) {
     try {
         // Parse API base URL
         httplib::Client client(config_.api_base);
         client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
-        // Build request body
-        json request_body = {
-            {"model", config_.model},
-            {"max_tokens", config_.max_tokens},
-            {"messages", messages}
-        };
-
-        if (config_.temperature != 1.0) {
-            request_body["temperature"] = config_.temperature;
-        }
+        json request_body = build_request_body(messages, options);
 
         // Set headers
         httplib::Headers headers = {
@@ -188,6 +218,9 @@ core::Message ClaudeAgent::json_to_message(const json& response) {
     return msg;
 }
 
+// Note (#818): stream() intentionally does not take a CallOptions, same
+// rationale as OpenAIAgent::stream — #818 scopes per-call options to
+// process()/process_with().
 core::Result<void, core::AgentError>
 ClaudeAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
     try {

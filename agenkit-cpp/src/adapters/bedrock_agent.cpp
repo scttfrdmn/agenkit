@@ -13,6 +13,7 @@
 
 #include "agenkit/adapters/bedrock_agent.hpp"
 #include "agenkit/adapters/validation.hpp"
+#include <iostream>
 #include <stdexcept>
 #include <sstream>
 
@@ -63,7 +64,21 @@ std::string BedrockAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 BedrockAgent::process(core::Message message) {
-    auto result = call_converse_api(message);
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+BedrockAgent::process_with(core::Message message, const core::CallOptions& options) {
+    // seed has no Bedrock equivalent: the Converse API's InferenceConfiguration
+    // has no sampling-seed parameter. Warn rather than silently drop it, so a
+    // caller doesn't have to discover this empirically via non-reproducible
+    // output.
+    if (options.seed.has_value()) {
+        std::cerr << "BedrockAgent: 'seed' is not supported by the Bedrock Converse API "
+                  << "and was not sent to the provider." << std::endl;
+    }
+
+    auto result = call_converse_api(message, options);
 
     if (result.is_err()) {
         return core::make_ready_future(
@@ -113,7 +128,7 @@ void BedrockAgent::initialize_client() {
 }
 
 core::Result<core::Message, core::AgentError>
-BedrockAgent::call_converse_api(const core::Message& message) {
+BedrockAgent::call_converse_api(const core::Message& message, const core::CallOptions& options) {
     try {
         // Create request
         Aws::BedrockRuntime::Model::ConverseRequest request;
@@ -141,22 +156,34 @@ BedrockAgent::call_converse_api(const core::Message& message) {
         // Add message to request
         request.AddMessages(bedrock_message);
 
-        // Set inference configuration
+        // Set inference configuration. A per-call option overrides the config
+        // default for that one call rather than merging with it.
         Aws::BedrockRuntime::Model::InferenceConfiguration inference_config;
 
-        if (config_.temperature.has_value()) {
-            inference_config.SetTemperature(static_cast<float>(config_.temperature.value()));
+        std::optional<double> temperature = options.temperature.has_value() ? options.temperature : config_.temperature;
+        if (temperature.has_value()) {
+            inference_config.SetTemperature(static_cast<float>(temperature.value()));
         }
-        if (config_.max_tokens.has_value()) {
-            inference_config.SetMaxTokens(config_.max_tokens.value());
+        std::optional<int> max_tokens = options.max_tokens.has_value() ? options.max_tokens : config_.max_tokens;
+        if (max_tokens.has_value()) {
+            inference_config.SetMaxTokens(max_tokens.value());
         }
-        if (config_.top_p.has_value()) {
-            inference_config.SetTopP(static_cast<float>(config_.top_p.value()));
+        std::optional<double> top_p = options.top_p.has_value() ? options.top_p : config_.top_p;
+        if (top_p.has_value()) {
+            inference_config.SetTopP(static_cast<float>(top_p.value()));
         }
-        if (!config_.stop_sequences.empty()) {
-            for (const auto& seq : config_.stop_sequences) {
-                inference_config.AddStopSequences(seq);
-            }
+
+        // stop -> stopSequences: the Converse API has no field named `stop`.
+        // options.stop overrides config_.stop_sequences for this call when
+        // set, rather than merging with it. seed is intentionally never set
+        // here: the Converse API has no sampling-seed parameter at all, so
+        // there is no wire name to translate it to. process_with() warns
+        // about this; this method only builds the request that will
+        // actually be sent.
+        const std::vector<std::string>& stop_sequences =
+            options.stop.has_value() ? options.stop.value() : config_.stop_sequences;
+        for (const auto& seq : stop_sequences) {
+            inference_config.AddStopSequences(seq);
         }
 
         request.SetInferenceConfig(inference_config);
@@ -247,6 +274,9 @@ BedrockAgent::call_converse_api(const core::Message& message) {
     }
 }
 
+// Note (#818): stream() intentionally does not take a CallOptions, same
+// rationale as OpenAIAgent::stream — #818 scopes per-call options to
+// process()/process_with().
 core::Result<void, core::AgentError>
 BedrockAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
     try {
@@ -413,6 +443,18 @@ std::string BedrockAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 BedrockAgent::process(core::Message /* message */) {
+    return core::make_ready_future(
+        core::Result<core::Message, core::AgentError>::err(
+            core::AgentError(
+                core::AgentErrorType::Internal,
+                "Bedrock adapter not available - AWS SDK not compiled in"
+            )
+        )
+    );
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+BedrockAgent::process_with(core::Message /* message */, const core::CallOptions& /* options */) {
     return core::make_ready_future(
         core::Result<core::Message, core::AgentError>::err(
             core::AgentError(

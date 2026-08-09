@@ -38,12 +38,17 @@ std::string LiteLLMAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 LiteLLMAgent::process(core::Message message) {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+LiteLLMAgent::process_with(core::Message message, const core::CallOptions& options) {
     // Convert message to OpenAI API format
     json messages = json::array();
     messages.push_back(message_to_json(message));
 
     // Make API call
-    auto result = call_api(messages);
+    auto result = call_api(messages, options);
 
     if (result.is_err()) {
         return core::make_ready_future(
@@ -84,29 +89,49 @@ void LiteLLMAgent::set_config(const LiteLLMConfig& config) {
     config_ = config;
 }
 
+json LiteLLMAgent::build_request_body(const json& messages, const core::CallOptions& options) const {
+    // Build request body
+    json request_body = {
+        {"model", config_.model},
+        {"messages", messages}
+    };
+
+    // Add optional parameters if set, letting a per-call option override the
+    // config value when set.
+    std::optional<double> temperature = options.temperature.has_value() ? options.temperature : config_.temperature;
+    if (temperature.has_value()) {
+        request_body["temperature"] = temperature.value();
+    }
+    std::optional<int> max_tokens = options.max_tokens.has_value() ? options.max_tokens : config_.max_tokens;
+    if (max_tokens.has_value()) {
+        request_body["max_tokens"] = max_tokens.value();
+    }
+    std::optional<double> top_p = options.top_p.has_value() ? options.top_p : config_.top_p;
+    if (top_p.has_value()) {
+        request_body["top_p"] = top_p.value();
+    }
+
+    // seed and stop have no config-level equivalent: the LiteLLM proxy
+    // normalizes them to whatever the routed provider supports (or forwards
+    // them as-is when unsupported), so both are a straight passthrough.
+    if (options.seed.has_value()) {
+        request_body["seed"] = options.seed.value();
+    }
+    if (options.stop.has_value()) {
+        request_body["stop"] = options.stop.value();
+    }
+
+    return request_body;
+}
+
 core::Result<nlohmann::json, core::AgentError>
-LiteLLMAgent::call_api(const json& messages) {
+LiteLLMAgent::call_api(const json& messages, const core::CallOptions& options) {
     try {
         // Parse base URL for http client
         httplib::Client client(config_.base_url);
         client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
-        // Build request body
-        json request_body = {
-            {"model", config_.model},
-            {"messages", messages}
-        };
-
-        // Add optional parameters if set
-        if (config_.temperature.has_value()) {
-            request_body["temperature"] = config_.temperature.value();
-        }
-        if (config_.max_tokens.has_value()) {
-            request_body["max_tokens"] = config_.max_tokens.value();
-        }
-        if (config_.top_p.has_value()) {
-            request_body["top_p"] = config_.top_p.value();
-        }
+        json request_body = build_request_body(messages, options);
 
         // Set headers
         httplib::Headers headers = {

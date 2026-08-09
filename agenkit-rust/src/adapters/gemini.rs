@@ -2,7 +2,7 @@
 //!
 //! Provides integration with Google's Gemini models (Gemini 2.0, Gemini 1.5 Pro, etc.).
 //! Supports both completion and streaming modes via the Gemini REST API.
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use futures::stream::Stream;
 use serde::{Deserialize, Serialize};
@@ -74,7 +74,7 @@ struct GeminiContent {
 }
 
 /// Gemini generation configuration.
-#[derive(Debug, Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct GeminiGenerationConfig {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -87,6 +87,11 @@ struct GeminiGenerationConfig {
     top_k: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     stop_sequences: Option<Vec<String>>,
+    /// Gemini's REST API supports `seed` directly in `generationConfig` (the real
+    /// `google-genai` Python SDK's `GenerateContentConfig.seed`), unlike Anthropic
+    /// and Bedrock, which have no equivalent (#818).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    seed: Option<u32>,
 }
 
 /// Gemini generate content request.
@@ -220,24 +225,41 @@ impl GeminiAdapter {
         })
     }
 
-    /// Call Gemini API with messages.
-    #[cfg(feature = "native")]
-    async fn call_api(&self, contents: Vec<GeminiContent>) -> Result<GeminiResponse, AgentError> {
-        let generation_config = GeminiGenerationConfig {
+    /// Build the per-call generation config, letting `options` override the
+    /// config-level default field by field — the same override precedent every
+    /// adapter in this crate uses for `CallOptions` (#818).
+    fn generation_config_for(&self, options: &CallOptions) -> GeminiGenerationConfig {
+        let stop_sequences = match &options.stop {
+            Some(stop) => Some(stop.clone()),
+            None if !self.config.stop_sequences.is_empty() => {
+                Some(self.config.stop_sequences.clone())
+            }
+            None => None,
+        };
+
+        GeminiGenerationConfig {
             temperature: self.config.temperature,
             max_output_tokens: self.config.max_tokens,
             top_p: self.config.top_p,
             top_k: self.config.top_k,
-            stop_sequences: if self.config.stop_sequences.is_empty() {
-                None
-            } else {
-                Some(self.config.stop_sequences.clone())
-            },
-        };
+            stop_sequences,
+            // CallOptions.seed is u64 for portability across providers; Gemini's
+            // REST API field is u32, so an out-of-range value saturates rather
+            // than silently wrapping.
+            seed: options.seed.map(|seed| seed.min(u32::MAX as u64) as u32),
+        }
+    }
 
+    /// Call Gemini API with messages.
+    #[cfg(feature = "native")]
+    async fn call_api(
+        &self,
+        contents: Vec<GeminiContent>,
+        options: &CallOptions,
+    ) -> Result<GeminiResponse, AgentError> {
         let request = GeminiRequest {
             contents,
-            generation_config: Some(generation_config),
+            generation_config: Some(self.generation_config_for(options)),
         };
 
         let url = format!(
@@ -351,6 +373,8 @@ impl GeminiAdapter {
         &self,
         contents: Vec<GeminiContent>,
     ) -> Result<Vec<Message>, AgentError> {
+        // Streaming is not part of the OptionsAgent contract this issue is about
+        // (#818); see the equivalent decision in openai.rs.
         let generation_config = GeminiGenerationConfig {
             temperature: self.config.temperature,
             max_output_tokens: self.config.max_tokens,
@@ -361,6 +385,7 @@ impl GeminiAdapter {
             } else {
                 Some(self.config.stop_sequences.clone())
             },
+            seed: None,
         };
 
         let request = GeminiRequest {
@@ -503,18 +528,8 @@ impl Agent for GeminiAdapter {
         "gemini"
     }
 
-    #[cfg(feature = "native")]
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        let contents = self.messages_to_gemini_contents(&[message]);
-        let response = self.call_api(contents).await?;
-        self.response_to_message(response)
-    }
-
-    #[cfg(not(feature = "native"))]
-    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::Transport(
-            "Gemini adapter requires 'native' feature".to_string(),
-        ))
+        self.process_with(message, &CallOptions::new()).await
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -524,6 +539,35 @@ impl Agent for GeminiAdapter {
             "gemini".to_string(),
             "google".to_string(),
         ]
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for GeminiAdapter {
+    #[cfg(feature = "native")]
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        let contents = self.messages_to_gemini_contents(&[message]);
+        let response = self.call_api(contents, options).await?;
+        self.response_to_message(response)
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn process_with(
+        &self,
+        _message: Message,
+        _options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        Err(AgentError::Transport(
+            "Gemini adapter requires 'native' feature".to_string(),
+        ))
     }
 }
 
@@ -680,5 +724,80 @@ mod tests {
         assert_eq!(models::GEMINI_1_5_PRO, "gemini-1.5-pro");
         assert_eq!(models::GEMINI_1_5_FLASH, "gemini-1.5-flash");
         assert_eq!(models::GEMINI_PRO, "gemini-pro");
+    }
+
+    // Gemini's request URL is hardcoded to the live Google endpoint (no
+    // configurable `api_base` like the other adapters), so an HTTP-mock test
+    // like openai.rs's cannot intercept it. `generation_config_for` is the exact
+    // function `call_api` uses to build the outgoing `generationConfig`, so
+    // testing it directly still proves seed/stop reach the request (#818).
+
+    #[test]
+    fn test_generation_config_forwards_seed_and_stop() {
+        let config = GeminiConfig {
+            api_key: "test-key".to_string(),
+            ..Default::default()
+        };
+        let adapter = GeminiAdapter::new(config).unwrap();
+        let options = CallOptions::new()
+            .with_seed(42)
+            .with_stop(vec!["\n".to_string(), "END".to_string()]);
+
+        let generation_config = adapter.generation_config_for(&options);
+
+        assert_eq!(generation_config.seed, Some(42));
+        assert_eq!(
+            generation_config.stop_sequences,
+            Some(vec!["\n".to_string(), "END".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_generation_config_omits_seed_and_stop_when_unset() {
+        let config = GeminiConfig {
+            api_key: "test-key".to_string(),
+            ..Default::default()
+        };
+        let adapter = GeminiAdapter::new(config).unwrap();
+
+        let generation_config = adapter.generation_config_for(&CallOptions::new());
+
+        assert_eq!(generation_config.seed, None);
+        assert_eq!(generation_config.stop_sequences, None);
+    }
+
+    #[test]
+    fn test_generation_config_per_call_stop_overrides_config_default() {
+        let config = GeminiConfig {
+            api_key: "test-key".to_string(),
+            stop_sequences: vec!["CONFIG_STOP".to_string()],
+            ..Default::default()
+        };
+        let adapter = GeminiAdapter::new(config).unwrap();
+        let options = CallOptions::new().with_stop(vec!["CALL_STOP".to_string()]);
+
+        let generation_config = adapter.generation_config_for(&options);
+
+        assert_eq!(
+            generation_config.stop_sequences,
+            Some(vec!["CALL_STOP".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_generation_config_falls_back_to_config_default_stop() {
+        let config = GeminiConfig {
+            api_key: "test-key".to_string(),
+            stop_sequences: vec!["CONFIG_STOP".to_string()],
+            ..Default::default()
+        };
+        let adapter = GeminiAdapter::new(config).unwrap();
+
+        let generation_config = adapter.generation_config_for(&CallOptions::new());
+
+        assert_eq!(
+            generation_config.stop_sequences,
+            Some(vec!["CONFIG_STOP".to_string()])
+        );
     }
 }

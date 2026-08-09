@@ -12,6 +12,7 @@
 #define AGENKIT_ADAPTERS_OLLAMA_AGENT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <memory>
@@ -86,7 +87,7 @@ struct OllamaConfig {
  * }
  * @endcode
  */
-class OllamaAgent : public core::Agent {
+class OllamaAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Construct an Ollama agent with configuration
@@ -113,6 +114,22 @@ public:
      */
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
+
+    /**
+     * @brief Process a message, forwarding per-call options to the Ollama API
+     *
+     * Same as process(), except that `options.temperature` overrides the
+     * config default when set, and `options.seed`/`options.stop` are threaded
+     * into the outgoing request's `options` object. Ollama's REST API
+     * supports both `seed` and `stop` natively under those exact keys (per
+     * its `Options` schema), so both are a straight passthrough.
+     *
+     * @param message Input message (role and content)
+     * @param options Per-call options; unset fields fall back to config
+     * @return Future with Result containing response or error
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
 
     /**
      * @brief Stream response from Ollama API
@@ -157,16 +174,30 @@ public:
      */
     std::vector<std::string> list_models() const;
 
+    /**
+     * @brief Build the outgoing /api/chat request body
+     *
+     * Exposed publicly so tests can assert on the exact JSON sent to Ollama
+     * without a live HTTP call. Per-call `options` values, when set, override
+     * the corresponding config default.
+     *
+     * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
+     * @return Request body JSON, not yet sent
+     */
+    nlohmann::json build_request_body(const nlohmann::json& messages, const core::CallOptions& options) const;
+
 private:
     OllamaConfig config_;
 
     /**
      * @brief Make HTTP request to Ollama API
      * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
      * @return JSON response or error
      */
     core::Result<nlohmann::json, core::AgentError>
-    call_api(const nlohmann::json& messages);
+    call_api(const nlohmann::json& messages, const core::CallOptions& options);
 
     /**
      * @brief Convert Agent message to Ollama API format

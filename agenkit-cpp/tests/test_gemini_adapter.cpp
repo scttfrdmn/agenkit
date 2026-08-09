@@ -5,11 +5,14 @@
 
 #include <gtest/gtest.h>
 #include "agenkit/adapters/gemini_agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include <cstdlib>
+#include <nlohmann/json.hpp>
 
 using namespace agenkit::core;
 using namespace agenkit::adapters;
+using json = nlohmann::json;
 
 // Test 1: Constructor with explicit API key
 TEST(GeminiAgentTest, ConstructorWithExplicitAPIKey) {
@@ -212,6 +215,95 @@ TEST(GeminiAgentTest, StopSequencesConfiguration) {
     EXPECT_EQ(stop_seqs[0], "\n\n");
     EXPECT_EQ(stop_seqs[1], "END");
     EXPECT_EQ(stop_seqs[2], "STOP");
+}
+
+// --- CallOptions / OptionsAgent wiring (#818) ---
+
+TEST(GeminiAgentTest, IsAnOptionsAgent) {
+    GeminiConfig config;
+    config.api_key = "test-key";
+    GeminiAgent agent(config);
+
+    EXPECT_TRUE(supports_options(&agent));
+    EXPECT_NE(dynamic_cast<OptionsAgent*>(&agent), nullptr);
+}
+
+// Gemini's REST API supports `seed` directly as an integer field on
+// generationConfig, and `stopSequences` for stop — both a real field, no
+// warn-and-drop needed (unlike Claude/Bedrock).
+TEST(GeminiAgentTest, RequestBodyIncludesSeedAndStopSequencesWhenSet) {
+    GeminiConfig config;
+    config.api_key = "test-key";
+    GeminiAgent agent(config);
+
+    auto options = CallOptions{}.with_seed(42).with_stop({"STOP", "END"});
+    auto contents = json::array({{{"role", "user"}, {"parts", json::array({{{"text", "hi"}}})}}});
+    auto body = agent.build_request_body(contents, options);
+
+    ASSERT_TRUE(body.contains("generationConfig"));
+    const auto& gen_config = body["generationConfig"];
+
+    ASSERT_TRUE(gen_config.contains("seed"));
+    EXPECT_EQ(gen_config["seed"].get<uint64_t>(), 42u);
+
+    ASSERT_TRUE(gen_config.contains("stopSequences"));
+    std::vector<std::string> stop = gen_config["stopSequences"].get<std::vector<std::string>>();
+    ASSERT_EQ(stop.size(), 2u);
+    EXPECT_EQ(stop[0], "STOP");
+    EXPECT_EQ(stop[1], "END");
+}
+
+// options.stop overrides config_.stop_sequences for that one call rather
+// than merging with it.
+TEST(GeminiAgentTest, RequestBodyStopOverridesConfigStopSequences) {
+    GeminiConfig config;
+    config.api_key = "test-key";
+    config.stop_sequences = {"CONFIG_STOP"};
+    GeminiAgent agent(config);
+
+    auto options = CallOptions{}.with_stop({"CALL_STOP"});
+    auto contents = json::array({{{"role", "user"}, {"parts", json::array({{{"text", "hi"}}})}}});
+    auto body = agent.build_request_body(contents, options);
+
+    std::vector<std::string> stop = body["generationConfig"]["stopSequences"].get<std::vector<std::string>>();
+    ASSERT_EQ(stop.size(), 1u);
+    EXPECT_EQ(stop[0], "CALL_STOP");
+}
+
+// When CallOptions.stop is unset, the config default must still reach the
+// wire (the existing pre-#818 behavior for config-level stop_sequences).
+TEST(GeminiAgentTest, RequestBodyFallsBackToConfigStopSequencesWhenUnset) {
+    GeminiConfig config;
+    config.api_key = "test-key";
+    config.stop_sequences = {"CONFIG_STOP"};
+    GeminiAgent agent(config);
+
+    auto contents = json::array({{{"role", "user"}, {"parts", json::array({{{"text", "hi"}}})}}});
+    auto body = agent.build_request_body(contents, CallOptions{});
+
+    std::vector<std::string> stop = body["generationConfig"]["stopSequences"].get<std::vector<std::string>>();
+    ASSERT_EQ(stop.size(), 1u);
+    EXPECT_EQ(stop[0], "CONFIG_STOP");
+}
+
+// A per-call temperature/max_tokens/top_p must override the config default
+// for that one call.
+TEST(GeminiAgentTest, RequestBodyPerCallOptionsOverrideConfigDefaults) {
+    GeminiConfig config;
+    config.api_key = "test-key";
+    config.temperature = 0.5;
+    config.max_tokens = 1024;
+    config.top_p = 0.9;
+    GeminiAgent agent(config);
+
+    auto options = CallOptions{}.with_temperature(0.1).with_max_tokens(64).with_top_p(0.3);
+    auto contents = json::array({{{"role", "user"}, {"parts", json::array({{{"text", "hi"}}})}}});
+    auto body = agent.build_request_body(contents, options);
+
+    const auto& gen_config = body["generationConfig"];
+    EXPECT_DOUBLE_EQ(gen_config["temperature"].get<double>(), 0.1);
+    EXPECT_EQ(gen_config["maxOutputTokens"].get<int>(), 64);
+    EXPECT_DOUBLE_EQ(gen_config["topP"].get<double>(), 0.3);
 }
 
 // Test 14: Empty API key string is treated as invalid

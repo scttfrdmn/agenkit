@@ -160,6 +160,7 @@ class BedrockLLM(LLM):
         """
         # Validate parameters
         self._validate_llm_params(temperature, max_tokens, **kwargs)
+        kwargs = self._translate_options(kwargs)
 
         # Convert Agenkit Messages to Bedrock format
         bedrock_messages, system_prompts = self._convert_messages(messages)
@@ -260,6 +261,7 @@ class BedrockLLM(LLM):
         """
         # Validate parameters
         self._validate_llm_params(temperature, max_tokens, **kwargs)
+        kwargs = self._translate_options(kwargs)
 
         # Convert messages
         bedrock_messages, system_prompts = self._convert_messages(messages)
@@ -310,6 +312,40 @@ class BedrockLLM(LLM):
                     )
             # Allow other async tasks to run
             await asyncio.sleep(0)
+
+    def _translate_options(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """
+        Translate portable :class:`~agenkit.CallOptions` fields to Bedrock's names.
+
+        ``stop`` (the portable field) maps to Bedrock's ``stopSequences``, which
+        both ``complete()`` and ``stream()`` already special-case out of ``kwargs``
+        and into ``inferenceConfig`` — but only under the ``stopSequences`` key, so
+        the portable ``stop`` name needs renaming first or it falls through to
+        ``converse_params.update(kwargs)`` and Bedrock rejects it as an unknown
+        top-level parameter.
+
+        ``seed`` has no Bedrock Converse equivalent: the API's
+        ``inferenceConfig`` has no sampling-seed field, and passing it as a
+        top-level parameter raises ``ParamValidationError``. Warned rather than
+        silently dropped (#818, the same defect as #801's ``temperature``).
+
+        Args:
+            kwargs: Rendered ``CallOptions`` kwargs plus any other kwargs passed
+                directly to ``complete()``/``stream()``.
+
+        Returns:
+            ``kwargs`` with ``stop`` renamed to ``stopSequences`` and ``seed``
+            removed (after warning, if it was set).
+        """
+        kwargs = dict(kwargs)
+        if "stop" in kwargs:
+            kwargs["stopSequences"] = kwargs.pop("stop")
+        if "seed" in kwargs:
+            kwargs.pop("seed")
+            self._warn_unsupported_option(
+                "seed", "the Bedrock Converse API has no sampling-seed parameter"
+            )
+        return kwargs
 
     def _convert_messages(
         self, messages: list[Message]

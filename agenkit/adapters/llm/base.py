@@ -6,6 +6,7 @@ The interface is intentionally small to maximize flexibility while ensuring
 consistency across providers.
 """
 
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import AsyncIterator
 from typing import Any
@@ -108,6 +109,28 @@ class LLM(ABC):
             pres_pen = kwargs["presence_penalty"]
             if not isinstance(pres_pen, (int, float)) or not -2.0 <= pres_pen <= 2.0:
                 raise ValueError(f"presence_penalty must be between -2 and 2, got {pres_pen}")
+
+    def _warn_unsupported_option(self, option: str, reason: str) -> None:
+        """
+        Warn that a set ``CallOptions`` field cannot reach this provider.
+
+        Exists so an option a provider cannot honor is *visible* rather than
+        silently dropped before the request is built — the exact failure #818
+        was filed about (the same shape as #801's ``temperature``). Adapters
+        call this instead of just popping the kwarg, so a caller who set
+        ``seed`` for reproducibility learns their request was not reproducible
+        rather than discovering it empirically.
+
+        Args:
+            option: Name of the unsupported option (e.g. ``"seed"``).
+            reason: Why the provider cannot honor it.
+        """
+        warnings.warn(
+            f"{type(self).__name__} does not support '{option}': {reason}. "
+            f"The value was not sent to the provider.",
+            UserWarning,
+            stacklevel=3,
+        )
 
     @abstractmethod
     async def complete(self, messages: list[Message], **kwargs: Any) -> Message:

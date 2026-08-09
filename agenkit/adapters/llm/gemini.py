@@ -227,7 +227,15 @@ class GeminiLLM(LLM):
     def _build_config(
         self, temperature: float, max_tokens: int | None, kwargs: dict[str, Any]
     ) -> types.GenerateContentConfig:
-        """Build Gemini generation config."""
+        """
+        Build Gemini generation config.
+
+        ``stop`` (the portable :class:`~agenkit.CallOptions` field) is renamed to
+        ``stop_sequences`` here — ``GenerateContentConfig`` has no ``stop`` field,
+        so forwarding it unchanged raises a pydantic validation error rather than
+        reaching the request. ``seed`` needs no translation: Gemini's config
+        supports it directly under the same name (#818).
+        """
         config_params: dict[str, Any] = {
             "temperature": temperature,
         }
@@ -236,7 +244,11 @@ class GeminiLLM(LLM):
         if max_tokens is not None:
             config_params["max_output_tokens"] = max_tokens
 
-        # Merge additional kwargs
+        # Merge additional kwargs, translating the portable "stop" name to
+        # Gemini's "stop_sequences" (#818).
+        kwargs = dict(kwargs)
+        if "stop" in kwargs:
+            kwargs["stop_sequences"] = kwargs.pop("stop")
         config_params.update(kwargs)
 
         return types.GenerateContentConfig(**config_params)

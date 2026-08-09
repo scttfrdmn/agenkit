@@ -39,6 +39,53 @@ async def test_complete_with_options(mock_openai_client, simple_test_message):
     assert call_kwargs["max_tokens"] == 100
 
 
+@pytest.mark.asyncio
+async def test_complete_forwards_seed_and_stop(mock_openai_client, simple_test_message):
+    """
+    seed and stop must reach the outgoing OpenAI request (#818).
+
+    OpenAI's chat.completions.create supports both natively under these exact
+    names, so no translation is required — a caller's CallOptions(seed=...)
+    should arrive unchanged. This is the negative-verification target: reverting
+    the CallOptions plumbing that forwards **kwargs through complete() makes this
+    fail because "seed" and "stop" disappear from the call.
+    """
+    llm = OpenAILLM(api_key="test-key")
+    llm._client = mock_openai_client
+
+    await llm.complete(simple_test_message, seed=918273645, stop=["END", "STOP"])
+
+    call_kwargs = mock_openai_client.chat.completions.create.call_args.kwargs
+    assert call_kwargs["seed"] == 918273645
+    assert call_kwargs["stop"] == ["END", "STOP"]
+
+
+@pytest.mark.asyncio
+async def test_complete_via_call_options_forwards_seed_and_stop(
+    mock_openai_client, simple_test_message
+):
+    """
+    The full CallOptions -> complete_messages -> adapter path forwards seed/stop.
+
+    Exercises the actual caller-facing path (#818): a caller sets
+    CallOptions(seed=..., stop=...) and dispatches through
+    agenkit._llm_protocol.complete_messages, exactly as SelfConsistency and
+    ConversationalAgent do.
+    """
+    from agenkit._llm_protocol import complete_messages
+    from agenkit.interfaces import CallOptions
+
+    llm = OpenAILLM(api_key="test-key")
+    llm._client = mock_openai_client
+
+    options = CallOptions(seed=918273645, stop=("END",))
+    await complete_messages(llm, simple_test_message, options)
+
+    call_kwargs = mock_openai_client.chat.completions.create.call_args.kwargs
+    assert call_kwargs["seed"] == 918273645
+    assert call_kwargs["stop"] == ["END"]
+
+
 def test_message_conversion(test_messages):
     """Test Agenkit Message to OpenAI format conversion."""
     llm = OpenAILLM(api_key="test-key")

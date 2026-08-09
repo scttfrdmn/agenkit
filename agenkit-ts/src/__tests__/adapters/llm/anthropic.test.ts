@@ -128,6 +128,29 @@ describe('Anthropic Adapter: Unit Tests', () => {
     expect(response.metadata.id).toBe('msg_test123');
   });
 
+  it('should translate stop to stop_sequences via processWith (#818)', async () => {
+    const message = getSimpleTestMessage();
+
+    await adapter.processWith(message, { stop: ['END', 'STOP'] });
+
+    const callArgs = mockClient.messages.create.mock.calls[0][0];
+    expect(callArgs.stop_sequences).toEqual(['END', 'STOP']);
+    expect(callArgs.stop).toBeUndefined();
+  });
+
+  it('should warn and drop unsupported seed via processWith (#818)', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const message = getSimpleTestMessage();
+
+    await adapter.processWith(message, { seed: 918273645 });
+
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("does not support 'seed'"));
+    const callArgs = mockClient.messages.create.mock.calls[0][0];
+    expect(callArgs.seed).toBeUndefined();
+
+    warnSpy.mockRestore();
+  });
+
   it('should handle streaming chunks', async () => {
     // Mock streaming response.
     //

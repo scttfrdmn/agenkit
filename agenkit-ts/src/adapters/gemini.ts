@@ -31,6 +31,7 @@ import {
   type EnhancedGenerateContentResponse,
 } from '@google/generative-ai';
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
+import type { CallOptions } from '../core/call-options';
 
 /**
  * Configuration for Gemini adapter.
@@ -129,9 +130,34 @@ export class GeminiAdapter implements Agent {
    * @returns Promise resolving to response message
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Processes a message with per-call inference options (#818).
+   *
+   * `stop` is translated to Gemini's `stopSequences` — the GenerationConfig has
+   * no `stop` field. `seed` has no equivalent in this SDK
+   * (`@google/generative-ai`'s `GenerationConfig` has no seed field, unlike
+   * Google's Python `google-genai` SDK), so a caller who set one is warned
+   * rather than left to discover — empirically, via non-reproducible output —
+   * that it had no effect.
+   *
+   * @param message - Input message
+   * @param options - Per-call inference options
+   * @returns Promise resolving to response message
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     validateMessage(message);
 
-    const model = this.getModel();
+    if (options.seed !== undefined) {
+      console.warn(
+        `GeminiAdapter does not support 'seed': the @google/generative-ai SDK's ` +
+          "GenerationConfig has no sampling-seed field. The value was not sent to the provider.",
+      );
+    }
+
+    const model = this.getModel(options);
     const { history, lastMessage } = this.convertMessages([message]);
 
     const chat = model.startChat({
@@ -255,17 +281,22 @@ export class GeminiAdapter implements Agent {
   /**
    * Gets a configured Gemini model.
    *
+   * @param options - Optional per-call inference options that override the
+   *   adapter's configured defaults (#818). `stop` overrides `stopSequences`
+   *   entirely rather than merging, matching how `options.temperature` etc.
+   *   already override rather than merge with the adapter's config.
    * @returns Configured GenerativeModel instance
    */
-  private getModel(): GenerativeModel {
+  private getModel(options?: CallOptions): GenerativeModel {
+    const stopSequences = options?.stop ?? this.config.stopSequences;
     return this.client.getGenerativeModel({
       model: this.config.model,
       generationConfig: {
-        temperature: this.config.temperature,
-        maxOutputTokens: this.config.maxTokens,
-        topP: this.config.topP,
+        temperature: options?.temperature ?? this.config.temperature,
+        maxOutputTokens: options?.maxTokens ?? this.config.maxTokens,
+        topP: options?.topP ?? this.config.topP,
         topK: this.config.topK,
-        stopSequences: this.config.stopSequences.length > 0 ? this.config.stopSequences : undefined,
+        stopSequences: stopSequences.length > 0 ? stopSequences : undefined,
         candidateCount: this.config.candidateCount,
       },
     });

@@ -40,6 +40,70 @@ async def test_complete_with_options(mock_anthropic_client, simple_test_message)
     assert call_kwargs["max_tokens"] == 100
 
 
+@pytest.mark.asyncio
+async def test_complete_translates_stop_to_stop_sequences(
+    mock_anthropic_client, simple_test_message
+):
+    """
+    stop must reach the Messages API request as stop_sequences (#818).
+
+    The Anthropic SDK has no "stop" parameter (it would raise TypeError against
+    the real client), only "stop_sequences" — so the portable CallOptions field
+    must be renamed, not forwarded as-is.
+    """
+    llm = AnthropicLLM(api_key="test-key")
+    llm._client = mock_anthropic_client
+
+    await llm.complete(simple_test_message, stop=["END", "STOP"])
+
+    call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
+    assert call_kwargs["stop_sequences"] == ["END", "STOP"]
+    assert "stop" not in call_kwargs
+
+
+@pytest.mark.asyncio
+async def test_complete_warns_and_drops_unsupported_seed(
+    mock_anthropic_client, simple_test_message
+):
+    """
+    seed has no Anthropic equivalent; it must warn rather than silently drop (#818).
+
+    Forwarding "seed" unchanged would raise TypeError against the real SDK, so it
+    is popped before the request is built -- but silently popping it recreates the
+    exact "accepted and dropped" failure #818 was filed about, one field over from
+    #801's temperature. A caller must be told the option had no effect.
+    """
+    llm = AnthropicLLM(api_key="test-key")
+    llm._client = mock_anthropic_client
+
+    with pytest.warns(UserWarning, match="does not support 'seed'"):
+        await llm.complete(simple_test_message, seed=918273645)
+
+    call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
+    assert "seed" not in call_kwargs
+
+
+@pytest.mark.asyncio
+async def test_complete_via_call_options_translates_stop_and_warns_on_seed(
+    mock_anthropic_client, simple_test_message
+):
+    """The full CallOptions path also translates stop and warns on seed (#818)."""
+    from agenkit._llm_protocol import complete_messages
+    from agenkit.interfaces import CallOptions
+
+    llm = AnthropicLLM(api_key="test-key")
+    llm._client = mock_anthropic_client
+
+    options = CallOptions(seed=918273645, stop=("END",))
+    with pytest.warns(UserWarning, match="does not support 'seed'"):
+        await complete_messages(llm, simple_test_message, options)
+
+    call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
+    assert call_kwargs["stop_sequences"] == ["END"]
+    assert "seed" not in call_kwargs
+    assert "stop" not in call_kwargs
+
+
 def test_message_conversion_user(simple_test_message):
     """Test Agenkit Message to Anthropic format conversion."""
     llm = AnthropicLLM(api_key="test-key")

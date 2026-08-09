@@ -75,3 +75,39 @@ TEST(MakeReadyFutureTest, WorksWithMoveOnlyTypes) {
 
     EXPECT_EQ(future.get().role(), "test");
 }
+
+// Agent::introspect() (#850): docs/API.md documented this method on the
+// Agent interface for years while the header had no such member. These
+// tests confirm the default virtual implementation actually exists and
+// returns sensible data for a concrete, production Agent subclass.
+TEST(EchoAgentTest, IntrospectReturnsNameAndCapabilities) {
+    EchoAgent agent;
+
+    nlohmann::json result = agent.introspect();
+
+    EXPECT_EQ(result["agent_name"], agent.name());
+    ASSERT_TRUE(result["capabilities"].is_array());
+    std::vector<std::string> expected_caps = agent.capabilities();
+    std::vector<std::string> actual_caps =
+        result["capabilities"].get<std::vector<std::string>>();
+    EXPECT_EQ(actual_caps, expected_caps);
+}
+
+TEST(EchoAgentTest, IntrospectDefaultShapeHasEmptyStateAndTimestamp) {
+    EchoAgent agent;
+
+    nlohmann::json result = agent.introspect();
+
+    EXPECT_TRUE(result["memory_state"].is_null());
+    EXPECT_TRUE(result["internal_state"].is_object());
+    EXPECT_TRUE(result["internal_state"].empty());
+    EXPECT_TRUE(result["metadata"].is_object());
+    EXPECT_TRUE(result["metadata"].empty());
+
+    ASSERT_TRUE(result.contains("timestamp"));
+    // ISO 8601 UTC, e.g. "2026-08-08T12:34:56Z" -- must at least parse as a
+    // non-empty string in that general shape.
+    std::string ts = result["timestamp"].get<std::string>();
+    EXPECT_FALSE(ts.empty());
+    EXPECT_EQ(ts.back(), 'Z');
+}

@@ -136,23 +136,39 @@ TEST(TestUtilsTest, FailingMockAgentCapabilities) {
     EXPECT_TRUE(std::find(caps.begin(), caps.end(), "testing") != caps.end());
 }
 
-// Test MockAgent introspection
-TEST(TestUtilsTest, MockAgentIntrospection) {
+// Test MockAgent debug_info()
+TEST(TestUtilsTest, MockAgentDebugInfo) {
     auto mock = std::make_shared<MockAgent>(std::vector<std::string>{"R1", "R2"});
 
-    std::string info = mock->introspect();
+    std::string info = mock->debug_info();
     EXPECT_TRUE(info.find("MockAgent") != std::string::npos);
     EXPECT_TRUE(info.find("responses=2") != std::string::npos);
 }
 
-// Test FailingMockAgent introspection
-TEST(TestUtilsTest, FailingMockAgentIntrospection) {
+// Test FailingMockAgent debug_info()
+TEST(TestUtilsTest, FailingMockAgentDebugInfo) {
     auto failing = std::make_shared<FailingMockAgent>(
         AgentErrorType::ProcessingError,
         "Test error"
     );
 
-    std::string info = failing->introspect();
+    std::string info = failing->debug_info();
     EXPECT_TRUE(info.find("FailingMockAgent") != std::string::npos);
     EXPECT_TRUE(info.find("ProcessingError") != std::string::npos);
+}
+
+// Test MockAgent::introspect() -- the real Agent interface method (#850)
+TEST(TestUtilsTest, MockAgentIntrospect) {
+    auto mock = std::make_shared<MockAgent>(std::vector<std::string>{"R1", "R2"}, "mock-1");
+
+    nlohmann::json result = mock->introspect();
+    EXPECT_EQ(result["agent_name"], "mock-1");
+    ASSERT_TRUE(result["capabilities"].is_array());
+    EXPECT_TRUE(std::find(
+        result["capabilities"].begin(), result["capabilities"].end(), "mock"
+    ) != result["capabilities"].end());
+    EXPECT_TRUE(result["memory_state"].is_null());
+    EXPECT_TRUE(result["internal_state"].is_object());
+    EXPECT_TRUE(result["metadata"].is_object());
+    EXPECT_TRUE(result.contains("timestamp"));
 }

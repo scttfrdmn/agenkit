@@ -226,7 +226,9 @@ public:
     // Return a list of capability tags (e.g., {"search", "math"})
     virtual std::vector<std::string> capabilities() const;
 
-    // Return introspection data (patterns, config, stats)
+    // Return a snapshot of internal state: {agent_name, capabilities,
+    // timestamp, memory_state, internal_state, metadata}. Default reports
+    // name()/capabilities() with the rest empty/null; override to add state.
     virtual nlohmann::json introspect() const;
 
     // Process a message and stream the response chunk by chunk

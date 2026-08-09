@@ -101,8 +101,11 @@ if ! python3 scripts/version.py check; then
     exit 1
 fi
 
-# Commit version bump
-git add -A
+# Commit version bump. `-u` (tracked files only), not `-A`: version.py only
+# ever rewrites existing declaration files, so there's no legitimate reason
+# for this step to stage an untracked file -- `-A` swept in a 22.8MB stray
+# compiled Go binary sitting in the working tree into the v0.91.0 tag.
+git add -u
 git commit -m "chore(release): Bump version to $VERSION"
 
 echo "   ✓ Version numbers updated"

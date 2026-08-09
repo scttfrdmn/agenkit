@@ -102,6 +102,7 @@ tests/cross_language/harness_zig/harness_zig
 agenkit-go/basic
 agenkit-go/test_client
 agenkit-go/memory_hierarchy
+agenkit-go/readme
 # All compiled Go example binaries (built from examples/*; never commit).
 agenkit-go/*_example
 # Compiled Rust artifacts (also covered by target/ rules, belt-and-suspenders).

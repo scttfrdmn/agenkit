@@ -102,10 +102,15 @@ public:
     }
 
     /**
-     * @brief Get introspection information
-     * @return JSON string describing the agent
+     * @brief Get debug information (distinct from Agent::introspect())
+     *
+     * This is a free-text debug helper predating the real introspection
+     * subsystem; it is not an override of Agent::introspect() and stays
+     * that way to avoid confusing the two concepts.
+     *
+     * @return Human-readable string describing the agent
      */
-    std::string introspect() const {
+    std::string debug_info() const {
         std::stringstream ss;
         ss << "MockAgent(name=" << agent_name_
            << ", responses=" << responses_.size()
@@ -170,10 +175,15 @@ public:
     }
 
     /**
-     * @brief Get introspection information
-     * @return JSON string describing the agent
+     * @brief Get debug information (distinct from Agent::introspect())
+     *
+     * This is a free-text debug helper predating the real introspection
+     * subsystem; it is not an override of Agent::introspect() and stays
+     * that way to avoid confusing the two concepts.
+     *
+     * @return Human-readable string describing the agent
      */
-    std::string introspect() const {
+    std::string debug_info() const {
         std::stringstream ss;
         ss << "FailingMockAgent(name=" << agent_name_
            << ", error=" << to_string(error_type_)
@@ -371,10 +381,15 @@ public:
     }
 
     /**
-     * @brief Get introspection information
-     * @return JSON string describing the mock LLM
+     * @brief Get debug information (distinct from Agent::introspect())
+     *
+     * This is a free-text debug helper predating the real introspection
+     * subsystem; it is not an override of Agent::introspect() and stays
+     * that way to avoid confusing the two concepts.
+     *
+     * @return Human-readable string describing the mock LLM
      */
-    std::string introspect() const {
+    std::string debug_info() const {
         std::stringstream ss;
         ss << "MockLLM(model=" << model_name_
            << ", responses=" << responses_.size()

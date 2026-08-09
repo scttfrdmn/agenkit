@@ -143,7 +143,7 @@ TEST(MockLLMTest, ResetCallCount) {
     EXPECT_EQ(0, mock_llm->get_call_count());
 }
 
-TEST(MockLLMTest, Introspection) {
+TEST(MockLLMTest, DebugInfo) {
     auto mock_llm = std::make_shared<MockLLM>(
         std::vector<std::string>{"R1", "R2"},
         "gpt-4"
@@ -151,13 +151,30 @@ TEST(MockLLMTest, Introspection) {
     mock_llm->set_temperature(0.7);
     mock_llm->set_max_tokens(100);
 
-    std::string info = mock_llm->introspect();
+    std::string info = mock_llm->debug_info();
 
     EXPECT_NE(std::string::npos, info.find("MockLLM"));
     EXPECT_NE(std::string::npos, info.find("gpt-4"));
     EXPECT_NE(std::string::npos, info.find("responses=2"));
     EXPECT_NE(std::string::npos, info.find("temperature=0.7"));
     EXPECT_NE(std::string::npos, info.find("max_tokens=100"));
+}
+
+// Test MockLLM::introspect() -- the real Agent interface method (#850)
+TEST(MockLLMTest, Introspect) {
+    auto mock_llm = std::make_shared<MockLLM>(
+        std::vector<std::string>{"R1", "R2"},
+        "gpt-4"
+    );
+
+    nlohmann::json result = mock_llm->introspect();
+
+    EXPECT_EQ(result["agent_name"], "gpt-4");
+    ASSERT_TRUE(result["capabilities"].is_array());
+    EXPECT_FALSE(result["capabilities"].empty());
+    EXPECT_TRUE(result["memory_state"].is_null());
+    EXPECT_TRUE(result["internal_state"].is_object());
+    EXPECT_TRUE(result.contains("timestamp"));
 }
 
 TEST(MockLLMTest, Capabilities) {

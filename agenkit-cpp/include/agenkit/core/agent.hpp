@@ -12,6 +12,7 @@
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/errors.hpp"
 #include "agenkit/core/result.hpp"
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
 #include <future>
@@ -19,6 +20,10 @@
 #include <functional>
 #include <atomic>
 #include <thread>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
 namespace agenkit {
 namespace core {
@@ -86,6 +91,46 @@ public:
     }
 
     /**
+     * @brief Examine agent's internal state, memory, and capabilities (optional)
+     *
+     * This is introspection (examining "what I know"), not reflection
+     * (analyzing "how I did"). Returns a snapshot of current internal state.
+     *
+     * Introspection is useful for:
+     * - Debugging: Examine agent state during development
+     * - Monitoring: Track agent state in production
+     * - Coordination: Agents can inspect each other's capabilities
+     * - Testing: Verify agent state in tests
+     * - Explainability: Understand what an agent "knows"
+     *
+     * @return JSON object mirroring the other cores' IntrospectionResult shape:
+     *         `agent_name`, `capabilities`, `timestamp` (ISO 8601 UTC),
+     *         `memory_state` (null unless overridden), `internal_state`
+     *         (empty object unless overridden), and `metadata` (empty object).
+     *
+     * @note Default implementation returns `name()` and `capabilities()` with
+     *       `memory_state: null` and empty `internal_state`/`metadata` objects.
+     *       Override to report agent-specific memory or internal state, e.g.:
+     * @code
+     * nlohmann::json introspect() const override {
+     *     auto result = Agent::introspect();
+     *     result["internal_state"]["messages_processed"] = message_count_;
+     *     return result;
+     * }
+     * @endcode
+     */
+    virtual nlohmann::json introspect() const {
+        nlohmann::json result;
+        result["agent_name"] = name();
+        result["capabilities"] = capabilities();
+        result["timestamp"] = current_timestamp_iso8601();
+        result["memory_state"] = nullptr;
+        result["internal_state"] = nlohmann::json::object();
+        result["metadata"] = nlohmann::json::object();
+        return result;
+    }
+
+    /**
      * @brief Process a message with streaming response (optional)
      *
      * This method enables streaming responses where the agent can return
@@ -132,6 +177,19 @@ public:
         std::promise<Result<bool, AgentError>> promise;
         promise.set_value(Result<bool, AgentError>::ok(true));
         return promise.get_future();
+    }
+
+private:
+    /**
+     * @brief Current UTC time formatted as ISO 8601 (used by the default introspect())
+     * @return Timestamp string, e.g. "2026-08-08T12:34:56Z"
+     */
+    static std::string current_timestamp_iso8601() {
+        auto now = std::chrono::system_clock::now();
+        auto time_t_now = std::chrono::system_clock::to_time_t(now);
+        std::stringstream ss;
+        ss << std::put_time(std::gmtime(&time_t_now), "%Y-%m-%dT%H:%M:%SZ");
+        return ss.str();
     }
 };
 

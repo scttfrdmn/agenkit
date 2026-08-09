@@ -45,6 +45,34 @@ def test_committed_readme_block_is_current():
     assert block.read().strip() == docs_facts.render_pattern_list().strip()
 
 
+def test_language_support_table_render_matches_spec_conformance():
+    rendered = docs_facts.render_language_support_table()
+
+    import json
+
+    conformance = json.loads(docs_facts.SPEC_CONFORMANCE_FILE.read_text())
+    for lang, count in conformance["summary"].items():
+        display = docs_facts._LANGUAGE_DISPLAY[lang]
+        assert display in rendered
+        assert f"{count}/{conformance['total_patterns']}" in rendered
+
+
+def test_language_support_table_flags_missing_patterns():
+    rendered = docs_facts.render_language_support_table()
+
+    assert "missing `AgentsAsTools`" in rendered
+    for full_lang in ("Python", "Go", "TypeScript", "Rust", "C++", "Zig"):
+        # A fully-conformant language's row must not claim a missing pattern.
+        row_start = rendered.index(f"**{full_lang}**")
+        row_end = rendered.index("\n", row_start)
+        assert "missing" not in rendered[row_start:row_end]
+
+
+def test_committed_readme_language_support_table_is_current():
+    block = next(b for b in docs_facts.BLOCKS if b.marker == "language-support-table")
+    assert block.read().strip() == docs_facts.render_language_support_table().strip()
+
+
 @pytest.fixture
 def scratch_block(tmp_path, monkeypatch):
     """A GeneratedBlock pointed at a scratch file under tmp_path, via

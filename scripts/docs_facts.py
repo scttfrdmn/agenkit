@@ -19,21 +19,28 @@ Usage::
 green throughout, because the existing parity pipeline regenerates fresh
 output every run but never compared it to the committed copy).
 
-v1 deliberately covers exactly one fact: the "18 Core Patterns" name list in
-README.md, sourced from ``specs/patterns/*.yaml`` filenames. Explicitly out
-of scope for this module: the README pattern-count table (sourced from
-``feature-manifest.json`` via ``scripts/parity/matrix_generator.py --check``,
+v1 covers two facts: the "18 Core Patterns" name list in README.md (sourced
+from ``specs/patterns/*.yaml`` filenames), and the README language-support
+table's "Patterns implemented" + "Tests" columns (sourced from
+``spec-conformance.json`` and ``test-parity-report.json`` respectively --
+#913's decision to make spec-presence conformance the public metric,
+replacing a raw class count from ``feature-manifest.json`` that answered a
+different, noisier question). "LLM Adapters" and "Depth" have no single
+structured source in the repo today and stay hand-maintained inside this
+module's own small annotation table, documented as such rather than left
+silently freeform in README.md.
+
+Explicitly out of scope for this module: ``docs/parity/FEATURE_MATRIX.md``/
+``GAPS_ANALYSIS.md`` (owned by ``scripts/parity/matrix_generator.py --check``,
 a separate, already-existing mechanism -- see that module rather than
-duplicating it here) and test counts (change every run; state-a-number
-guarantees staleness, so sibling fixes point readers at ``make test``
-instead of a frozen figure). Versions are already owned by
-``scripts/version.py``; this module must never become a 21st declaration
-site for those.
+duplicating it here). Versions are already owned by ``scripts/version.py``;
+this module must never become a 21st declaration site for those.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass
@@ -41,6 +48,37 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SPECS_DIR = ROOT / "specs" / "patterns"
+SPEC_CONFORMANCE_FILE = ROOT / "spec-conformance.json"
+TEST_PARITY_REPORT_FILE = ROOT / "test-parity-report.json"
+
+# Display order for the language-support table, and the two columns that
+# have no single structured source in the repo -- these stay hand-curated
+# here rather than silently freeform in README.md's prose. Update this
+# table directly when a language ships a new adapter or subsystem; there is
+# no scanner for "which subsystems are implemented" to generate it from.
+_LANGUAGE_DISPLAY = {
+    "python": "Python",
+    "go": "Go",
+    "typescript": "TypeScript",
+    "rust": "Rust",
+    "cpp": "C++",
+    "zig": "Zig",
+    "csharp": "C# (.NET)",
+    "java": "Java",
+    "scala": "Scala",
+}
+
+_LANGUAGE_ANNOTATIONS = {
+    "python": ("7", "Reference — all subsystems"),
+    "go": ("7 (+vLLM, SGLang)", "Complete — incl. reasoning memory, skills"),
+    "typescript": ("7", "Broad — no skills / reasoning memory"),
+    "rust": ("6", "Complete — incl. skills"),
+    "cpp": ("5", "Broad — `safety/` not yet implemented"),
+    "zig": ("8", "Broad — no skills"),
+    "csharp": ("2 (+mock)", "Newer — no skills"),
+    "java": ("2 (+mock)", "Newer — no skills"),
+    "scala": ("mock only", "Newest — LLM adapters are stubs"),
+}
 
 # Filename stem -> display name, for stems whose naming convention diverges
 # from a naive title-case of the underscored filename (agents_as_tools.yaml
@@ -73,6 +111,48 @@ def render_pattern_list() -> str:
 
     names = ", ".join(_display_name(stem) for stem in stems)
     return f"**{len(stems)} Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): {names}."
+
+
+def render_language_support_table() -> str:
+    """The README language-support table: spec-presence conformance (not a
+    raw class count -- #913) plus test counts, both from generated JSON,
+    joined with the small hand-curated LLM-adapter/depth annotations above.
+    """
+    if not SPEC_CONFORMANCE_FILE.exists():
+        raise SystemExit(
+            f"{SPEC_CONFORMANCE_FILE} does not exist -- run "
+            f"scripts/parity/spec_conformance.py first"
+        )
+    if not TEST_PARITY_REPORT_FILE.exists():
+        raise SystemExit(f"{TEST_PARITY_REPORT_FILE} does not exist")
+
+    conformance = json.loads(SPEC_CONFORMANCE_FILE.read_text())
+    test_report = json.loads(TEST_PARITY_REPORT_FILE.read_text())
+    total = conformance["total_patterns"]
+
+    missing_by_lang: dict[str, list[str]] = {lang: [] for lang in _LANGUAGE_DISPLAY}
+    for spec_stem, per_lang in conformance["patterns"].items():
+        for lang, present in per_lang.items():
+            if lang in missing_by_lang and not present:
+                missing_by_lang[lang].append(_display_name(spec_stem))
+
+    lines = [
+        "| Language | Patterns implemented | LLM Adapters | Tests | Depth |",
+        "|----------|----------------------|--------------|-------|-------|",
+    ]
+    for lang, display in _LANGUAGE_DISPLAY.items():
+        count = conformance["summary"][lang]
+        missing = missing_by_lang[lang]
+        patterns_cell = f"{count}/{total}"
+        if missing:
+            patterns_cell += f" (missing {', '.join(f'`{m}`' for m in sorted(missing))})"
+
+        adapters, depth = _LANGUAGE_ANNOTATIONS[lang]
+        tests = test_report["languages"].get(lang, {}).get("total", "?")
+
+        lines.append(f"| **{display}** | {patterns_cell} | {adapters} | {tests} | {depth} |")
+
+    return "\n".join(lines)
 
 
 @dataclass(frozen=True)
@@ -149,12 +229,18 @@ BLOCKS = [
         label="18 Core Patterns list",
         render=staticmethod(render_pattern_list),
     ),
+    GeneratedBlock(
+        path="README.md",
+        marker="language-support-table",
+        label="Language support table",
+        render=staticmethod(render_language_support_table),
+    ),
 ]
 
 # Floor on the list's own size, mirroring version.py's _EXPECTED_DECLARATIONS
 # -- quoting #868's rationale: "the reassuring count was the tell" applies
 # here too. Raise this when a new block is added; never lower it silently.
-_EXPECTED_BLOCKS = 1
+_EXPECTED_BLOCKS = 2
 if len(BLOCKS) < _EXPECTED_BLOCKS:
     raise SystemExit(
         f"scripts/docs_facts.py tracks {len(BLOCKS)} block(s) but expected at least "

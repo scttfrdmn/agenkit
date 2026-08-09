@@ -148,7 +148,7 @@ agent = TimeoutDecorator(agent, TimeoutConfig(timeout_ms=30000))
 Write once. Deploy anywhere. **Nine language implementations** (Python is the
 reference; all nine share the same `Agent`/`Message`/`Tool` core and most of
 the 18 core patterns — C#, Java, and Scala are missing `AgentsAsTools`; see
-[Status](#status) for the exact per-language pattern-class counts):
+[Status](#status) for the exact per-language spec-conformance breakdown):
 
 ```python
 # Python - Prototype quickly with ML ecosystem
@@ -558,37 +558,37 @@ file for the current number — this line will drift again if hand-maintained)
 ### Language Support
 
 The shared core is the `Agent`/`Message`/`Tool` interface plus 18 named
-patterns (listed below). The "Pattern classes" column is a raw class count
-from `feature-manifest.json` — it is **not** a conformance score against
-those 18 patterns. Languages differ in how many concrete classes back a given
-pattern for legitimate architectural reasons (Python ships config/streaming
-variants like `StreamingConversationalAgent` and `ConversationalAgentConfig`
-that other languages fold into one class; C++ has a couple of duplicate class
-names for the same pattern), so a lower number does not always mean a missing
-pattern. Regenerate it yourself with:
-`uv run python -c "import json; d=json.load(open('feature-manifest.json')); [print(l, len(v['patterns'])) for l,v in d['languages'].items()]"`.
-The one gap that is real across all nine languages: C#/Java/Scala do not
-implement `AgentsAsTools` (verified by `grep -rl AgentTool` finding no hits
-under `agenkit-cs`/`agenkit-java`/`agenkit-scala`) — the class-count column
-below already reflects that as their only shortfall. See #913 for a planned
-move to a spec-conformance metric that would replace this class count with a
-per-pattern ✅/❌ table generated from `specs/patterns/*.yaml`, and #902 for
-a diff-check that keeps this table from drifting silently the way it did
-before (#918). The "Tests" column is the test count from the parity report;
-"Depth" reflects how many advanced subsystems (memory, skills, reasoning
-memory, full adapter set) are implemented.
+patterns (listed below). The "Patterns implemented" column is a
+**spec-presence** conformance score from `spec-conformance.json`
+(`scripts/parity/spec_conformance.py`, #909/#913) — for each of the 18
+patterns named in `specs/patterns/*.yaml`, does a source file implementing
+it actually exist in that language, checked by filename/class-name (with an
+alias table for legitimate naming divergence, e.g. Python's
+`memory.py`/`MemoryHierarchy` vs. C#'s `MemoryAugmentedAgent.cs`) rather than
+by counting classes. This replaced an earlier raw class-count column
+(`feature-manifest.json`'s `patterns` count) that answered a different,
+noisier question — it could not distinguish "no implementation exists" from
+"the implementation has an unconventional class name," and undercounted
+C#/Java/Scala for months due to a scanner bug (#918) before this metric
+existed. `feature-manifest.json` remains as a secondary, diagnostic
+class-count signal; it is no longer this table's source. The "Tests" column
+is the test count from the parity report; "Depth" reflects how many advanced
+subsystems (memory, skills, reasoning memory, full adapter set) are
+implemented.
 
-| Language | Pattern classes (of 18 named patterns) | LLM Adapters | Tests | Depth |
-|----------|------------------------------------------|--------------|-------|-------|
-| **Python** | 25 (all 18 patterns) | 7 | 2229 | Reference — all subsystems |
-| **Go** | 18 (all 18 patterns) | 7 (+vLLM, SGLang) | 1330 | Complete — incl. reasoning memory, skills |
-| **TypeScript** | 18 (all 18 patterns) | 7 | 976 | Broad — no skills / reasoning memory |
-| **C++** | 19 (all 18 patterns) | 5 | 1133 | Broad — `safety/` not yet implemented |
-| **Rust** | 16 (all 18 patterns) | 6 | 1352 | Complete — incl. skills |
-| **Zig** | 13 (all 18 patterns) | 8 | 671 | Broad — no skills |
-| **C#** (.NET) | 18 (17 of 18, missing `AgentsAsTools`) | 2 (+mock) | 272 | Newer — no skills |
-| **Java** | 18 (17 of 18, missing `AgentsAsTools`) | 2 (+mock) | 358 | Newer — no skills |
-| **Scala** | 18 (17 of 18, missing `AgentsAsTools`) | mock only | 363 | Newest — LLM adapters are stubs |
+<!-- GENERATED:language-support-table:start -->
+| Language | Patterns implemented | LLM Adapters | Tests | Depth |
+|----------|----------------------|--------------|-------|-------|
+| **Python** | 18/18 | 7 | 2229 | Reference — all subsystems |
+| **Go** | 18/18 | 7 (+vLLM, SGLang) | 1341 | Complete — incl. reasoning memory, skills |
+| **TypeScript** | 18/18 | 7 | 976 | Broad — no skills / reasoning memory |
+| **Rust** | 18/18 | 6 | 1352 | Complete — incl. skills |
+| **C++** | 18/18 | 5 | 1133 | Broad — `safety/` not yet implemented |
+| **Zig** | 18/18 | 8 | 671 | Broad — no skills |
+| **C# (.NET)** | 17/18 (missing `AgentsAsTools`) | 2 (+mock) | 272 | Newer — no skills |
+| **Java** | 17/18 (missing `AgentsAsTools`) | 2 (+mock) | 358 | Newer — no skills |
+| **Scala** | 17/18 (missing `AgentsAsTools`) | mock only | 363 | Newest — LLM adapters are stubs |
+<!-- GENERATED:language-support-table:end -->
 
 <!-- GENERATED:pattern-list:start -->
 **18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): AgentsAsTools, Autonomous, Collaborative, Conversational, Fallback, HumanInLoop, MemoryHierarchy, MultiAgent, Orchestration, Parallel, Planning, ReAct, ReasoningWithTools, Reflection, Router, Sequential, Supervisor, Task.

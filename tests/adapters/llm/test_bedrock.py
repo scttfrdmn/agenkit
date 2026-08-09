@@ -93,7 +93,7 @@ def test_aws_profile_initialization():
 async def test_bedrock_integration(aws_profile, simple_test_message):
     """Integration test with real Bedrock API."""
     llm = BedrockLLM(
-        model_id="anthropic.claude-3-haiku-20240307-v1:0",
+        model_id="us.anthropic.claude-sonnet-5",
         profile_name=aws_profile,
         region_name="us-east-1",
     )
@@ -112,7 +112,7 @@ async def test_bedrock_integration(aws_profile, simple_test_message):
 async def test_bedrock_streaming_integration(aws_profile, simple_test_message):
     """Integration test for streaming with real Bedrock API."""
     llm = BedrockLLM(
-        model_id="anthropic.claude-3-haiku-20240307-v1:0",
+        model_id="us.anthropic.claude-sonnet-5",
         profile_name=aws_profile,
         region_name="us-east-1",
     )

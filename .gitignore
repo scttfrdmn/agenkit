@@ -115,6 +115,10 @@ agenkit-zig/.zig-cache/
 site/
 .cache/
 
+# Marimo notebook session cache (written by `marimo edit`/`marimo export`
+# under the notebook's directory, e.g. tutorials/__marimo__/)
+__marimo__/
+
 # Ruff cache
 .ruff_cache/
 

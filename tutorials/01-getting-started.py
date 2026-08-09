@@ -185,10 +185,10 @@ def __(EchoAgent, WordCounterAgent):
     from agenkit.composition import SequentialAgent
 
     # Create pipeline: Echo first, then count words
-    pipeline = SequentialAgent([EchoAgent(), WordCounterAgent()])
+    pipeline = SequentialAgent("echo-then-count", [EchoAgent(), WordCounterAgent()])
 
     print(f"✅ Created pipeline: {pipeline.name}")
-    print(f"   Agents in pipeline: {len(pipeline.agents)}")
+    print(f"   Agents in pipeline: {len(pipeline.get_agents())}")
     return SequentialAgent, pipeline
 
 
@@ -258,10 +258,10 @@ def __(has_openai, mo, os):
     openai_agent = None
 
     if has_openai:
-        from agenkit.llm import OpenAIAdapter
+        from agenkit.adapters.llm import OpenAILLM
         from agenkit.patterns import ConversationalAgent
 
-        llm = OpenAIAdapter(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
+        llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
 
         openai_agent = ConversationalAgent(
             llm=llm, system_prompt="You are a helpful AI assistant. Be concise and friendly."
@@ -270,7 +270,7 @@ def __(has_openai, mo, os):
         mo.md("✅ GPT-4 agent ready!")
     else:
         mo.md("⚠️ OpenAI API key not set")
-    return ConversationalAgent, OpenAIAdapter, llm, openai_agent
+    return ConversationalAgent, OpenAILLM, llm, openai_agent
 
 
 @app.cell
@@ -279,11 +279,11 @@ def __(has_anthropic, mo, os):
     claude_agent = None
 
     if has_anthropic:
-        from agenkit.llm import AnthropicAdapter
+        from agenkit.adapters.llm import AnthropicLLM
         from agenkit.patterns import ConversationalAgent as Conv
 
-        anthropic_llm = AnthropicAdapter(
-            api_key=os.getenv("ANTHROPIC_API_KEY"), model="claude-3-5-sonnet-20241022"
+        anthropic_llm = AnthropicLLM(
+            api_key=os.getenv("ANTHROPIC_API_KEY"), model="claude-sonnet-5"
         )
 
         claude_agent = Conv(
@@ -294,7 +294,7 @@ def __(has_anthropic, mo, os):
         mo.md("✅ Claude agent ready!")
     else:
         mo.md("⚠️ Anthropic API key not set")
-    return AnthropicAdapter, Conv, anthropic_llm, claude_agent
+    return AnthropicLLM, Conv, anthropic_llm, claude_agent
 
 
 @app.cell

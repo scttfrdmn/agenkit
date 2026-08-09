@@ -30,7 +30,13 @@
 
 import { Agent, Message } from '../../../core/interfaces.js';
 import { AGUIAdapter } from '../adapter.js';
-import { AGUIEvent, MetadataEvent, ErrorEvent, HeartbeatEvent } from '../events.js';
+import {
+  AGUIEvent,
+  AGUI_METADATA_SCHEMA_VERSION,
+  MetadataEvent,
+  ErrorEvent,
+  HeartbeatEvent,
+} from '../events.js';
 
 /**
  * WebSocket interface (compatible with ws library)
@@ -291,7 +297,7 @@ export class AGUIWebSocketHandler {
     const metadata: Record<string, any> = {
       agent_name: this.agentName || this.agent.name,
       protocol: 'ag-ui',
-      protocol_version: '1.0',
+      protocol_version: AGUI_METADATA_SCHEMA_VERSION,
       transport: 'websocket',
       capabilities: {
         streaming: true,

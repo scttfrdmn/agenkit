@@ -3,7 +3,7 @@
 /// Implements the Model Context Protocol for tool discovery and invocation.
 /// Provides StdioClient, HttpClient, McpServer, and a Tool adapter.
 ///
-/// Protocol version: 2024-11-05
+/// Protocol version: 2025-11-25
 ///
 /// ## Overview
 ///
@@ -31,8 +31,36 @@ const Allocator = std.mem.Allocator;
 
 // ── Protocol constants ────────────────────────────────────────────────────────
 
-pub const PROTOCOL_VERSION = "2024-11-05";
+// The MCP protocol revision this implementation speaks. A single named
+// constant (agenkit#781) used by both the client and server code paths in
+// this file, so a version bump is a one-line change and the two halves of
+// the protocol cannot drift from each other.
+//
+// 2025-11-25 is the latest *ratified* revision whose initialize/tools/list/
+// tools/call surface is additive over 2024-11-05 (agenkit#733: the
+// 2026-07-28 revision removes the initialize handshake in favor of a
+// stateless core this module does not implement, so advertising that
+// literal would claim a handshake the wire no longer has).
+pub const PROTOCOL_VERSION = "2025-11-25";
 pub const CLIENT_VERSION = "0.90.0";
+
+// ── Test-observable version-mismatch hook (agenkit#781) ────────────────────────
+//
+// Zig's default test runner installs its own `std_options.logFn` ahead of
+// any module-level override, so tests cannot intercept `std.log.warn`
+// output directly. `recordVersionMismatch` is the single call site for
+// both client- and server-side mismatch detection below: it still emits
+// `std.log.warn` for real callers, and additionally updates this counter +
+// fixed buffer so tests can assert the mismatch path actually fired.
+pub var version_mismatch_count: usize = 0;
+var version_mismatch_buf: [256]u8 = undefined;
+pub var version_mismatch_message: []const u8 = "";
+
+fn recordVersionMismatch(comptime fmt: []const u8, peer_version: []const u8, our_version: []const u8) void {
+    version_mismatch_count += 1;
+    version_mismatch_message = std.fmt.bufPrint(&version_mismatch_buf, fmt, .{ peer_version, our_version }) catch "";
+    std.log.warn(fmt, .{ peer_version, our_version });
+}
 
 // ── Wire types ────────────────────────────────────────────────────────────────
 
@@ -82,6 +110,13 @@ pub const McpToolResult = struct {
 pub const McpServerInfo = struct {
     name: []const u8 = "",
     version: []const u8 = "",
+
+    /// The MCP protocol revision the server actually reported in its
+    /// initialize response (result.protocolVersion). Captured so a caller
+    /// has a single place to check it after initialize() (agenkit#781 —
+    /// this field did not exist before, so a peer speaking a different
+    /// revision was indistinguishable from one speaking ours).
+    protocol_version: []const u8 = "",
 };
 
 /// Concatenate all text-type content blocks, separated by spaces.
@@ -226,6 +261,22 @@ pub const StdioClient = struct {
                     }
                 }
             }
+            // Capture the server's reported protocolVersion (previously
+            // discarded — agenkit#781) and warn on mismatch, so version
+            // skew is visible instead of surfacing later as an unrelated
+            // decode error or wrong result.
+            if (obj.get("protocolVersion")) |pv| {
+                if (pv == .string) {
+                    self.server_info_data.protocol_version = try self.allocator.dupe(u8, pv.string);
+                    if (!std.mem.eql(u8, pv.string, PROTOCOL_VERSION)) {
+                        recordVersionMismatch(
+                            "mcp: server protocol version \"{s}\" does not match client version \"{s}\"",
+                            pv.string,
+                            PROTOCOL_VERSION,
+                        );
+                    }
+                }
+            }
         }
 
         // Send initialized notification (fire and forget, no response)
@@ -277,6 +328,7 @@ pub const StdioClient = struct {
         }
         if (self.server_info_data.name.len > 0) self.allocator.free(self.server_info_data.name);
         if (self.server_info_data.version.len > 0) self.allocator.free(self.server_info_data.version);
+        if (self.server_info_data.protocol_version.len > 0) self.allocator.free(self.server_info_data.protocol_version);
     }
 
     /// Send a JSON-RPC request and return the parsed result value.
@@ -402,6 +454,22 @@ pub const HttpClient = struct {
                     }
                 }
             }
+            // Capture the server's reported protocolVersion (previously
+            // discarded — agenkit#781) and warn on mismatch, so version
+            // skew is visible instead of surfacing later as an unrelated
+            // decode error or wrong result.
+            if (obj.get("protocolVersion")) |pv| {
+                if (pv == .string) {
+                    self.server_info_data.protocol_version = try self.allocator.dupe(u8, pv.string);
+                    if (!std.mem.eql(u8, pv.string, PROTOCOL_VERSION)) {
+                        recordVersionMismatch(
+                            "mcp: server protocol version \"{s}\" does not match client version \"{s}\"",
+                            pv.string,
+                            PROTOCOL_VERSION,
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -444,6 +512,7 @@ pub const HttpClient = struct {
         const self: *HttpClient = @ptrCast(@alignCast(ptr));
         if (self.server_info_data.name.len > 0) self.allocator.free(self.server_info_data.name);
         if (self.server_info_data.version.len > 0) self.allocator.free(self.server_info_data.version);
+        if (self.server_info_data.protocol_version.len > 0) self.allocator.free(self.server_info_data.protocol_version);
     }
 
     /// Send a JSON-RPC request via HTTP POST and return the parsed result.
@@ -602,7 +671,7 @@ pub const McpServer = struct {
 
     fn dispatch(self: *McpServer, id: u64, method: []const u8, params: ?std.json.Value) ![]u8 {
         if (std.mem.eql(u8, method, "initialize")) {
-            return self.handleInitialize(id);
+            return self.handleInitialize(id, params);
         } else if (std.mem.eql(u8, method, "tools/list")) {
             return self.handleToolsList(id);
         } else if (std.mem.eql(u8, method, "tools/call")) {
@@ -615,7 +684,25 @@ pub const McpServer = struct {
         }
     }
 
-    fn handleInitialize(self: *McpServer, id: u64) ![]u8 {
+    fn handleInitialize(self: *McpServer, id: u64, params: ?std.json.Value) ![]u8 {
+        // Read (and thus stop discarding) the client's requested version —
+        // agenkit#781. Per the MCP spec's negotiation model the server
+        // always replies with the revision it actually implements; a
+        // mismatch is logged so version skew is visible instead of silent.
+        if (params) |p| {
+            if (p == .object) {
+                if (p.object.get("protocolVersion")) |pv| {
+                    if (pv == .string and !std.mem.eql(u8, pv.string, PROTOCOL_VERSION)) {
+                        recordVersionMismatch(
+                            "mcp: client requested protocol version \"{s}\", server speaks \"{s}\"",
+                            pv.string,
+                            PROTOCOL_VERSION,
+                        );
+                    }
+                }
+            }
+        }
+
         var buf = std.ArrayList(u8).empty;
         defer buf.deinit(self.allocator);
         var id_buf: [24]u8 = undefined;
@@ -624,7 +711,12 @@ pub const McpServer = struct {
         try buf.appendSlice(self.allocator, id_str);
         try buf.appendSlice(self.allocator, ",\"result\":{\"protocolVersion\":\"");
         try buf.appendSlice(self.allocator, PROTOCOL_VERSION);
-        try buf.appendSlice(self.allocator, "\",\"serverInfo\":{\"name\":\"");
+        // Zig previously omitted "capabilities" from the initialize result
+        // entirely (agenkit#781's live interop bug: a spec-conformant
+        // client that gates tools/list on capabilities.tools being present
+        // would refuse to list tools against this server). Match the other
+        // 8 languages' {"tools":{}} shape.
+        try buf.appendSlice(self.allocator, "\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"");
         try buf.appendSlice(self.allocator, self.name);
         try buf.appendSlice(self.allocator, "\",\"version\":\"");
         try buf.appendSlice(self.allocator, self.version);

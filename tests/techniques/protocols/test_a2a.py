@@ -23,6 +23,7 @@ from agenkit.techniques.protocols.a2a import (  # Agent; Message types; Server; 
     A2AException,
     A2AMessage,
     A2AServer,
+    A2AVersion,
     AgentA2AServer,
     AgentInfo,
     AgentNotFoundError,
@@ -279,6 +280,18 @@ class TestProtocol:
         assert "capabilities" in response_data
         assert response_data["capabilities"] == capabilities
         assert "protocol_version" in response_data
+
+    def test_a2a_version_has_only_v1_0(self):
+        """A2AVersion has exactly one member (agenkit#781 item E).
+
+        V1_1 was previously defined but never emitted, accepted, or checked
+        anywhere in the codebase -- an unreachable enum member in a public
+        API that promised support the code didn't provide. Asserting the
+        member set here (not just that V1_0 works) is the part that would
+        catch V1_1 being silently reintroduced.
+        """
+        assert [v.name for v in A2AVersion] == ["V1_0"]
+        assert A2AVersion.V1_0.value == "1.0"
 
     def test_create_status_response(self):
         """Test creating status response."""

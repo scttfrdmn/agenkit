@@ -10,6 +10,19 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
+# The MCP protocol revision this implementation speaks. A single named
+# constant per language (agenkit#781) — client.py and server.py both import
+# this rather than repeating the literal, so a version bump is a one-line
+# change and can't drift between the two halves of the protocol.
+#
+# 2025-11-25 is the latest *ratified* revision whose initialize/tools/list/
+# tools/call surface is additive over 2024-11-05 (see agenkit#733: the
+# 2026-07-28 revision removes the initialize handshake entirely in favor of
+# a stateless core, which agenkit does not implement, so adopting that
+# literal would advertise a synchronous handshake under a version number
+# that no longer has one).
+PROTOCOL_VERSION = "2025-11-25"
+
 # ── JSON-RPC 2.0 wire types ──────────────────────────────────────────────────
 
 
@@ -95,10 +108,22 @@ class MCPToolResult:
 
 @dataclass
 class MCPServerInfo:
-    """Information about a connected MCP server."""
+    """Information about a connected MCP server.
+
+    Attributes:
+        name: Server name, from the ``initialize`` response's ``serverInfo``.
+        version: Server version, from the same.
+        protocol_version: The MCP protocol revision the server actually
+            reported (its ``result["protocolVersion"]``), captured so a
+            caller can detect a mismatch against ``PROTOCOL_VERSION``
+            (agenkit#781 — this field did not exist before, so a peer
+            speaking a different revision was indistinguishable from one
+            speaking ours).
+    """
 
     name: str = ""
     version: str = ""
+    protocol_version: str = ""
 
 
 # ── MCPClient interface ───────────────────────────────────────────────────────

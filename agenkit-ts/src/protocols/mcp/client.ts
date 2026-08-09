@@ -15,18 +15,42 @@
 
 import { spawn, ChildProcess } from 'child_process';
 import * as readline from 'readline';
-import type {
-  JsonRpcRequest,
-  JsonRpcResponse,
-  McpClient,
-  McpContent,
-  McpServerInfo,
-  McpTool,
-  McpToolResult,
+import {
+  PROTOCOL_VERSION,
+  type JsonRpcRequest,
+  type JsonRpcResponse,
+  type McpClient,
+  type McpContent,
+  type McpServerInfo,
+  type McpTool,
+  type McpToolResult,
 } from './types.js';
 
-const PROTOCOL_VERSION = '2024-11-05';
 const CLIENT_VERSION = '0.90.0';
+
+/**
+ * Parse an initialize result into an {@link McpServerInfo}, capturing the
+ * server's reported `protocolVersion` (previously discarded — agenkit#781)
+ * and logging a warning when it differs from ours, so version skew is
+ * visible instead of surfacing later as an unrelated decode error or wrong
+ * result.
+ */
+export function parseServerInfo(result: {
+  serverInfo?: { name?: string; version?: string };
+  protocolVersion?: string;
+} | null | undefined): McpServerInfo {
+  const protocolVersion = result?.protocolVersion ?? '';
+  if (protocolVersion && protocolVersion !== PROTOCOL_VERSION) {
+    console.warn(
+      `mcp: server protocol version "${protocolVersion}" does not match client version "${PROTOCOL_VERSION}"`,
+    );
+  }
+  return {
+    name: result?.serverInfo?.name ?? '',
+    version: result?.serverInfo?.version ?? '',
+    protocolVersion,
+  };
+}
 
 // ─── StdioClient ─────────────────────────────────────────────────────────────
 
@@ -57,7 +81,7 @@ export class StdioClient implements McpClient {
   private nextId = 0;
   /** Serial queue — ensures only one `sendOnce` call runs at a time. */
   private queue: Promise<void> = Promise.resolve();
-  private _serverInfo: McpServerInfo = { name: '', version: '' };
+  private _serverInfo: McpServerInfo = { name: '', version: '', protocolVersion: '' };
 
   /**
    * @param command - Executable to spawn (e.g. `"npx"`)
@@ -107,13 +131,9 @@ export class StdioClient implements McpClient {
 
     const result = resp.result as {
       serverInfo?: { name?: string; version?: string };
-    };
-    if (result?.serverInfo) {
-      this._serverInfo = {
-        name: result.serverInfo.name ?? '',
-        version: result.serverInfo.version ?? '',
-      };
-    }
+      protocolVersion?: string;
+    } | null;
+    this._serverInfo = parseServerInfo(result);
   }
 
   async listTools(): Promise<McpTool[]> {
@@ -206,7 +226,7 @@ export class StdioClient implements McpClient {
  */
 export class HttpClient implements McpClient {
   private nextId = 0;
-  private _serverInfo: McpServerInfo = { name: '', version: '' };
+  private _serverInfo: McpServerInfo = { name: '', version: '', protocolVersion: '' };
 
   /**
    * @param baseUrl - Full URL of the MCP JSON-RPC endpoint
@@ -226,13 +246,9 @@ export class HttpClient implements McpClient {
 
     const result = resp.result as {
       serverInfo?: { name?: string; version?: string };
-    };
-    if (result?.serverInfo) {
-      this._serverInfo = {
-        name: result.serverInfo.name ?? '',
-        version: result.serverInfo.version ?? '',
-      };
-    }
+      protocolVersion?: string;
+    } | null;
+    this._serverInfo = parseServerInfo(result);
   }
 
   async listTools(): Promise<McpTool[]> {

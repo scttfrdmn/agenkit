@@ -17,10 +17,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import sys
 from typing import TYPE_CHECKING, Any
 
 from agenkit.protocols.mcp.types import (
+    PROTOCOL_VERSION,
     MCPContent,
     MCPServerInfo,
     MCPTool,
@@ -33,7 +35,7 @@ from agenkit.protocols.mcp.types import (
 if TYPE_CHECKING:
     from agenkit.interfaces import Tool
 
-_PROTOCOL_VERSION = "2024-11-05"
+logger = logging.getLogger(__name__)
 
 
 class MCPServer:
@@ -128,8 +130,20 @@ class MCPServer:
         writer.write((json.dumps(d) + "\n").encode())
 
     def _handle_initialize(self, req: _JSONRPCRequest) -> _JSONRPCResponse:
+        # Read (and thus stop discarding) the client's requested version —
+        # agenkit#781. Per the MCP spec's negotiation model, the server always
+        # replies with the revision it actually implements; a mismatch is
+        # logged so version skew is visible instead of silent.
+        params = req.params or {}
+        client_protocol_version = params.get("protocolVersion", "")
+        if client_protocol_version and client_protocol_version != PROTOCOL_VERSION:
+            logger.warning(
+                "mcp: client requested protocol version %r, server speaks %r",
+                client_protocol_version,
+                PROTOCOL_VERSION,
+            )
         result = {
-            "protocolVersion": _PROTOCOL_VERSION,
+            "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {"tools": {}},
             "serverInfo": {"name": self._info.name, "version": self._info.version},
         }

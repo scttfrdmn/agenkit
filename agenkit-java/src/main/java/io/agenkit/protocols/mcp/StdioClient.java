@@ -66,12 +66,7 @@ public class StdioClient implements McpClient {
         if (resp.error() != null) {
             throw new RuntimeException("mcp initialize error: " + resp.error().message());
         }
-        if (resp.result() != null && resp.result().has("serverInfo")) {
-            JsonNode info = resp.result().get("serverInfo");
-            serverInfo = new McpServerInfo(
-                    info.path("name").asText(""),
-                    info.path("version").asText(""));
-        }
+        serverInfo = McpVersionNegotiation.parseServerInfo(resp.result());
     }
 
     @Override

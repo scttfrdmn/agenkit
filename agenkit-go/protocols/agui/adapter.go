@@ -9,6 +9,15 @@ import (
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
 
+// metadataSchemaVersion is agenkit's own metadata-event schema version --
+// NOT a version of the AG-UI wire protocol itself. AG-UI (docs.ag-ui.com)
+// has no numbered spec revision to align with, so this was previously a
+// made-up "1.0" that looked like an upstream protocol version but wasn't
+// (agenkit#781 item D: "a wrong version is worse than an absent one"). One
+// named constant per language, so all emitters advertise the same value
+// and a bump can't drift between them.
+const metadataSchemaVersion = "1.0"
+
 // AGUIAdapter wraps an Agenkit agent to produce AG-UI protocol events.
 //
 // Converts standard Agent.Process() calls into streaming AG-UI events
@@ -271,7 +280,7 @@ func (a *AGUIAdapter) createMetadataEvent() *MetadataEvent {
 		"agent_name":       a.agentName,
 		"agent_type":       fmt.Sprintf("%T", a.agent),
 		"capabilities":     a.agent.Capabilities(),
-		"protocol_version": "1.0",
+		"protocol_version": metadataSchemaVersion,
 	}
 	return NewMetadataEvent(data)
 }

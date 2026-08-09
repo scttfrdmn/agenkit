@@ -110,3 +110,62 @@ class McpSpec extends AnyFunSuite with Matchers:
     val tools  = toolsFromClient(client)
     tools.length shouldBe 2
     tools.map(_.name) shouldBe List("tool_a", "tool_b")
+
+  // ── Protocol version negotiation (agenkit#781) ───────────────────────────
+
+  test("McpServer initialize advertises shared constant and tools capability"):
+    val server = McpServer("test-server", "1.0.0", Nil)
+    val req    = JsonRpcRequest("2.0", 1L, "initialize", None)
+    val resp   = server.handleRequest(req)
+
+    resp.result shouldBe defined
+    resp.result.get.obj("protocolVersion").str shouldBe ProtocolVersion
+    // Previously ujson.Obj() with no "tools" key (agenkit#781's live
+    // interop bug) -- verify it's present now.
+    resp.result.get.obj("capabilities").obj.contains("tools") shouldBe true
+
+  // Negative-verification target: reverting the mismatch check in
+  // McpServer.handleInitialize (removing the
+  // McpVersionNegotiation.warnIfClientVersionMismatch call) makes this
+  // test fail, because nothing else in the server reads
+  // req.params["protocolVersion"].
+  test("McpServer warns on client version mismatch"):
+    val server = McpServer("test-server", "1.0.0", Nil)
+    val params = ujson.Obj("protocolVersion" -> "1999-01-01", "capabilities" -> ujson.Obj())
+    val req    = JsonRpcRequest("2.0", 1L, "initialize", Some(params))
+
+    val originalErr = System.err
+    val captured     = java.io.ByteArrayOutputStream()
+    System.setErr(java.io.PrintStream(captured))
+    val resp =
+      try server.handleRequest(req)
+      finally System.setErr(originalErr)
+
+    // Server still answers with the version it actually speaks (spec's
+    // negotiation model: the server states its own supported revision).
+    resp.result shouldBe defined
+    resp.result.get.obj("protocolVersion").str shouldBe ProtocolVersion
+
+    val logged = captured.toString
+    logged should include("1999-01-01")
+    logged should include(ProtocolVersion)
+
+  test("McpServer does not warn on matching client version"):
+    val server = McpServer("test-server", "1.0.0", Nil)
+    val params = ujson.Obj("protocolVersion" -> ProtocolVersion, "capabilities" -> ujson.Obj())
+    val req    = JsonRpcRequest("2.0", 1L, "initialize", Some(params))
+
+    val originalErr = System.err
+    val captured     = java.io.ByteArrayOutputStream()
+    System.setErr(java.io.PrintStream(captured))
+    try server.handleRequest(req)
+    finally System.setErr(originalErr)
+
+    captured.toString should not include "protocol version"
+
+  // The client's serverInfo() now exposes the server's reported
+  // protocolVersion. Before agenkit#781, McpServerInfo had no field for
+  // this and the value was discarded entirely.
+  test("McpServerInfo has protocolVersion field"):
+    val info = McpServerInfo("srv", "9.9.9", ProtocolVersion)
+    info.protocolVersion shouldBe ProtocolVersion

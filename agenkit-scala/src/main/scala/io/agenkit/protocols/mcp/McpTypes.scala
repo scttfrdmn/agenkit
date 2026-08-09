@@ -1,8 +1,19 @@
 package io.agenkit.protocols.mcp
 
+import org.slf4j.LoggerFactory
 import upickle.default.*
 
-val ProtocolVersion = "2024-11-05"
+// The MCP protocol revision this implementation speaks. A single named
+// constant (agenkit#781) used by both client and server code, rather than
+// each repeating the literal, so a version bump is a one-line change and
+// the two halves of the protocol cannot drift from each other.
+//
+// 2025-11-25 is the latest *ratified* revision whose initialize/tools/list/
+// tools/call surface is additive over 2024-11-05 (agenkit#733: the
+// 2026-07-28 revision removes the initialize handshake in favor of a
+// stateless core this package does not implement, so advertising that
+// literal would claim a handshake the wire no longer has).
+val ProtocolVersion = "2025-11-25"
 val ClientVersion   = "0.90.0"
 
 // Wire types (private to package)
@@ -97,10 +108,58 @@ case class McpToolResult(
   isError: Boolean
 ) derives ReadWriter
 
+/** Identity information about a connected MCP server.
+  *
+  * @param protocolVersion
+  *   The MCP protocol revision the server actually reported in its initialize response
+  *   (`result.protocolVersion`). Captured so a caller has a single place to check it after
+  *   `initialize()` (agenkit#781 -- this field did not exist before, so a peer speaking a
+  *   different revision was indistinguishable from one speaking ours).
+  */
 case class McpServerInfo(
   name: String = "",
-  version: String = ""
+  version: String = "",
+  protocolVersion: String = ""
 ) derives ReadWriter
 
 def textContent(contents: List[McpContent]): String =
   contents.filter(c => c.`type` == "text" && c.text.nonEmpty).map(_.text).mkString(" ")
+
+/** Protocol version negotiation helpers shared by client and server (agenkit#781). */
+private[mcp] object McpVersionNegotiation:
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  /** Builds an [[McpServerInfo]] from a raw initialize result, capturing the server's reported
+    * `protocolVersion` (previously discarded) and warning when it differs from ours, so version
+    * skew is visible instead of surfacing later as an unrelated decode error or wrong result.
+    */
+  def parseServerInfo(result: ujson.Value): McpServerInfo =
+    val name    = result.obj.get("serverInfo").flatMap(_.obj.get("name")).map(_.str).getOrElse("")
+    val version = result.obj.get("serverInfo").flatMap(_.obj.get("version")).map(_.str).getOrElse("")
+    val protocolVersion = result.obj.get("protocolVersion").map(_.str).getOrElse("")
+
+    if protocolVersion.nonEmpty && protocolVersion != ProtocolVersion then
+      logger.warn(
+        "mcp: server protocol version \"{}\" does not match client version \"{}\"",
+        protocolVersion,
+        ProtocolVersion
+      )
+
+    McpServerInfo(name, version, protocolVersion)
+
+  /** Reads (and thus stops discarding) the client's requested `protocolVersion` from an
+    * initialize request's params, warning on a mismatch. Per the MCP spec's negotiation model
+    * the server always replies with the revision it actually implements.
+    */
+  def warnIfClientVersionMismatch(params: Option[ujson.Value]): Unit =
+    for
+      p  <- params
+      pv <- p.obj.get("protocolVersion")
+    do
+      val clientProtocolVersion = pv.str
+      if clientProtocolVersion.nonEmpty && clientProtocolVersion != ProtocolVersion then
+        logger.warn(
+          "mcp: client requested protocol version \"{}\", server speaks \"{}\"",
+          clientProtocolVersion,
+          ProtocolVersion
+        )

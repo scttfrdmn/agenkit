@@ -6,16 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os/exec"
 	"sync"
 	"sync/atomic"
 )
 
-const (
-	mcpProtocolVersion = "2024-11-05"
-	mcpClientVersion   = "0.90.0"
-)
+const mcpClientVersion = "0.90.0"
 
 // mcpInitParams returns the serialised params for the MCP initialize request.
 func mcpInitParams() (json.RawMessage, error) {
@@ -27,6 +25,28 @@ func mcpInitParams() (json.RawMessage, error) {
 			"version": mcpClientVersion,
 		},
 	})
+}
+
+// parseInitializeResult decodes an initialize response into an
+// MCPServerInfo, capturing the server's reported protocolVersion
+// (previously discarded — agenkit#781) and logging a warning if it differs
+// from ours, so version skew is visible instead of surfacing later as an
+// unrelated decode error or wrong result.
+func parseInitializeResult(raw json.RawMessage) (MCPServerInfo, error) {
+	var result struct {
+		ServerInfo      MCPServerInfo `json:"serverInfo"`
+		ProtocolVersion string        `json:"protocolVersion"`
+	}
+	if err := json.Unmarshal(raw, &result); err != nil {
+		return MCPServerInfo{}, err
+	}
+	info := result.ServerInfo
+	info.ProtocolVersion = result.ProtocolVersion
+	if info.ProtocolVersion != "" && info.ProtocolVersion != mcpProtocolVersion {
+		log.Printf("mcp: server protocol version %q does not match client version %q",
+			info.ProtocolVersion, mcpProtocolVersion)
+	}
+	return info, nil
 }
 
 // StdioConfig holds configuration for StdioClient.
@@ -103,13 +123,11 @@ func (c *StdioClient) Initialize(ctx context.Context) error {
 		return fmt.Errorf("mcp: initialize: %w", err)
 	}
 
-	var result struct {
-		ServerInfo MCPServerInfo `json:"serverInfo"`
-	}
-	if err := json.Unmarshal(resp.Result, &result); err != nil {
+	info, err := parseInitializeResult(resp.Result)
+	if err != nil {
 		return fmt.Errorf("mcp: decode initialize result: %w", err)
 	}
-	c.serverInfo = result.ServerInfo
+	c.serverInfo = info
 	return nil
 }
 
@@ -236,13 +254,11 @@ func (c *HTTPClient) Initialize(ctx context.Context) error {
 		return fmt.Errorf("mcp: initialize: %w", err)
 	}
 
-	var result struct {
-		ServerInfo MCPServerInfo `json:"serverInfo"`
-	}
-	if err := json.Unmarshal(resp.Result, &result); err != nil {
+	info, err := parseInitializeResult(resp.Result)
+	if err != nil {
 		return fmt.Errorf("mcp: decode initialize result: %w", err)
 	}
-	c.serverInfo = result.ServerInfo
+	c.serverInfo = info
 	return nil
 }
 

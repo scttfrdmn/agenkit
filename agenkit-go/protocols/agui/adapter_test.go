@@ -338,8 +338,8 @@ func TestCreateMetadataEvent(t *testing.T) {
 		t.Errorf("capabilities = %v, want 3 items", metadata.Data["capabilities"])
 	}
 
-	if version, ok := metadata.Data["protocol_version"].(string); !ok || version != "1.0" {
-		t.Errorf("protocol_version = %v, want 1.0", metadata.Data["protocol_version"])
+	if version, ok := metadata.Data["protocol_version"].(string); !ok || version != metadataSchemaVersion {
+		t.Errorf("protocol_version = %v, want %s", metadata.Data["protocol_version"], metadataSchemaVersion)
 	}
 }
 

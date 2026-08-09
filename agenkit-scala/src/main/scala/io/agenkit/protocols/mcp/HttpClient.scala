@@ -21,12 +21,7 @@ class HttpClient(baseUrl: String) extends McpClient:
     val resp = sendRequest("initialize", Some(params))
     resp.error.foreach(e => throw RuntimeException(s"mcp initialize error ${e.code}: ${e.message}"))
     resp.result.foreach { r =>
-      r.obj.get("serverInfo").foreach { info =>
-        _serverInfo = McpServerInfo(
-          info.obj.get("name").map(_.str).getOrElse(""),
-          info.obj.get("version").map(_.str).getOrElse("")
-        )
-      }
+      _serverInfo = McpVersionNegotiation.parseServerInfo(r)
     }
 
   def listTools(): List[McpTool] =

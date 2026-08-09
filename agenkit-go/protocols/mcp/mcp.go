@@ -43,6 +43,19 @@ import (
 	"strings"
 )
 
+// mcpProtocolVersion is the MCP protocol revision this implementation
+// speaks. A single named constant (agenkit#781) that both client.go and
+// server.go import, rather than each repeating the literal, so a version
+// bump touches one line and the two halves of the protocol cannot drift
+// from each other within this language.
+//
+// 2025-11-25 is the latest *ratified* MCP revision whose initialize/
+// tools/list/tools/call surface is additive over 2024-11-05 (agenkit#733:
+// the 2026-07-28 revision removes the initialize handshake in favor of a
+// stateless core that this package does not implement, so advertising that
+// literal would claim a handshake the wire no longer has).
+const mcpProtocolVersion = "2025-11-25"
+
 // jsonrpcRequest is the JSON-RPC 2.0 request wire type.
 type jsonrpcRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
@@ -88,6 +101,15 @@ type MCPToolResult struct {
 type MCPServerInfo struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
+
+	// ProtocolVersion is the MCP revision the server actually reported in
+	// its initialize response (the top-level result.protocolVersion field —
+	// not part of the wire "serverInfo" object, but carried here for a
+	// single place callers can check it after Initialize()). Before
+	// agenkit#781, the initialize decode target had no field for this value
+	// at all, so encoding/json silently dropped it and a peer speaking a
+	// different revision was indistinguishable from one speaking ours.
+	ProtocolVersion string `json:"-"`
 }
 
 // MCPClient is the interface satisfied by StdioClient and HTTPClient.

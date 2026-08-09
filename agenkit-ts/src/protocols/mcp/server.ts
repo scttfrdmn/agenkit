@@ -19,7 +19,7 @@
 
 import * as readline from 'readline';
 import type { Tool } from '../../core/interfaces.js';
-import type { JsonRpcRequest, JsonRpcResponse } from './types.js';
+import { PROTOCOL_VERSION, type JsonRpcRequest, type JsonRpcResponse } from './types.js';
 
 /**
  * MCP server that exposes a set of {@link Tool} instances over stdio.
@@ -100,11 +100,23 @@ export class McpServer {
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
   private handleInitialize(req: JsonRpcRequest): JsonRpcResponse {
+    // Read (and thus stop discarding) the client's requested version —
+    // agenkit#781. Per the MCP spec's negotiation model the server always
+    // replies with the revision it actually implements; a mismatch is
+    // logged so version skew is visible instead of silent.
+    const params = req.params as { protocolVersion?: string } | undefined;
+    const clientProtocolVersion = params?.protocolVersion ?? '';
+    if (clientProtocolVersion && clientProtocolVersion !== PROTOCOL_VERSION) {
+      console.warn(
+        `mcp: client requested protocol version "${clientProtocolVersion}", server speaks "${PROTOCOL_VERSION}"`,
+      );
+    }
+
     return {
       jsonrpc: '2.0',
       id: req.id,
       result: {
-        protocolVersion: '2024-11-05',
+        protocolVersion: PROTOCOL_VERSION,
         capabilities: { tools: {} },
         serverInfo: { name: this.name, version: this.version },
       },

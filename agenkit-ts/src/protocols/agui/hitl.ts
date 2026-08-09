@@ -39,6 +39,7 @@ import { HumanInLoopAgent, ApprovalRequest } from '../../patterns/human-in-loop.
 import { AGUIAdapter, AGUIAdapterConfig } from './adapter.js';
 import {
   AGUIEvent,
+  AGUI_METADATA_SCHEMA_VERSION,
   Interrupt,
   InterruptAction,
   InterruptReason,
@@ -241,7 +242,7 @@ export class AGUIHumanInLoopAdapter extends AGUIAdapter {
     const metadata: Record<string, any> = {
       agent_name: this.getAgentName(),
       protocol: 'ag-ui',
-      protocol_version: '1.0',
+      protocol_version: AGUI_METADATA_SCHEMA_VERSION,
       capabilities: {
         streaming: true,
         tool_calls: false,

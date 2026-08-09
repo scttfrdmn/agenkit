@@ -5,7 +5,7 @@
  * a server ({@link McpServer}), and a tool adapter ({@link toolsFromClient})
  * for integrating MCP servers into Agenkit agent pipelines.
  *
- * Reference: https://spec.modelcontextprotocol.io/specification/2024-11-05/
+ * Reference: https://spec.modelcontextprotocol.io/specification/2025-11-25/
  *
  * @example
  * ```ts
@@ -21,7 +21,7 @@
 
 // Domain types and helpers
 export type { McpTool, McpContent, McpToolResult, McpServerInfo, McpClient } from './types.js';
-export { textContent } from './types.js';
+export { PROTOCOL_VERSION, textContent } from './types.js';
 
 // Client implementations
 export { StdioClient, HttpClient } from './client.js';

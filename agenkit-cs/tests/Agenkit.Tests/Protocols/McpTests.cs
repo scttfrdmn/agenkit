@@ -177,4 +177,96 @@ public class McpTests
         tools.Should().HaveCount(3);
         tools.Select(t => t.Name).Should().BeEquivalentTo("tool-a", "tool-b", "tool-c");
     }
+
+    // ------------------------------------------------------------------
+    // Protocol version negotiation (agenkit#781)
+    // ------------------------------------------------------------------
+
+    // 13. McpServer.initialize advertises the shared McpConstants.ProtocolVersion,
+    // not an independent literal that could drift from the client's.
+    [Fact]
+    public async Task McpServer_Initialize_AdvertisesSharedConstant()
+    {
+        var server = new McpServer("test-server", "1.0.0", []);
+        var req = new JsonRpcRequest("2.0", 1L, "initialize", null);
+        var resp = await server.HandleRequestAsync(JsonSerializer.Serialize(req));
+
+        resp.Result.Should().NotBeNull();
+        resp.Result!.Value.GetProperty("protocolVersion").GetString().Should().Be(McpConstants.ProtocolVersion);
+    }
+
+    // 14. Negative-verification target: reverting the mismatch check in
+    // McpServer.HandleInitialize (removing the WarnIfClientVersionMismatch
+    // call) makes this test fail, because nothing else in the server reads
+    // req.Params["protocolVersion"].
+    [Fact]
+    public async Task McpServer_WarnsOnClientVersionMismatch()
+    {
+        var server = new McpServer("test-server", "1.0.0", []);
+        var initParams = JsonSerializer.SerializeToElement(new
+        {
+            protocolVersion = "1999-01-01",
+            capabilities = new { },
+        });
+        var req = new JsonRpcRequest("2.0", 1L, "initialize", initParams);
+
+        var originalError = Console.Error;
+        using var captured = new StringWriter();
+        Console.SetError(captured);
+        JsonRpcResponse resp;
+        try
+        {
+            resp = await server.HandleRequestAsync(JsonSerializer.Serialize(req));
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        // Server still answers with the version it actually speaks (spec's
+        // negotiation model: the server states its own supported revision).
+        resp.Result.Should().NotBeNull();
+        resp.Result!.Value.GetProperty("protocolVersion").GetString().Should().Be(McpConstants.ProtocolVersion);
+
+        var logged = captured.ToString();
+        logged.Should().Contain("1999-01-01");
+        logged.Should().Contain(McpConstants.ProtocolVersion);
+    }
+
+    // 15. A client requesting the server's own version produces no mismatch warning.
+    [Fact]
+    public async Task McpServer_NoWarningOnMatchingClientVersion()
+    {
+        var server = new McpServer("test-server", "1.0.0", []);
+        var initParams = JsonSerializer.SerializeToElement(new
+        {
+            protocolVersion = McpConstants.ProtocolVersion,
+            capabilities = new { },
+        });
+        var req = new JsonRpcRequest("2.0", 1L, "initialize", initParams);
+
+        var originalError = Console.Error;
+        using var captured = new StringWriter();
+        Console.SetError(captured);
+        try
+        {
+            await server.HandleRequestAsync(JsonSerializer.Serialize(req));
+        }
+        finally
+        {
+            Console.SetError(originalError);
+        }
+
+        captured.ToString().Should().NotContain("protocol version");
+    }
+
+    // 16. The client's ServerInfo now exposes the server's reported
+    // ProtocolVersion. Before agenkit#781, McpServerInfo had no field for
+    // this and the value was discarded entirely.
+    [Fact]
+    public void McpServerInfo_HasProtocolVersionField()
+    {
+        var info = new McpServerInfo("srv", "9.9.9", McpConstants.ProtocolVersion);
+        info.ProtocolVersion.Should().Be(McpConstants.ProtocolVersion);
+    }
 }

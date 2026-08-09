@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -430,5 +432,85 @@ func TestParseInitializeResultWarnsOnServerVersionMismatch(t *testing.T) {
 	logged := buf.String()
 	if !strings.Contains(logged, "1999-01-01") || !strings.Contains(logged, mcpProtocolVersion) {
 		t.Errorf("expected a version-mismatch warning mentioning both versions, got: %q", logged)
+	}
+}
+
+// ─── Stateless server (agenkit#837) ────────────────────────────────────────────
+
+// TestMCPServerToolsCallWithoutInitialize is a regression lock: handleRequest
+// tracks no session state at all (no "initialized" flag, no session table),
+// so a "tools/call" arriving with no preceding "initialize" already succeeds
+// today. agenkit#837 asked us to decide our position deliberately rather
+// than by accident; this codifies "stateless by design" (option 1) so a
+// future change that starts enforcing the handshake is a visible, deliberate
+// break rather than a silent one.
+func TestMCPServerToolsCallWithoutInitialize(t *testing.T) {
+	server := NewServer(ServerConfig{
+		Name:    "test-server",
+		Version: "1.0.0",
+		Tools:   []agenkit.Tool{&echoTool{}},
+	})
+	ctx := context.Background()
+
+	// Deliberately skip "initialize" and go straight to "tools/call".
+	callParams, _ := json.Marshal(map[string]interface{}{
+		"name":      "echo",
+		"arguments": map[string]interface{}{"message": "no handshake needed"},
+	})
+	callReq := jsonrpcRequest{JSONRPC: "2.0", ID: 1, Method: "tools/call", Params: callParams}
+	callResp := server.handleRequest(ctx, callReq)
+	if callResp.Error != nil {
+		t.Fatalf("tools/call error: %v", callResp.Error)
+	}
+
+	var toolResult MCPToolResult
+	if err := json.Unmarshal(callResp.Result, &toolResult); err != nil {
+		t.Fatalf("decode tools/call result: %v", err)
+	}
+	if toolResult.IsError {
+		t.Errorf("expected IsError=false")
+	}
+	if len(toolResult.Content) == 0 || toolResult.Content[0].Text != "no handshake needed" {
+		t.Errorf("expected content text %q, got %v", "no handshake needed", toolResult.Content)
+	}
+}
+
+// TestHTTPClientCallToolWithoutInitialize verifies the Go HTTPClient's
+// transport (http.Client) is constructed eagerly at NewHTTPClient time, not
+// gated behind Initialize() the way Python's was before agenkit#837 — so
+// ListTools/CallTool never depended on Initialize() having run first. This
+// is a parity check for #837 point 4 across languages, not a behavior
+// change: Go never had the lazy-construction bug.
+func TestHTTPClientCallToolWithoutInitialize(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req jsonrpcRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		result, _ := json.Marshal(map[string]interface{}{
+			"content": []map[string]string{{"type": "text", "text": "hi"}},
+			"isError": false,
+		})
+		resp := jsonrpcResponse{JSONRPC: "2.0", ID: req.ID, Result: result}
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Fatalf("encode response: %v", err)
+		}
+	}))
+	defer srv.Close()
+
+	// Construct the client struct directly (bypassing NewHTTPClient, which
+	// would call Initialize itself) to prove CallTool works without ever
+	// calling Initialize.
+	client := &HTTPClient{baseURL: srv.URL, http: &http.Client{}}
+
+	result, err := client.CallTool(context.Background(), "echo", map[string]any{"message": "hi"})
+	if err != nil {
+		t.Fatalf("CallTool without Initialize: %v", err)
+	}
+	if result.IsError {
+		t.Errorf("expected IsError=false")
+	}
+	if len(result.Content) == 0 || result.Content[0].Text != "hi" {
+		t.Errorf("expected content text %q, got %v", "hi", result.Content)
 	}
 }

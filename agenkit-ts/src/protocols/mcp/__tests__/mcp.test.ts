@@ -270,6 +270,106 @@ describe('McpServer protocol version negotiation', () => {
   });
 });
 
+// ─── Stateless server (agenkit#837) ────────────────────────────────────────────
+
+describe('McpServer statelessness', () => {
+  it('handles tools/call with no preceding initialize (regression lock)', async () => {
+    // handleRequest tracks no session state at all (no "initialized" flag,
+    // no session table), so a "tools/call" arriving with no preceding
+    // "initialize" already succeeds today. agenkit#837 asked us to decide
+    // our position deliberately rather than by accident; this codifies
+    // "stateless by design" (option 1) so a future change that starts
+    // enforcing the handshake is a visible, deliberate break rather than a
+    // silent one. This passes today, unchanged — it is not a behaviour
+    // change.
+    const echoTool = {
+      name: 'echo',
+      description: 'Echoes the input message',
+      async execute(params: Record<string, unknown>) {
+        return { success: true, output: params.message };
+      },
+    };
+    const server = new McpServer('test-server', '1.0.0', [echoTool]);
+
+    // Deliberately skip "initialize" and go straight to "tools/call".
+    const resp = await server.handleRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name: 'echo', arguments: { message: 'no handshake needed' } },
+    });
+
+    expect(resp.error).toBeUndefined();
+    const result = resp.result as { content: { text: string }[]; isError: boolean };
+    expect(result.isError).toBe(false);
+    expect(result.content[0].text).toBe('no handshake needed');
+  });
+
+  it('handles tools/list with no preceding initialize', async () => {
+    const echoTool = {
+      name: 'echo',
+      description: 'Echoes the input message',
+      async execute(params: Record<string, unknown>) {
+        return { success: true, output: params.message };
+      },
+    };
+    const server = new McpServer('test-server', '1.0.0', [echoTool]);
+
+    const resp = await server.handleRequest({ jsonrpc: '2.0', id: 1, method: 'tools/list' });
+
+    expect(resp.error).toBeUndefined();
+    const result = resp.result as { tools: { name: string }[] };
+    expect(result.tools.map((t) => t.name)).toContain('echo');
+  });
+});
+
+// ─── HttpClient transport independent of initialize() (agenkit#837) ──────────
+
+describe('HttpClient statelessness', () => {
+  it('listTools works without a preceding initialize() call', async () => {
+    // HttpClient.send() calls the global `fetch` directly per-request; it
+    // never held a persistent transport object gated behind initialize()
+    // the way Python's HTTPClient did before agenkit#837. This is a
+    // cross-language parity check for #837 point 4, not a behaviour change:
+    // TypeScript never had the lazy-construction bug.
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        jsonrpc: '2.0',
+        id: 1,
+        result: { tools: [{ name: 'echo', description: 'Echo' }] },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const client = new HttpClient('http://localhost:3000/mcp');
+    const tools = await client.listTools();
+
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('echo');
+
+    vi.unstubAllGlobals();
+  });
+
+  it('callTool works without a preceding initialize() call', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        jsonrpc: '2.0',
+        id: 1,
+        result: { content: [{ type: 'text', text: 'hi' }], isError: false },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const client = new HttpClient('http://localhost:3000/mcp');
+    const result = await client.callTool('echo', { message: 'hi' });
+
+    expect(result.isError).toBe(false);
+    expect(result.content[0].text).toBe('hi');
+
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('MCP client protocol version capture', () => {
   it('captures the server-reported protocolVersion (previously discarded)', () => {
     const info = parseServerInfo({

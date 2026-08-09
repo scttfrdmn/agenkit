@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -276,6 +277,98 @@ async def test_mcp_server_unknown_method() -> None:
     resp = await server.handle_request(req)
     assert resp.error is not None
     assert resp.error.code == -32601
+
+
+# ── Stateless server (agenkit#837) ─────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_tools_call_without_initialize() -> None:
+    """`tools/call` succeeds with no preceding `initialize` — regression lock.
+
+    Per agenkit#837, `MCPServer.handle_request` is a bare `match` on method
+    with no `_initialized` flag and no session table: nothing in the server
+    tracks whether `initialize` was ever called. This test codifies that
+    accidental behaviour as an intentional, tested contract ("stateless by
+    design" — option 1 in #837) so a future change that adds handshake
+    enforcement is a deliberate, visible break rather than a silent one.
+
+    This passes today, unchanged — it is not a behaviour change.
+    """
+    server = MCPServer(name="test-server", version="1.0.0", tools=[EchoTool()])
+    # Deliberately skip "initialize" and go straight to "tools/call".
+    req = _JSONRPCRequest(
+        jsonrpc="2.0",
+        id=1,
+        method="tools/call",
+        params={"name": "echo", "arguments": {"message": "no handshake needed"}},
+    )
+    resp = await server.handle_request(req)
+    assert resp.error is None
+    assert resp.result is not None
+    assert resp.result["isError"] is False
+    assert resp.result["content"][0]["text"] == "no handshake needed"
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_tools_list_without_initialize() -> None:
+    """`tools/list` also succeeds with no preceding `initialize`."""
+    server = MCPServer(name="test-server", version="1.0.0", tools=[EchoTool()])
+    req = _JSONRPCRequest(jsonrpc="2.0", id=1, method="tools/list")
+    resp = await server.handle_request(req)
+    assert resp.error is None
+    assert resp.result is not None
+    tool_names = [t["name"] for t in resp.result["tools"]]
+    assert "echo" in tool_names
+
+
+# ── HTTPClient transport decoupled from handshake (agenkit#837) ────────────────
+
+
+@pytest.mark.asyncio
+async def test_http_client_list_tools_without_initialize() -> None:
+    """HTTPClient.list_tools() works without a preceding initialize() call.
+
+    Before agenkit#837, `HTTPClient._http` (the httpx.AsyncClient) was only
+    constructed inside `initialize()`, so any other method raised
+    `RuntimeError: mcp: client not initialized` purely because the transport
+    object didn't exist yet — a lifecycle accident, not a protocol rule.
+    `_send` now lazily constructs `_http` itself, so `initialize()` is a
+    genuine (optional) protocol step rather than a required setup call.
+
+    Negative-verification target: reverting the lazy-construction change in
+    `HTTPClient._send` (restoring construction only inside `initialize()`)
+    makes this test fail with the "not initialized" RuntimeError.
+    """
+    client = HTTPClient("http://localhost:9999/mcp")
+
+    mock_response = AsyncMock()
+    mock_response.json = lambda: {"result": {"tools": [{"name": "echo", "description": "Echo"}]}}
+    mock_response.raise_for_status = lambda: None
+
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_response)):
+        tools = await client.list_tools()
+
+    assert len(tools) == 1
+    assert tools[0].name == "echo"
+
+
+@pytest.mark.asyncio
+async def test_http_client_call_tool_without_initialize() -> None:
+    """HTTPClient.call_tool() works without a preceding initialize() call."""
+    client = HTTPClient("http://localhost:9999/mcp")
+
+    mock_response = AsyncMock()
+    mock_response.json = lambda: {
+        "result": {"content": [{"type": "text", "text": "hi"}], "isError": False}
+    }
+    mock_response.raise_for_status = lambda: None
+
+    with patch("httpx.AsyncClient.post", new=AsyncMock(return_value=mock_response)):
+        result = await client.call_tool("echo", {"message": "hi"})
+
+    assert result.is_error is False
+    assert result.content[0].text == "hi"
 
 
 # ── Protocol version negotiation (agenkit#781) ─────────────────────────────────

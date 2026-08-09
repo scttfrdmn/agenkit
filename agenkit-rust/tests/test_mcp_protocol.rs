@@ -315,6 +315,40 @@ async fn test_mcp_server_handle_request() {
     assert_eq!(r["content"][0]["text"], "hello MCP");
 }
 
+// ── Stateless server (agenkit#837) ───────────────────────────────────────────
+
+/// Regression lock: `handle_request` tracks no session state at all (no
+/// "initialized" flag, no session table), so a "tools/call" arriving with no
+/// preceding "initialize" already succeeds today. agenkit#837 asked us to
+/// decide our position deliberately rather than by accident; this codifies
+/// "stateless by design" (option 1) so a future change that starts
+/// enforcing the handshake is a visible, deliberate break rather than a
+/// silent one.
+#[tokio::test]
+async fn test_mcp_server_tools_call_without_initialize() {
+    let server = McpServer::new(ServerConfig {
+        name: "test-server".to_string(),
+        version: "1.0.0".to_string(),
+        tools: vec![Arc::new(EchoTool)],
+    });
+
+    // Deliberately skip "initialize" and go straight to "tools/call".
+    let call_req = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        method: "tools/call".to_string(),
+        params: Some(serde_json::json!({
+            "name": "echo",
+            "arguments": {"message": "no handshake needed"}
+        })),
+    };
+    let call_resp = server.handle_request(call_req).await;
+    assert!(call_resp.error.is_none());
+    let r = call_resp.result.unwrap();
+    assert_eq!(r["isError"], false);
+    assert_eq!(r["content"][0]["text"], "no handshake needed");
+}
+
 // ── Protocol version negotiation (agenkit#781) ──────────────────────────────────
 
 /// A `tracing::Subscriber` that records every "message" field it sees, so
@@ -456,4 +490,48 @@ async fn test_mcp_server_no_warning_on_matching_client_version() {
         !messages.iter().any(|m| m.contains("protocol version")),
         "expected no mismatch warning, got: {messages:?}"
     );
+}
+
+// ── HttpClient transport independent of initialize() (agenkit#837) ─────────────
+
+/// `HttpClient::new` constructs its `reqwest::Client` eagerly (not lazily
+/// inside `initialize()`), so `call_tool`/`list_tools` never depended on
+/// `initialize()` having run first. Unlike Python's `HTTPClient` (fixed in
+/// agenkit#837), Rust's `HttpClient` never had the lazy-construction bug —
+/// this is a cross-language parity check for #837 point 4, not a behavior
+/// change.
+#[cfg(feature = "native")]
+#[tokio::test]
+async fn test_http_client_call_tool_without_initialize() {
+    use agenkit::protocols::mcp::HttpClient;
+
+    let mut server = mockito::Server::new_async().await;
+    let mock = server
+        .mock("POST", "/")
+        .with_status(200)
+        .with_header("content-type", "application/json")
+        .with_body(
+            serde_json::json!({
+                "jsonrpc": "2.0",
+                "id": 1,
+                "result": {"content": [{"type": "text", "text": "hi"}], "isError": false}
+            })
+            .to_string(),
+        )
+        .create_async()
+        .await;
+
+    // Constructed via `new`, never calling `initialize()`.
+    let client = HttpClient::new(&server.url());
+
+    let mut args = HashMap::new();
+    args.insert("message".to_string(), serde_json::json!("hi"));
+    let result = client
+        .call_tool("echo", args)
+        .await
+        .expect("call_tool without initialize() should succeed");
+
+    assert!(!result.is_error);
+    assert_eq!(result.content[0].text, "hi");
+    mock.assert_async().await;
 }

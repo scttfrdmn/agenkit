@@ -9,10 +9,16 @@ from typing import Any
 
 
 class A2AVersion(Enum):
-    """A2A protocol versions."""
+    """A2A protocol versions.
+
+    Only V1_0 exists: agenkit#781 (item E) found a V1_1 member that no code
+    path emitted, accepted, or checked -- grepped, the only references were
+    this definition and the package's re-export. An unreachable enum member
+    in a public API is a promise nothing keeps, so it was removed rather
+    than kept as a placeholder for a revision agenkit doesn't implement.
+    """
 
     V1_0 = "1.0"
-    V1_1 = "1.1"
 
 
 class A2AAction(Enum):

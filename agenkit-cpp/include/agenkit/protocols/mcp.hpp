@@ -2,7 +2,7 @@
  * @file mcp.hpp
  * @brief Model Context Protocol (MCP) client, server, and tool adapter types
  *
- * Implements the MCP 2024-11-05 specification:
+ * Implements the MCP 2025-11-25 specification:
  * - StdioClient: subprocess-based MCP client over stdin/stdout
  * - HttpClient: HTTP-based MCP client using JSON-RPC
  * - McpServer: expose agenkit Tools via MCP stdio protocol
@@ -25,7 +25,18 @@ namespace agenkit {
 namespace protocols {
 namespace mcp {
 
-inline constexpr const char* PROTOCOL_VERSION = "2024-11-05";
+// The MCP protocol revision this implementation speaks. A single named
+// constant (agenkit#781) used by both the client and server halves in
+// mcp.cpp, rather than each repeating the literal, so a version bump is a
+// one-line change and the two halves of the protocol cannot drift from
+// each other.
+//
+// 2025-11-25 is the latest *ratified* revision whose initialize/tools/list/
+// tools/call surface is additive over 2024-11-05 (agenkit#733: the
+// 2026-07-28 revision removes the initialize handshake in favor of a
+// stateless core this module does not implement, so advertising that
+// literal would claim a handshake the wire no longer has).
+inline constexpr const char* PROTOCOL_VERSION = "2025-11-25";
 inline constexpr const char* CLIENT_VERSION = "0.90.0";
 
 // ── Wire types ───────────────────────────────────────────────────────────────
@@ -83,6 +94,14 @@ struct McpToolResult {
 struct McpServerInfo {
     std::string name;
     std::string version;
+
+    /// The MCP protocol revision the server actually reported in its
+    /// initialize response (the top-level result["protocolVersion"] field).
+    /// Captured so a caller has a single place to check it after
+    /// initialize() (agenkit#781 — this field did not exist before, so a
+    /// peer speaking a different revision was indistinguishable from one
+    /// speaking ours).
+    std::string protocol_version;
 };
 
 /// Concatenate text-type contents into a single string.

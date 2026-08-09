@@ -46,7 +46,17 @@ pub use tool_adapter::{tools_from_client, McpToolAdapter};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-pub(crate) const PROTOCOL_VERSION: &str = "2024-11-05";
+/// The MCP protocol revision this implementation speaks. A single named
+/// constant (agenkit#781) imported by both `client.rs` and `server.rs`,
+/// rather than each repeating the literal, so a version bump is a one-line
+/// change and the two halves of the protocol cannot drift from each other.
+///
+/// `2025-11-25` is the latest *ratified* revision whose initialize/
+/// tools/list/tools/call surface is additive over `2024-11-05` (agenkit#733:
+/// the `2026-07-28` revision removes the initialize handshake in favor of a
+/// stateless core this module does not implement, so advertising that
+/// literal would claim a handshake the wire no longer has).
+pub const PROTOCOL_VERSION: &str = "2025-11-25";
 
 // ── JSON-RPC 2.0 wire types ───────────────────────────────────────────────────
 
@@ -107,6 +117,15 @@ pub struct McpToolResult {
 pub struct McpServerInfo {
     pub name: String,
     pub version: String,
+
+    /// The MCP protocol revision the server actually reported in its
+    /// initialize response (the top-level `result.protocolVersion` field,
+    /// not part of the wire "serverInfo" object — captured here so a caller
+    /// has a single place to check it after `initialize()`). Before
+    /// agenkit#781 this field did not exist, so a peer speaking a different
+    /// revision was indistinguishable from one speaking ours.
+    #[serde(skip)]
+    pub protocol_version: String,
 }
 
 // ── MCPClient trait ──────────────────────────────────────────────────────────

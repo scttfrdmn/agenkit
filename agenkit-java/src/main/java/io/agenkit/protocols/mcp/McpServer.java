@@ -79,9 +79,22 @@ public class McpServer {
     // -------------------------------------------------------------------------
 
     private JsonRpcResponse handleInitialize(JsonRpcRequest req) {
+        // Read (and thus stop discarding) the client's requested version —
+        // agenkit#781. Per the MCP spec's negotiation model the server
+        // always replies with the revision it actually implements; a
+        // mismatch is logged so version skew is visible instead of silent.
+        McpVersionNegotiation.warnIfClientVersionMismatch(req.params());
+
         ObjectNode result = mapper.createObjectNode()
                 .put("protocolVersion", McpConstants.PROTOCOL_VERSION);
-        result.set("capabilities", mapper.createObjectNode());
+        // Previously an empty ObjectNode with no "tools" key (agenkit#781's
+        // live interop bug: a spec-conformant client that gates tools/list
+        // on capabilities.tools being present would refuse to list tools
+        // against this server). Match the other 8 languages' {"tools":{}}
+        // shape.
+        ObjectNode capabilities = mapper.createObjectNode();
+        capabilities.set("tools", mapper.createObjectNode());
+        result.set("capabilities", capabilities);
         ObjectNode serverInfo = mapper.createObjectNode()
                 .put("name", name)
                 .put("version", version);

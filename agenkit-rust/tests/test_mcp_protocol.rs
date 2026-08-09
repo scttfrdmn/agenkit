@@ -111,6 +111,7 @@ impl MockMcpClient {
             info: McpServerInfo {
                 name: "mock".to_string(),
                 version: "1.0.0".to_string(),
+                protocol_version: String::new(),
             },
         }
     }
@@ -312,4 +313,147 @@ async fn test_mcp_server_handle_request() {
     let r = call_resp.result.unwrap();
     assert_eq!(r["isError"], false);
     assert_eq!(r["content"][0]["text"], "hello MCP");
+}
+
+// ── Protocol version negotiation (agenkit#781) ──────────────────────────────────
+
+/// A `tracing::Subscriber` that records every "message" field it sees, so
+/// tests can assert a `tracing::warn!` call happened without depending on
+/// any particular log-formatting crate.
+#[derive(Clone, Default)]
+struct RecordingSubscriber {
+    messages: Arc<std::sync::Mutex<Vec<String>>>,
+}
+
+impl RecordingSubscriber {
+    fn messages(&self) -> Vec<String> {
+        self.messages.lock().unwrap().clone()
+    }
+}
+
+impl tracing::Subscriber for RecordingSubscriber {
+    fn enabled(&self, _metadata: &tracing::Metadata<'_>) -> bool {
+        true
+    }
+
+    fn new_span(&self, _span: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+        tracing::span::Id::from_u64(1)
+    }
+
+    fn record(&self, _span: &tracing::span::Id, _values: &tracing::span::Record<'_>) {}
+
+    fn record_follows_from(&self, _span: &tracing::span::Id, _follows: &tracing::span::Id) {}
+
+    fn event(&self, event: &tracing::Event<'_>) {
+        struct Visitor(String);
+        impl tracing::field::Visit for Visitor {
+            fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+                self.0.push_str(&format!(" {}={:?}", field.name(), value));
+            }
+        }
+        let mut visitor = Visitor(String::new());
+        event.record(&mut visitor);
+        self.messages.lock().unwrap().push(visitor.0);
+    }
+
+    fn enter(&self, _span: &tracing::span::Id) {}
+    fn exit(&self, _span: &tracing::span::Id) {}
+}
+
+/// Server's advertised protocolVersion is the shared PROTOCOL_VERSION
+/// constant, not an independent literal that could drift from the client's.
+#[tokio::test]
+async fn test_mcp_server_initialize_advertises_shared_constant() {
+    let server = McpServer::new(ServerConfig {
+        name: "test-server".to_string(),
+        version: "1.0.0".to_string(),
+        tools: vec![],
+    });
+
+    let init_req = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        method: "initialize".to_string(),
+        params: None,
+    };
+    let init_resp = server.handle_request(init_req).await;
+    let result = init_resp.result.unwrap();
+    assert_eq!(
+        result["protocolVersion"],
+        agenkit::protocols::mcp::PROTOCOL_VERSION
+    );
+}
+
+/// Negative-verification target for agenkit#781: reverting the mismatch
+/// check in `handle_initialize` (removing the `tracing::warn!` call) makes
+/// this test fail, because nothing else in the server reads
+/// `req.params["protocolVersion"]`.
+#[tokio::test]
+async fn test_mcp_server_warns_on_client_version_mismatch() {
+    let subscriber = RecordingSubscriber::default();
+    let _guard = tracing::subscriber::set_default(subscriber.clone());
+
+    let server = McpServer::new(ServerConfig {
+        name: "test-server".to_string(),
+        version: "1.0.0".to_string(),
+        tools: vec![],
+    });
+
+    let init_req = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        method: "initialize".to_string(),
+        params: Some(serde_json::json!({
+            "protocolVersion": "1999-01-01",
+            "capabilities": {}
+        })),
+    };
+    let init_resp = server.handle_request(init_req).await;
+
+    // Server still answers with the version it actually speaks (spec's
+    // negotiation model: the server states its own supported revision).
+    let result = init_resp.result.unwrap();
+    assert_eq!(
+        result["protocolVersion"],
+        agenkit::protocols::mcp::PROTOCOL_VERSION
+    );
+
+    let messages = subscriber.messages();
+    assert!(
+        messages
+            .iter()
+            .any(|m| m.contains("1999-01-01")
+                && m.contains(agenkit::protocols::mcp::PROTOCOL_VERSION)),
+        "expected a version-mismatch warning mentioning both versions, got: {messages:?}"
+    );
+}
+
+/// A client requesting the server's own version produces no mismatch warning.
+#[tokio::test]
+async fn test_mcp_server_no_warning_on_matching_client_version() {
+    let subscriber = RecordingSubscriber::default();
+    let _guard = tracing::subscriber::set_default(subscriber.clone());
+
+    let server = McpServer::new(ServerConfig {
+        name: "test-server".to_string(),
+        version: "1.0.0".to_string(),
+        tools: vec![],
+    });
+
+    let init_req = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        id: 1,
+        method: "initialize".to_string(),
+        params: Some(serde_json::json!({
+            "protocolVersion": agenkit::protocols::mcp::PROTOCOL_VERSION,
+            "capabilities": {}
+        })),
+    };
+    server.handle_request(init_req).await;
+
+    let messages = subscriber.messages();
+    assert!(
+        !messages.iter().any(|m| m.contains("protocol version")),
+        "expected no mismatch warning, got: {messages:?}"
+    );
 }

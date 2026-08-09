@@ -72,6 +72,12 @@ public sealed class McpServer
 
     private JsonRpcResponse HandleInitialize(JsonRpcRequest req)
     {
+        // Read (and thus stop discarding) the client's requested version —
+        // agenkit#781. Per the MCP spec's negotiation model the server
+        // always replies with the revision it actually implements; a
+        // mismatch is logged so version skew is visible instead of silent.
+        McpVersionNegotiation.WarnIfClientVersionMismatch(req.Params);
+
         var result = JsonSerializer.SerializeToElement(new
         {
             protocolVersion = McpConstants.ProtocolVersion,

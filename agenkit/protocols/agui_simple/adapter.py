@@ -40,6 +40,14 @@ from agenkit.protocols.agui.events import (
     TextMessageStart,
 )
 
+# agenkit's own metadata-event schema version -- NOT a version of the AG-UI
+# wire protocol itself. AG-UI (docs.ag-ui.com) has no numbered spec revision
+# to align with, so this was previously a made-up "1.0" that looked like an
+# upstream protocol version but wasn't (agenkit#781 item D: "a wrong version
+# is worse than an absent one"). One named constant per language, so all
+# emitters advertise the same value and a bump can't drift between them.
+AGUI_METADATA_SCHEMA_VERSION = "1.0"
+
 
 class AGUIAdapter:
     """
@@ -226,7 +234,7 @@ class AGUIAdapter:
                 "agent_name": self._agent_name,
                 "agent_type": self._agent.__class__.__name__,
                 "capabilities": self._agent.capabilities,
-                "protocol_version": "1.0",
+                "protocol_version": AGUI_METADATA_SCHEMA_VERSION,
             }
         )
 

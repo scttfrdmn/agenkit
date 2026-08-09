@@ -1,8 +1,10 @@
 package mcp
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"strings"
 	"testing"
 
@@ -288,5 +290,145 @@ func TestMCPServerHandleRequest(t *testing.T) {
 	}
 	if len(toolResult.Content) == 0 || toolResult.Content[0].Text != "hello MCP" {
 		t.Errorf("expected content text %q, got %v", "hello MCP", toolResult.Content)
+	}
+}
+
+// ─── Protocol version negotiation (agenkit#781) ────────────────────────────────
+
+// TestMCPServerInitializeAdvertisesSharedConstant checks the server's
+// advertised protocolVersion is the shared mcpProtocolVersion constant, not
+// an independent literal that could drift from the client's.
+func TestMCPServerInitializeAdvertisesSharedConstant(t *testing.T) {
+	server := NewServer(ServerConfig{Name: "test-server", Version: "1.0.0"})
+	ctx := context.Background()
+
+	initReq := jsonrpcRequest{JSONRPC: "2.0", ID: 1, Method: "initialize"}
+	initResp := server.handleRequest(ctx, initReq)
+	if initResp.Error != nil {
+		t.Fatalf("initialize error: %v", initResp.Error)
+	}
+	var result struct {
+		ProtocolVersion string `json:"protocolVersion"`
+	}
+	if err := json.Unmarshal(initResp.Result, &result); err != nil {
+		t.Fatalf("decode initialize result: %v", err)
+	}
+	if result.ProtocolVersion != mcpProtocolVersion {
+		t.Errorf("protocolVersion = %q, want %q", result.ProtocolVersion, mcpProtocolVersion)
+	}
+}
+
+// TestMCPServerWarnsOnClientVersionMismatch is the negative-verification
+// target for agenkit#781: reverting the mismatch check added to
+// handleInitialize (removing the log.Printf call) makes this test fail,
+// because nothing else in the server reads req.Params for "protocolVersion".
+func TestMCPServerWarnsOnClientVersionMismatch(t *testing.T) {
+	var buf bytes.Buffer
+	orig := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(orig)
+
+	server := NewServer(ServerConfig{Name: "test-server", Version: "1.0.0"})
+	ctx := context.Background()
+
+	params, err := json.Marshal(map[string]interface{}{
+		"protocolVersion": "1999-01-01",
+		"capabilities":    map[string]interface{}{},
+	})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
+	initReq := jsonrpcRequest{JSONRPC: "2.0", ID: 1, Method: "initialize", Params: params}
+	initResp := server.handleRequest(ctx, initReq)
+	if initResp.Error != nil {
+		t.Fatalf("initialize error: %v", initResp.Error)
+	}
+
+	// Server still answers with the version it actually speaks.
+	var result struct {
+		ProtocolVersion string `json:"protocolVersion"`
+	}
+	if err := json.Unmarshal(initResp.Result, &result); err != nil {
+		t.Fatalf("decode initialize result: %v", err)
+	}
+	if result.ProtocolVersion != mcpProtocolVersion {
+		t.Errorf("protocolVersion = %q, want %q", result.ProtocolVersion, mcpProtocolVersion)
+	}
+
+	logged := buf.String()
+	if !strings.Contains(logged, "1999-01-01") || !strings.Contains(logged, mcpProtocolVersion) {
+		t.Errorf("expected a version-mismatch warning mentioning both versions, got: %q", logged)
+	}
+}
+
+// TestMCPServerNoWarningOnMatchingClientVersion checks that a client
+// requesting the server's own version produces no mismatch warning.
+func TestMCPServerNoWarningOnMatchingClientVersion(t *testing.T) {
+	var buf bytes.Buffer
+	orig := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(orig)
+
+	server := NewServer(ServerConfig{Name: "test-server", Version: "1.0.0"})
+	ctx := context.Background()
+
+	params, err := json.Marshal(map[string]interface{}{
+		"protocolVersion": mcpProtocolVersion,
+		"capabilities":    map[string]interface{}{},
+	})
+	if err != nil {
+		t.Fatalf("marshal params: %v", err)
+	}
+	initReq := jsonrpcRequest{JSONRPC: "2.0", ID: 1, Method: "initialize", Params: params}
+	if resp := server.handleRequest(ctx, initReq); resp.Error != nil {
+		t.Fatalf("initialize error: %v", resp.Error)
+	}
+
+	if logged := buf.String(); strings.Contains(logged, "protocol version") {
+		t.Errorf("expected no mismatch warning, got: %q", logged)
+	}
+}
+
+// TestParseInitializeResultCapturesProtocolVersion checks that the client's
+// server_info now exposes the server's reported protocolVersion. Before
+// agenkit#781, the decode target had no field for this and the value was
+// silently dropped by encoding/json.
+func TestParseInitializeResultCapturesProtocolVersion(t *testing.T) {
+	raw := json.RawMessage(`{"protocolVersion":"` + mcpProtocolVersion + `","serverInfo":{"name":"srv","version":"9.9.9"}}`)
+	info, err := parseInitializeResult(raw)
+	if err != nil {
+		t.Fatalf("parseInitializeResult: %v", err)
+	}
+	if info.ProtocolVersion != mcpProtocolVersion {
+		t.Errorf("ProtocolVersion = %q, want %q", info.ProtocolVersion, mcpProtocolVersion)
+	}
+	if info.Name != "srv" || info.Version != "9.9.9" {
+		t.Errorf("unexpected server info: %+v", info)
+	}
+}
+
+// TestParseInitializeResultWarnsOnServerVersionMismatch is the
+// negative-verification target for the client-side half of agenkit#781:
+// reverting the mismatch check in parseInitializeResult (removing the
+// log.Printf call) makes this test fail — ProtocolVersion would still
+// populate (independently covered above), but no warning would be logged.
+func TestParseInitializeResultWarnsOnServerVersionMismatch(t *testing.T) {
+	var buf bytes.Buffer
+	orig := log.Writer()
+	log.SetOutput(&buf)
+	defer log.SetOutput(orig)
+
+	raw := json.RawMessage(`{"protocolVersion":"1999-01-01","serverInfo":{"name":"old-server","version":"0.1.0"}}`)
+	info, err := parseInitializeResult(raw)
+	if err != nil {
+		t.Fatalf("parseInitializeResult: %v", err)
+	}
+	if info.ProtocolVersion != "1999-01-01" {
+		t.Errorf("ProtocolVersion = %q, want %q", info.ProtocolVersion, "1999-01-01")
+	}
+
+	logged := buf.String()
+	if !strings.Contains(logged, "1999-01-01") || !strings.Contains(logged, mcpProtocolVersion) {
+		t.Errorf("expected a version-mismatch warning mentioning both versions, got: %q", logged)
 	}
 }

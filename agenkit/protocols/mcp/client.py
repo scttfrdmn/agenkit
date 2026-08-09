@@ -20,11 +20,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from typing import Any
 
 import httpx
 
 from agenkit.protocols.mcp.types import (
+    PROTOCOL_VERSION,
     MCPClient,
     MCPContent,
     MCPServerInfo,
@@ -34,13 +36,37 @@ from agenkit.protocols.mcp.types import (
     _JSONRPCResponse,
 )
 
-_PROTOCOL_VERSION = "2024-11-05"
+logger = logging.getLogger(__name__)
+
 _CLIENT_INFO = {"name": "agenkit", "version": "0.90.0"}
 _INIT_PARAMS = {
-    "protocolVersion": _PROTOCOL_VERSION,
+    "protocolVersion": PROTOCOL_VERSION,
     "capabilities": {},
     "clientInfo": _CLIENT_INFO,
 }
+
+
+def _parse_server_info(result: dict[str, Any]) -> MCPServerInfo:
+    """Build MCPServerInfo from an initialize result, warning on a version mismatch.
+
+    Reads ``result["protocolVersion"]`` (previously discarded — agenkit#781) and
+    logs a warning when the server's revision differs from ours, so a version
+    skew shows up in logs instead of only surfacing later as an unrelated
+    decode error or wrong result.
+    """
+    info = result.get("serverInfo", {})
+    server_protocol_version = result.get("protocolVersion", "")
+    if server_protocol_version and server_protocol_version != PROTOCOL_VERSION:
+        logger.warning(
+            "mcp: server protocol version %r does not match client version %r",
+            server_protocol_version,
+            PROTOCOL_VERSION,
+        )
+    return MCPServerInfo(
+        name=info.get("name", ""),
+        version=info.get("version", ""),
+        protocol_version=server_protocol_version,
+    )
 
 
 class StdioClient(MCPClient):
@@ -88,11 +114,7 @@ class StdioClient(MCPClient):
         if resp.error:
             raise RuntimeError(f"mcp initialize error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
-        info = result.get("serverInfo", {})
-        self._server_info = MCPServerInfo(
-            name=info.get("name", ""),
-            version=info.get("version", ""),
-        )
+        self._server_info = _parse_server_info(result)
 
     async def list_tools(self) -> list[MCPTool]:
         resp = await self._send("tools/list", None)
@@ -175,11 +197,7 @@ class HTTPClient(MCPClient):
         if resp.error:
             raise RuntimeError(f"mcp initialize error {resp.error.code}: {resp.error.message}")
         result = resp.result or {}
-        info = result.get("serverInfo", {})
-        self._server_info = MCPServerInfo(
-            name=info.get("name", ""),
-            version=info.get("version", ""),
-        )
+        self._server_info = _parse_server_info(result)
 
     async def list_tools(self) -> list[MCPTool]:
         resp = await self._send("tools/list", None)

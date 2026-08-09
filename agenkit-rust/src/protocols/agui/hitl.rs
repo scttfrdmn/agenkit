@@ -288,7 +288,10 @@ fn create_hitl_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEv
     let mut data = HashMap::new();
     data.insert("agent_name".to_string(), serde_json::json!(agent_name));
     data.insert("protocol".to_string(), serde_json::json!("ag-ui"));
-    data.insert("protocol_version".to_string(), serde_json::json!("1.0"));
+    data.insert(
+        "protocol_version".to_string(),
+        serde_json::json!(AGUI_METADATA_SCHEMA_VERSION),
+    );
 
     let caps = agent.capabilities();
     let is_hitl = caps.contains(&"human-in-loop".to_string());

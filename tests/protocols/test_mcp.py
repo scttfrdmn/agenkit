@@ -19,7 +19,9 @@ from agenkit.protocols.mcp import (
     StdioClient,
     tools_from_client,
 )
+from agenkit.protocols.mcp.client import _parse_server_info
 from agenkit.protocols.mcp.types import (
+    PROTOCOL_VERSION,
     _JSONRPCRequest,
     _JSONRPCResponse,
     _text_content,
@@ -274,3 +276,106 @@ async def test_mcp_server_unknown_method() -> None:
     resp = await server.handle_request(req)
     assert resp.error is not None
     assert resp.error.code == -32601
+
+
+# ── Protocol version negotiation (agenkit#781) ─────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_initialize_advertises_shared_constant() -> None:
+    """Server's advertised protocolVersion is the shared PROTOCOL_VERSION constant."""
+    server = MCPServer(name="test-server", version="1.0.0", tools=[])
+    req = _JSONRPCRequest(jsonrpc="2.0", id=1, method="initialize")
+    resp = await server.handle_request(req)
+    assert resp.result is not None
+    assert resp.result["protocolVersion"] == PROTOCOL_VERSION
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_warns_on_client_version_mismatch(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A mismatched client-requested protocolVersion is logged, not silently dropped.
+
+    Negative-verification target: reverting the `_handle_initialize` mismatch
+    check (removing the `logger.warning` call added for agenkit#781) makes
+    this test fail, because nothing else in the server reads
+    `req.params["protocolVersion"]` — this test is the only thing that would
+    catch a `req.params` read that silently disappeared again.
+    """
+    server = MCPServer(name="test-server", version="1.0.0", tools=[])
+    req = _JSONRPCRequest(
+        jsonrpc="2.0",
+        id=1,
+        method="initialize",
+        params={"protocolVersion": "1999-01-01", "capabilities": {}},
+    )
+    with caplog.at_level("WARNING", logger="agenkit.protocols.mcp.server"):
+        resp = await server.handle_request(req)
+
+    # The server still answers with the version it actually speaks (spec's
+    # negotiation model: the server states its own supported revision).
+    assert resp.result is not None
+    assert resp.result["protocolVersion"] == PROTOCOL_VERSION
+
+    assert any(
+        "1999-01-01" in record.message and PROTOCOL_VERSION in record.message
+        for record in caplog.records
+    ), f"expected a version-mismatch warning, got: {[r.message for r in caplog.records]}"
+
+
+@pytest.mark.asyncio
+async def test_mcp_server_no_warning_on_matching_client_version(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A client requesting the server's own version produces no mismatch warning."""
+    server = MCPServer(name="test-server", version="1.0.0", tools=[])
+    req = _JSONRPCRequest(
+        jsonrpc="2.0",
+        id=1,
+        method="initialize",
+        params={"protocolVersion": PROTOCOL_VERSION, "capabilities": {}},
+    )
+    with caplog.at_level("WARNING", logger="agenkit.protocols.mcp.server"):
+        await server.handle_request(req)
+
+    assert not any("protocol version" in record.message for record in caplog.records)
+
+
+def test_client_parse_server_info_captures_protocol_version() -> None:
+    """The client's server_info now exposes the server's reported protocolVersion.
+
+    Before agenkit#781, MCPServerInfo had no field for this and the client
+    discarded `result["protocolVersion"]` entirely.
+    """
+    result = {
+        "protocolVersion": PROTOCOL_VERSION,
+        "serverInfo": {"name": "srv", "version": "9.9.9"},
+    }
+    info = _parse_server_info(result)
+    assert info.protocol_version == PROTOCOL_VERSION
+    assert info.name == "srv"
+    assert info.version == "9.9.9"
+
+
+def test_client_warns_on_server_version_mismatch(caplog: pytest.LogCaptureFixture) -> None:
+    """A mismatched server-reported protocolVersion is logged, not silently dropped.
+
+    Negative-verification target: reverting the mismatch-warning branch in
+    `_parse_server_info` (added for agenkit#781) makes this test fail — the
+    `protocol_version` field would still populate (that part is independently
+    covered by `test_client_parse_server_info_captures_protocol_version`), but
+    no warning would be emitted.
+    """
+    result = {
+        "protocolVersion": "1999-01-01",
+        "serverInfo": {"name": "old-server", "version": "0.1.0"},
+    }
+    with caplog.at_level("WARNING", logger="agenkit.protocols.mcp.client"):
+        info = _parse_server_info(result)
+
+    assert info.protocol_version == "1999-01-01"
+    assert any(
+        "1999-01-01" in record.message and PROTOCOL_VERSION in record.message
+        for record in caplog.records
+    ), f"expected a version-mismatch warning, got: {[r.message for r in caplog.records]}"

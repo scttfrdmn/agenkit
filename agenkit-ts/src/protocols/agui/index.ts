@@ -10,6 +10,7 @@
 
 // Event types and classes
 export {
+  AGUI_METADATA_SCHEMA_VERSION,
   EventType,
   InterruptReason,
   InterruptAction,

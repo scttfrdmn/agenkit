@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
@@ -103,8 +104,23 @@ func (s *MCPServer) handleRequest(ctx context.Context, req jsonrpcRequest) jsonr
 }
 
 func (s *MCPServer) handleInitialize(req jsonrpcRequest) jsonrpcResponse {
+	// Read (and thus stop discarding) the client's requested version —
+	// agenkit#781. Per the MCP spec's negotiation model the server always
+	// replies with the revision it actually implements; a mismatch is
+	// logged so version skew is visible instead of silent.
+	var params struct {
+		ProtocolVersion string `json:"protocolVersion"`
+	}
+	if len(req.Params) > 0 {
+		if err := json.Unmarshal(req.Params, &params); err == nil &&
+			params.ProtocolVersion != "" && params.ProtocolVersion != mcpProtocolVersion {
+			log.Printf("mcp: client requested protocol version %q, server speaks %q",
+				params.ProtocolVersion, mcpProtocolVersion)
+		}
+	}
+
 	result, err := json.Marshal(map[string]interface{}{
-		"protocolVersion": "2024-11-05",
+		"protocolVersion": mcpProtocolVersion,
 		"capabilities": map[string]interface{}{
 			"tools": map[string]interface{}{},
 		},

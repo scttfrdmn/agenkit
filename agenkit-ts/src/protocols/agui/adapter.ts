@@ -25,6 +25,7 @@
 import { Agent, Message } from '../../core/interfaces.js';
 import {
   AGUIEvent,
+  AGUI_METADATA_SCHEMA_VERSION,
   ErrorEvent,
   HeartbeatEvent,
   MetadataEvent,
@@ -228,7 +229,7 @@ export class AGUIAdapter {
     const metadata: Record<string, any> = {
       agent_name: this.agentName,
       protocol: 'ag-ui',
-      protocol_version: '1.0',
+      protocol_version: AGUI_METADATA_SCHEMA_VERSION,
       capabilities: {
         streaming: true,
         tool_calls: false,

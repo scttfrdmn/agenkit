@@ -5,6 +5,8 @@ import io.agenkit.core.Tool;
 import io.agenkit.core.ToolResult;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -298,5 +300,81 @@ class McpTest {
         assertThat(resp.error()).isNull();
         assertThat(resp.result().path("isError").asBoolean()).isFalse();
         assertThat(resp.result().path("content").get(0).path("text").asText()).isEqualTo("hello");
+    }
+
+    // -------------------------------------------------------------------------
+    // Protocol version negotiation (agenkit#781)
+    // -------------------------------------------------------------------------
+
+    @Test
+    void serverInitializeAdvertisesSharedConstantAndToolsCapability() throws Exception {
+        McpServer server = new McpServer("test-server", "1.0.0", List.of());
+        ObjectMapper mapper = new ObjectMapper();
+        JsonRpcRequest req = JsonRpcRequest.of(1L, "initialize", mapper.createObjectNode());
+        JsonRpcResponse resp = server.handleRequest(req);
+
+        assertThat(resp.result().path("protocolVersion").asText()).isEqualTo(McpConstants.PROTOCOL_VERSION);
+        // Previously omitted the "tools" key entirely (agenkit#781's live
+        // interop bug) -- verify it's present now.
+        assertThat(resp.result().path("capabilities").has("tools")).isTrue();
+    }
+
+    // Negative-verification target: reverting the mismatch check in
+    // McpServer.handleInitialize (removing the
+    // McpVersionNegotiation.warnIfClientVersionMismatch call) makes this
+    // test fail, because nothing else in the server reads
+    // req.params()["protocolVersion"].
+    @Test
+    void serverWarnsOnClientVersionMismatch() throws Exception {
+        McpServer server = new McpServer("test-server", "1.0.0", List.of());
+        ObjectMapper mapper = new ObjectMapper();
+        var params = mapper.createObjectNode().put("protocolVersion", "1999-01-01");
+        JsonRpcRequest req = JsonRpcRequest.of(1L, "initialize", params);
+
+        PrintStream originalErr = System.err;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(captured));
+        JsonRpcResponse resp;
+        try {
+            resp = server.handleRequest(req);
+        } finally {
+            System.setErr(originalErr);
+        }
+
+        // Server still answers with the version it actually speaks (spec's
+        // negotiation model: the server states its own supported revision).
+        assertThat(resp.result().path("protocolVersion").asText()).isEqualTo(McpConstants.PROTOCOL_VERSION);
+
+        String logged = captured.toString();
+        assertThat(logged).contains("1999-01-01");
+        assertThat(logged).contains(McpConstants.PROTOCOL_VERSION);
+    }
+
+    @Test
+    void serverDoesNotWarnOnMatchingClientVersion() throws Exception {
+        McpServer server = new McpServer("test-server", "1.0.0", List.of());
+        ObjectMapper mapper = new ObjectMapper();
+        var params = mapper.createObjectNode().put("protocolVersion", McpConstants.PROTOCOL_VERSION);
+        JsonRpcRequest req = JsonRpcRequest.of(1L, "initialize", params);
+
+        PrintStream originalErr = System.err;
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(captured));
+        try {
+            server.handleRequest(req);
+        } finally {
+            System.setErr(originalErr);
+        }
+
+        assertThat(captured.toString()).doesNotContain("protocol version");
+    }
+
+    // The client's serverInfo() now exposes the server's reported
+    // protocolVersion. Before agenkit#781, McpServerInfo had no field for
+    // this and the value was discarded entirely.
+    @Test
+    void mcpServerInfoHasProtocolVersionField() {
+        McpServerInfo info = new McpServerInfo("srv", "9.9.9", McpConstants.PROTOCOL_VERSION);
+        assertThat(info.protocolVersion()).isEqualTo(McpConstants.PROTOCOL_VERSION);
     }
 }

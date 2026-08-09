@@ -22,8 +22,12 @@ fn init_params() -> serde_json::Value {
     })
 }
 
+/// Build an `McpServerInfo` from an initialize result, capturing the
+/// server's reported `protocolVersion` (previously discarded — agenkit#781)
+/// and warning when it differs from ours, so version skew is visible
+/// instead of surfacing later as an unrelated decode error or wrong result.
 fn parse_server_info(result: &serde_json::Value) -> McpServerInfo {
-    result
+    let mut info = result
         .get("serverInfo")
         .map(|info| McpServerInfo {
             name: info
@@ -36,8 +40,23 @@ fn parse_server_info(result: &serde_json::Value) -> McpServerInfo {
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string(),
+            protocol_version: String::new(),
         })
-        .unwrap_or_default()
+        .unwrap_or_default();
+
+    info.protocol_version = result
+        .get("protocolVersion")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
+    if !info.protocol_version.is_empty() && info.protocol_version != PROTOCOL_VERSION {
+        tracing::warn!(
+            server_protocol_version = %info.protocol_version,
+            client_protocol_version = %PROTOCOL_VERSION,
+            "mcp: server protocol version does not match client version",
+        );
+    }
+    info
 }
 
 // ── StdioClient ───────────────────────────────────────────────────────────────
@@ -359,5 +378,97 @@ impl McpClient for HttpClient {
 
     fn server_info(&self) -> &McpServerInfo {
         &self.server_info
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// A `tracing::Subscriber` that records every event it sees, so tests
+    /// can assert a `tracing::warn!` call happened without depending on any
+    /// particular log-formatting crate.
+    #[derive(Clone, Default)]
+    struct RecordingSubscriber {
+        messages: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
+    }
+
+    impl RecordingSubscriber {
+        fn messages(&self) -> Vec<String> {
+            self.messages.lock().unwrap().clone()
+        }
+    }
+
+    impl tracing::Subscriber for RecordingSubscriber {
+        fn enabled(&self, _metadata: &tracing::Metadata<'_>) -> bool {
+            true
+        }
+
+        fn new_span(&self, _span: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+            tracing::span::Id::from_u64(1)
+        }
+
+        fn record(&self, _span: &tracing::span::Id, _values: &tracing::span::Record<'_>) {}
+
+        fn record_follows_from(&self, _span: &tracing::span::Id, _follows: &tracing::span::Id) {}
+
+        fn event(&self, event: &tracing::Event<'_>) {
+            struct Visitor(String);
+            impl tracing::field::Visit for Visitor {
+                fn record_debug(
+                    &mut self,
+                    field: &tracing::field::Field,
+                    value: &dyn std::fmt::Debug,
+                ) {
+                    self.0.push_str(&format!(" {}={:?}", field.name(), value));
+                }
+            }
+            let mut visitor = Visitor(String::new());
+            event.record(&mut visitor);
+            self.messages.lock().unwrap().push(visitor.0);
+        }
+
+        fn enter(&self, _span: &tracing::span::Id) {}
+        fn exit(&self, _span: &tracing::span::Id) {}
+    }
+
+    /// The client's server_info now exposes the server's reported
+    /// protocolVersion. Before agenkit#781, `McpServerInfo` had no field for
+    /// this and the client discarded `result["protocolVersion"]` entirely.
+    #[test]
+    fn parse_server_info_captures_protocol_version() {
+        let result = serde_json::json!({
+            "protocolVersion": PROTOCOL_VERSION,
+            "serverInfo": {"name": "srv", "version": "9.9.9"}
+        });
+        let info = parse_server_info(&result);
+        assert_eq!(info.protocol_version, PROTOCOL_VERSION);
+        assert_eq!(info.name, "srv");
+        assert_eq!(info.version, "9.9.9");
+    }
+
+    /// Negative-verification target for agenkit#781: reverting the
+    /// mismatch-warning branch in `parse_server_info` makes this test fail —
+    /// `protocol_version` would still populate (covered above), but no
+    /// warning would be logged.
+    #[test]
+    fn parse_server_info_warns_on_server_version_mismatch() {
+        let subscriber = RecordingSubscriber::default();
+        let _guard = tracing::subscriber::set_default(subscriber.clone());
+
+        let result = serde_json::json!({
+            "protocolVersion": "1999-01-01",
+            "serverInfo": {"name": "old-server", "version": "0.1.0"}
+        });
+        let info = parse_server_info(&result);
+        assert_eq!(info.protocol_version, "1999-01-01");
+
+        let messages = subscriber.messages();
+        assert!(
+            messages
+                .iter()
+                .any(|m| m.contains("1999-01-01") && m.contains(PROTOCOL_VERSION)),
+            "expected a version-mismatch warning mentioning both versions, got: {messages:?}"
+        );
     }
 }

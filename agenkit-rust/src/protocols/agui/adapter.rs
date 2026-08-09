@@ -176,7 +176,10 @@ fn create_metadata_event(agent_name: &str, agent: &dyn Agent) -> MetadataEvent {
     let mut data = HashMap::new();
     data.insert("agent_name".to_string(), serde_json::json!(agent_name));
     data.insert("protocol".to_string(), serde_json::json!("ag-ui"));
-    data.insert("protocol_version".to_string(), serde_json::json!("1.0"));
+    data.insert(
+        "protocol_version".to_string(),
+        serde_json::json!(AGUI_METADATA_SCHEMA_VERSION),
+    );
 
     let mut capabilities = HashMap::new();
     capabilities.insert("streaming", serde_json::Value::Bool(true));

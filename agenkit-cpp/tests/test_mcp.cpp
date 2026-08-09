@@ -10,6 +10,8 @@
 #include "agenkit/protocols/mcp.hpp"
 
 #include <future>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -39,7 +41,7 @@ public:
     }
 
     McpServerInfo server_info() const override {
-        return McpServerInfo{"mock-server", "1.0.0"};
+        return McpServerInfo{"mock-server", "1.0.0", PROTOCOL_VERSION};
     }
 
     void close() override {}
@@ -353,4 +355,68 @@ TEST(McpServer, HandleRequest) {
         EXPECT_TRUE(resp.contains("error"));
         EXPECT_EQ(resp["error"]["code"].get<int>(), -32601);
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Protocol version negotiation (agenkit#781)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Negative-verification target: reverting the mismatch check in
+// McpServer::handle_initialize (removing the std::cerr write) makes this
+// test fail, because nothing else in the server reads
+// req["params"]["protocolVersion"].
+TEST(McpServer, WarnsOnClientVersionMismatch) {
+    std::vector<std::shared_ptr<agenkit::core::Tool>> tools;
+    McpServer server("test-server", "1.0.0", tools);
+
+    std::ostringstream captured;
+    std::streambuf* old_cerr = std::cerr.rdbuf(captured.rdbuf());
+
+    nlohmann::json req = {
+        {"jsonrpc", "2.0"},
+        {"id",      1},
+        {"method",  "initialize"},
+        {"params",  {{"protocolVersion", "1999-01-01"}, {"capabilities", nlohmann::json::object()}}}
+    };
+    auto resp = server.handle_request(req);
+
+    std::cerr.rdbuf(old_cerr);
+
+    // Server still answers with the version it actually speaks (spec's
+    // negotiation model: the server states its own supported revision).
+    EXPECT_EQ(resp["result"]["protocolVersion"].get<std::string>(), std::string(PROTOCOL_VERSION));
+
+    std::string logged = captured.str();
+    EXPECT_NE(logged.find("1999-01-01"), std::string::npos)
+        << "expected a version-mismatch warning mentioning the client's version, got: " << logged;
+    EXPECT_NE(logged.find(PROTOCOL_VERSION), std::string::npos)
+        << "expected a version-mismatch warning mentioning the server's version, got: " << logged;
+}
+
+TEST(McpServer, NoWarningOnMatchingClientVersion) {
+    std::vector<std::shared_ptr<agenkit::core::Tool>> tools;
+    McpServer server("test-server", "1.0.0", tools);
+
+    std::ostringstream captured;
+    std::streambuf* old_cerr = std::cerr.rdbuf(captured.rdbuf());
+
+    nlohmann::json req = {
+        {"jsonrpc", "2.0"},
+        {"id",      1},
+        {"method",  "initialize"},
+        {"params",  {{"protocolVersion", PROTOCOL_VERSION}, {"capabilities", nlohmann::json::object()}}}
+    };
+    server.handle_request(req);
+
+    std::cerr.rdbuf(old_cerr);
+
+    EXPECT_EQ(captured.str().find("protocol version"), std::string::npos);
+}
+
+// The client's server_info now exposes the server's reported
+// protocolVersion. Before agenkit#781, McpServerInfo had no field for this
+// and the value was discarded entirely.
+TEST(McpClient, ParseServerInfoCapturesProtocolVersion) {
+    MockMcpClient client;
+    EXPECT_EQ(client.server_info().protocol_version, std::string(PROTOCOL_VERSION));
 }

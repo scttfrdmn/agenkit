@@ -36,7 +36,9 @@
 //! ```
 use crate::core::{Agent, Message};
 use crate::protocols::agui::adapter::{AGUIAdapter, AGUIAdapterConfig};
-use crate::protocols::agui::events::{AGUIEvent, ErrorEvent, HeartbeatEvent, MetadataEvent};
+use crate::protocols::agui::events::{
+    AGUIEvent, ErrorEvent, HeartbeatEvent, MetadataEvent, AGUI_METADATA_SCHEMA_VERSION,
+};
 use futures::stream::StreamExt;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -193,7 +195,10 @@ impl AGUIWebSocketHandler {
                 .unwrap_or_else(|| self.agent.name().to_string())),
         );
         data.insert("protocol".to_string(), serde_json::json!("ag-ui"));
-        data.insert("protocol_version".to_string(), serde_json::json!("1.0"));
+        data.insert(
+            "protocol_version".to_string(),
+            serde_json::json!(AGUI_METADATA_SCHEMA_VERSION),
+        );
         data.insert("transport".to_string(), serde_json::json!("websocket"));
 
         let mut capabilities = HashMap::new();

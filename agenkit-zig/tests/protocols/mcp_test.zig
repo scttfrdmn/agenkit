@@ -298,3 +298,71 @@ test "toolsFromClient count" {
     try testing.expectEqualStrings("calculator", adapters[1].name());
     try testing.expectEqualStrings("read_file", adapters[2].name());
 }
+
+// ── Protocol version negotiation (agenkit#781) ──────────────────────────────────
+
+test "McpServer initialize advertises capabilities.tools (agenkit#781 live bug)" {
+    const alloc = testing.allocator;
+    var server = mcp.McpServer.init(alloc, "test-server", "1.0.0", &.{});
+
+    const req = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}";
+    const resp = try server.handleRequestStr(req);
+    defer alloc.free(resp);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, alloc, resp, .{});
+    defer parsed.deinit();
+
+    const result = parsed.value.object.get("result").?;
+    try testing.expect(result.object.get("capabilities") != null);
+    const capabilities = result.object.get("capabilities").?;
+    try testing.expect(capabilities.object.get("tools") != null);
+    try testing.expectEqualStrings(mcp.PROTOCOL_VERSION, result.object.get("protocolVersion").?.string);
+}
+
+// Negative-verification target: reverting the mismatch check in
+// handleInitialize (removing the recordVersionMismatch call) makes this
+// test fail, because nothing else in the server reads
+// params["protocolVersion"].
+test "McpServer warns on client version mismatch" {
+    const alloc = testing.allocator;
+    mcp.version_mismatch_count = 0;
+    mcp.version_mismatch_message = "";
+
+    var server = mcp.McpServer.init(alloc, "test-server", "1.0.0", &.{});
+
+    const req = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"1999-01-01\"}}";
+    const resp = try server.handleRequestStr(req);
+    defer alloc.free(resp);
+
+    const parsed = try std.json.parseFromSlice(std.json.Value, alloc, resp, .{});
+    defer parsed.deinit();
+
+    // Server still answers with the version it actually speaks (spec's
+    // negotiation model: the server states its own supported revision).
+    const result = parsed.value.object.get("result").?;
+    try testing.expectEqualStrings(mcp.PROTOCOL_VERSION, result.object.get("protocolVersion").?.string);
+
+    try testing.expect(mcp.version_mismatch_count > 0);
+    try testing.expect(std.mem.indexOf(u8, mcp.version_mismatch_message, "1999-01-01") != null);
+    try testing.expect(std.mem.indexOf(u8, mcp.version_mismatch_message, mcp.PROTOCOL_VERSION) != null);
+}
+
+test "McpServer does not warn on matching client version" {
+    const alloc = testing.allocator;
+    mcp.version_mismatch_count = 0;
+
+    var server = mcp.McpServer.init(alloc, "test-server", "1.0.0", &.{});
+
+    const req = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"" ++ mcp.PROTOCOL_VERSION ++ "\"}}";
+    const resp = try server.handleRequestStr(req);
+    defer alloc.free(resp);
+
+    try testing.expectEqual(@as(usize, 0), mcp.version_mismatch_count);
+}
+
+// The client's server_info now exposes the server's reported
+// protocolVersion. Before agenkit#781, McpServerInfo had no field for this.
+test "McpServerInfo has protocol_version field defaulting to empty" {
+    const info = mcp.McpServerInfo{};
+    try testing.expectEqualStrings("", info.protocol_version);
+}

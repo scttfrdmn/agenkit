@@ -48,11 +48,9 @@ public sealed class McpHttpClient : IMcpClient
             throw new InvalidOperationException($"mcp initialize error {resp.Error.Code}: {resp.Error.Message}");
         }
 
-        if (resp.Result.HasValue && resp.Result.Value.TryGetProperty("serverInfo", out var info))
+        if (resp.Result.HasValue)
         {
-            _serverInfo = new McpServerInfo(
-                info.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "",
-                info.TryGetProperty("version", out var v) ? v.GetString() ?? "" : "");
+            _serverInfo = McpVersionNegotiation.ParseServerInfo(resp.Result.Value);
         }
     }
 

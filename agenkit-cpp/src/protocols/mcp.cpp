@@ -23,6 +23,29 @@ namespace protocols {
 namespace mcp {
 
 // ============================================================================
+// Protocol version negotiation (agenkit#781)
+// ============================================================================
+
+/// Build an McpServerInfo from an initialize result, capturing the server's
+/// reported protocolVersion (previously discarded) and warning to stderr
+/// when it differs from ours, so version skew is visible instead of
+/// surfacing later as an unrelated decode error or wrong result.
+static McpServerInfo parse_server_info(const nlohmann::json& result) {
+    McpServerInfo info;
+    if (result.contains("serverInfo") && result["serverInfo"].is_object()) {
+        const auto& si = result["serverInfo"];
+        info.name = si.value("name", "");
+        info.version = si.value("version", "");
+    }
+    info.protocol_version = result.value("protocolVersion", "");
+    if (!info.protocol_version.empty() && info.protocol_version != PROTOCOL_VERSION) {
+        std::cerr << "mcp: server protocol version \"" << info.protocol_version
+                  << "\" does not match client version \"" << PROTOCOL_VERSION << "\"\n";
+    }
+    return info;
+}
+
+// ============================================================================
 // Wire type helpers
 // ============================================================================
 
@@ -143,10 +166,7 @@ void StdioClient::initialize() {
     if (resp.has_error) {
         throw std::runtime_error("mcp initialize error: " + resp.error.message);
     }
-    if (resp.result.contains("serverInfo") && resp.result["serverInfo"].is_object()) {
-        const auto& info = resp.result["serverInfo"];
-        server_info_ = {info.value("name", ""), info.value("version", "")};
-    }
+    server_info_ = parse_server_info(resp.result);
 }
 
 JsonRpcResponse StdioClient::send_request(const std::string& method,
@@ -331,10 +351,7 @@ void HttpClient::initialize() {
     if (resp.has_error) {
         throw std::runtime_error("mcp initialize error: " + resp.error.message);
     }
-    if (resp.result.contains("serverInfo") && resp.result["serverInfo"].is_object()) {
-        const auto& info = resp.result["serverInfo"];
-        server_info_ = {info.value("name", ""), info.value("version", "")};
-    }
+    server_info_ = parse_server_info(resp.result);
 }
 
 std::vector<McpTool> HttpClient::list_tools() {
@@ -404,6 +421,19 @@ McpServer::McpServer(const std::string& name, const std::string& version,
 
 nlohmann::json McpServer::handle_initialize(const nlohmann::json& req) {
     long long id = req.value("id", 0LL);
+
+    // Read (and thus stop discarding) the client's requested version —
+    // agenkit#781. Per the MCP spec's negotiation model the server always
+    // replies with the revision it actually implements; a mismatch is
+    // logged so version skew is visible instead of silent.
+    if (req.contains("params") && req["params"].is_object()) {
+        std::string client_protocol_version = req["params"].value("protocolVersion", "");
+        if (!client_protocol_version.empty() && client_protocol_version != PROTOCOL_VERSION) {
+            std::cerr << "mcp: client requested protocol version \"" << client_protocol_version
+                      << "\", server speaks \"" << PROTOCOL_VERSION << "\"\n";
+        }
+    }
+
     return {
         {"jsonrpc", "2.0"},
         {"id",      id},

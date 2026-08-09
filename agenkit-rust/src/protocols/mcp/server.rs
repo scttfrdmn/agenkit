@@ -38,6 +38,7 @@ impl McpServer {
             info: McpServerInfo {
                 name: cfg.name,
                 version: cfg.version,
+                protocol_version: String::new(),
             },
             tools,
         }
@@ -127,6 +128,24 @@ impl McpServer {
     }
 
     fn handle_initialize(&self, req: &JsonRpcRequest) -> JsonRpcResponse {
+        // Read (and thus stop discarding) the client's requested version —
+        // agenkit#781. Per the MCP spec's negotiation model the server
+        // always replies with the revision it actually implements; a
+        // mismatch is logged so version skew is visible instead of silent.
+        let client_protocol_version = req
+            .params
+            .as_ref()
+            .and_then(|p| p.get("protocolVersion"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        if !client_protocol_version.is_empty() && client_protocol_version != PROTOCOL_VERSION {
+            tracing::warn!(
+                client_protocol_version,
+                server_protocol_version = PROTOCOL_VERSION,
+                "mcp: client requested protocol version server does not speak",
+            );
+        }
+
         let result = serde_json::json!({
             "protocolVersion": PROTOCOL_VERSION,
             "capabilities": {"tools": {}},

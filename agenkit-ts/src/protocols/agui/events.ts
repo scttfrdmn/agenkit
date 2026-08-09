@@ -17,6 +17,17 @@
  */
 
 /**
+ * agenkit's own metadata-event schema version -- NOT a version of the AG-UI
+ * wire protocol itself. AG-UI (docs.ag-ui.com) has no numbered spec revision
+ * to align with, so this was previously a made-up "1.0" that looked like an
+ * upstream protocol version but wasn't (agenkit#781 item D: "a wrong
+ * version is worse than an absent one"). One named constant per language,
+ * so all emitters advertise the same value and a bump can't drift between
+ * them.
+ */
+export const AGUI_METADATA_SCHEMA_VERSION = '1.0';
+
+/**
  * AG-UI event type enumeration
  */
 export enum EventType {

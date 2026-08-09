@@ -3,10 +3,24 @@
  *
  * Implements JSON-RPC 2.0 wire format and MCP domain types.
  *
- * Reference: https://spec.modelcontextprotocol.io/specification/2024-11-05/
+ * Reference: https://spec.modelcontextprotocol.io/specification/2025-11-25/
  *
  * @packageDocumentation
  */
+
+/**
+ * The MCP protocol revision this implementation speaks. A single named
+ * constant (agenkit#781) imported by both client.ts and server.ts, rather
+ * than each repeating the literal, so a version bump is a one-line change
+ * and the two halves of the protocol can't drift from each other.
+ *
+ * 2025-11-25 is the latest *ratified* revision whose initialize/tools/list/
+ * tools/call surface is additive over 2024-11-05 (agenkit#733: the
+ * 2026-07-28 revision removes the initialize handshake in favor of a
+ * stateless core this package does not implement, so advertising that
+ * literal would claim a handshake the wire no longer has).
+ */
+export const PROTOCOL_VERSION = '2025-11-25';
 
 // ─── Internal wire types ────────────────────────────────────────────────────
 // Not exported from the barrel — callers work with domain types only.
@@ -75,6 +89,14 @@ export interface McpServerInfo {
   name: string;
   /** Server version string. */
   version: string;
+  /**
+   * The MCP protocol revision the server actually reported in its
+   * initialize response (`result.protocolVersion`). Captured so a caller
+   * can detect a mismatch against {@link PROTOCOL_VERSION} (agenkit#781 —
+   * this field did not exist before, so a peer speaking a different
+   * revision was indistinguishable from one speaking ours).
+   */
+  protocolVersion: string;
 }
 
 /**

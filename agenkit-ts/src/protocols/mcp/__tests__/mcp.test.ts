@@ -6,16 +6,21 @@
  * spawning any subprocess or making real network requests.
  */
 
-import { describe, it, expect } from 'vitest';
-import { StdioClient, HttpClient } from '../client.js';
+import { describe, it, expect, vi } from 'vitest';
+import { StdioClient, HttpClient, parseServerInfo } from '../client.js';
 import { McpToolAdapter, toolsFromClient } from '../tool_adapter.js';
 import type { McpClient, McpTool, McpToolResult, McpServerInfo } from '../types.js';
-import { textContent } from '../types.js';
+import { PROTOCOL_VERSION, textContent } from '../types.js';
+import { McpServer } from '../server.js';
 
 // ─── Mock MCP client ────────────────────────────────────────────────────────
 
 class MockMcpClient implements McpClient {
-  readonly serverInfo: McpServerInfo = { name: 'mock-server', version: '1.0.0' };
+  readonly serverInfo: McpServerInfo = {
+    name: 'mock-server',
+    version: '1.0.0',
+    protocolVersion: PROTOCOL_VERSION,
+  };
 
   private readonly mockTools: McpTool[];
 
@@ -152,7 +157,7 @@ describe('McpToolAdapter', () => {
 
   it('maps a successful tool call to success=true', async () => {
     const client: McpClient = {
-      serverInfo: { name: 'test', version: '1.0' },
+      serverInfo: { name: 'test', version: '1.0', protocolVersion: PROTOCOL_VERSION },
       async initialize() {},
       async listTools() { return []; },
       async callTool() {
@@ -174,7 +179,7 @@ describe('McpToolAdapter', () => {
 
   it('maps an error tool call to success=false', async () => {
     const client: McpClient = {
-      serverInfo: { name: 'test', version: '1.0' },
+      serverInfo: { name: 'test', version: '1.0', protocolVersion: PROTOCOL_VERSION },
       async initialize() {},
       async listTools() { return []; },
       async callTool() {
@@ -209,5 +214,90 @@ describe('toolsFromClient', () => {
     expect(tools).toHaveLength(2);
     expect(tools[0].name).toBe('tool_a');
     expect(tools[1].name).toBe('tool_b');
+  });
+});
+
+// ─── Protocol version negotiation (agenkit#781) ────────────────────────────────
+
+describe('McpServer protocol version negotiation', () => {
+  it('advertises the shared PROTOCOL_VERSION constant, not an independent literal', async () => {
+    const server = new McpServer('test-server', '1.0.0', []);
+    const resp = await server.handleRequest({ jsonrpc: '2.0', id: 1, method: 'initialize' });
+    const result = resp.result as { protocolVersion: string };
+    expect(result.protocolVersion).toBe(PROTOCOL_VERSION);
+  });
+
+  it('warns when the client requests a different protocol version', async () => {
+    const server = new McpServer('test-server', '1.0.0', []);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const resp = await server.handleRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: { protocolVersion: '1999-01-01', capabilities: {} },
+    });
+
+    // Server still answers with the version it actually speaks (spec's
+    // negotiation model: the server states its own supported revision).
+    const result = resp.result as { protocolVersion: string };
+    expect(result.protocolVersion).toBe(PROTOCOL_VERSION);
+
+    // Negative-verification target: reverting the mismatch check in
+    // handleInitialize (added for agenkit#781) makes this assertion fail,
+    // since nothing else in the server reads req.params.protocolVersion.
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('1999-01-01'),
+    );
+    expect(warnSpy.mock.calls[0]?.[0]).toContain(PROTOCOL_VERSION);
+
+    warnSpy.mockRestore();
+  });
+
+  it('does not warn when the client requests the server-supported version', async () => {
+    const server = new McpServer('test-server', '1.0.0', []);
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await server.handleRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: { protocolVersion: PROTOCOL_VERSION, capabilities: {} },
+    });
+
+    expect(warnSpy).not.toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+});
+
+describe('MCP client protocol version capture', () => {
+  it('captures the server-reported protocolVersion (previously discarded)', () => {
+    const info = parseServerInfo({
+      protocolVersion: PROTOCOL_VERSION,
+      serverInfo: { name: 'srv', version: '9.9.9' },
+    });
+    expect(info.protocolVersion).toBe(PROTOCOL_VERSION);
+    expect(info.name).toBe('srv');
+    expect(info.version).toBe('9.9.9');
+  });
+
+  it('warns when the server-reported protocolVersion differs from ours', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const info = parseServerInfo({
+      protocolVersion: '1999-01-01',
+      serverInfo: { name: 'old-server', version: '0.1.0' },
+    });
+
+    expect(info.protocolVersion).toBe('1999-01-01');
+
+    // Negative-verification target: reverting the mismatch check in
+    // parseServerInfo (added for agenkit#781) makes this assertion fail —
+    // protocolVersion would still populate (covered above), but no warning
+    // would be logged.
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('1999-01-01'));
+    expect(warnSpy.mock.calls[0]?.[0]).toContain(PROTOCOL_VERSION);
+
+    warnSpy.mockRestore();
   });
 });

@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest';
 import { Agent, Message } from '../../../core/interfaces';
 import {
   AGUIAdapter,
+  AGUI_METADATA_SCHEMA_VERSION,
   TextMessageStart,
   TextMessageChunk,
   TextMessageComplete,
@@ -336,7 +337,7 @@ describe('AGUIAdapter', () => {
 
       const metadata = events[0] as MetadataEvent;
       expect(metadata.data.protocol).toBe('ag-ui');
-      expect(metadata.data.protocol_version).toBe('1.0');
+      expect(metadata.data.protocol_version).toBe(AGUI_METADATA_SCHEMA_VERSION);
     });
   });
 

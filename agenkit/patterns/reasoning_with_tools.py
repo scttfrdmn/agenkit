@@ -262,7 +262,7 @@ Begin reasoning. Use tools as needed while thinking."""
                     # Execute tool
                     tool = self.tools[tool_name]
                     try:
-                        tool_result = await tool.execute(**parameters)
+                        tool_result = await tool.execute(parameters)
 
                         # Record tool call and result
                         if trace:

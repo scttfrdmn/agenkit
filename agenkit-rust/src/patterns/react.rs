@@ -217,6 +217,14 @@ impl ReActAgent {
     }
 
     /// Parse agent response into a ReActStep.
+    ///
+    /// Accepts both final-answer conventions used across the 9 cores (#765):
+    /// this core's own `Final Answer: <answer>` line prefix, and the
+    /// `Action: Final Answer` / `Action Input: <answer>` form used by Python
+    /// and Zig. Without this, a cross-language prompt or few-shot example
+    /// written against the Python docs silently degrades into max_steps here:
+    /// "Final Answer" gets looked up as a tool name, misses, and the loop
+    /// retries the identical response until it gives up.
     fn parse_response(&self, response: &str, step_number: usize) -> ReActStep {
         let lines: Vec<&str> = response.lines().collect();
 
@@ -231,10 +239,6 @@ impl ReActAgent {
 
             if let Some(content) = line.strip_prefix("Thought:") {
                 thought = content.trim().to_string();
-            } else if let Some(content) = line.strip_prefix("Action:") {
-                action = content.trim().to_string();
-            } else if let Some(content) = line.strip_prefix("Action Input:") {
-                action_input = content.trim().to_string();
             } else if let Some(content) = line.strip_prefix("Final Answer:") {
                 if thought.is_empty() {
                     thought = "Reached final answer".to_string();
@@ -242,7 +246,21 @@ impl ReActAgent {
                 observation = content.trim().to_string();
                 is_final = true;
                 break;
+            } else if let Some(content) = line.strip_prefix("Action Input:") {
+                action_input = content.trim().to_string();
+            } else if let Some(content) = line.strip_prefix("Action:") {
+                action = content.trim().to_string();
             }
+        }
+
+        // Python/Zig convention: the sentinel is an action name, with the
+        // answer in a following Action Input: line.
+        if !is_final && action.eq_ignore_ascii_case("Final Answer") {
+            if thought.is_empty() {
+                thought = "Reached final answer".to_string();
+            }
+            observation = action_input.clone();
+            is_final = true;
         }
 
         ReActStep {
@@ -649,5 +667,46 @@ mod tests {
         assert!(content.contains("Action: calculator"));
         assert!(content.contains("---"));
         assert!(content.contains("The answer is 4"));
+    }
+
+    /// Verifies the parser also accepts the Python/Zig convention: "Final
+    /// Answer" as an action name, with the answer in a following "Action
+    /// Input:" line, rather than this core's own "Final Answer: <answer>"
+    /// line prefix. See #765 -- without this, a Python-style response
+    /// reaching the Rust core looked up "Final Answer" as a tool name,
+    /// missed, and burned every step until max_steps.
+    #[tokio::test]
+    async fn test_react_agent_final_answer_as_action() {
+        let responses = vec![
+            "Thought: I have the answer\nAction: Final Answer\nAction Input: The result is 4"
+                .to_string(),
+        ];
+
+        let mock_agent = Arc::new(MockAgent {
+            responses: Arc::new(Mutex::new(responses)),
+        });
+
+        let calculator = Arc::new(CalculatorTool) as Arc<dyn Tool>;
+
+        let config = ReActConfig {
+            agent: mock_agent,
+            tools: vec![calculator],
+            max_steps: 3,
+            verbose: false,
+            prompt_template: None,
+        };
+
+        let react_agent = ReActAgent::new(config).unwrap();
+        let message = Message::with_text("user", "What is 2+2?");
+        let result = react_agent.process(message).await.unwrap();
+
+        assert_eq!(result.content_as_str().unwrap(), "The result is 4");
+
+        let metadata = &result.metadata;
+        assert_eq!(
+            metadata.get("stop_reason").and_then(|v| v.as_str()),
+            Some("final_answer")
+        );
+        assert_eq!(metadata.get("steps").and_then(|v| v.as_u64()), Some(1));
     }
 }

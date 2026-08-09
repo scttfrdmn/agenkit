@@ -126,7 +126,7 @@ class ToolAgent(Agent):
         if not tool:
             raise ValueError(f"Tool '{call.tool_name}' not found")
 
-        return await tool.execute(**call.parameters)
+        return await tool.execute(call.parameters)
 
     def _format_tool_results(self, results: list[ToolResult]) -> str:
         """Format tool results into a readable message.

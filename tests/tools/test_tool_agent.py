@@ -6,6 +6,8 @@ Tests verify:
 - ToolAgent (execute tools, handle tool calls, error handling, pass-through behavior, format results)
 """
 
+from typing import Any
+
 import pytest
 
 from agenkit.interfaces import Agent, Message, Tool, ToolResult
@@ -14,6 +16,10 @@ from agenkit.tools import ToolAgent, ToolRegistry
 # ============================================
 # Test Helper Tools
 # ============================================
+#
+# These accept a single positional `params: dict`, matching the Tool.execute()
+# contract declared in agenkit/interfaces.py:377 and called positionally by
+# ToolAgent._execute_tool (tool_agent.py:129). See #762.
 
 
 class CalculatorTool(Tool):
@@ -27,7 +33,10 @@ class CalculatorTool(Tool):
     def description(self) -> str:
         return "Performs basic arithmetic operations"
 
-    async def execute(self, operation: str, a: float, b: float) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        operation = params["operation"]
+        a = params["a"]
+        b = params["b"]
         try:
             if operation == "add":
                 result = a + b
@@ -58,7 +67,8 @@ class SearchTool(Tool):
     def description(self) -> str:
         return "Searches for information"
 
-    async def execute(self, query: str) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        query = params.get("query", "")
         if not query:
             return ToolResult(success=False, data=None, error="Query cannot be empty")
 
@@ -78,7 +88,7 @@ class ErrorTool(Tool):
     def description(self) -> str:
         return "Tool that always fails"
 
-    async def execute(self, **kwargs) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
         return ToolResult(success=False, data=None, error="This tool always fails")
 
 
@@ -107,7 +117,8 @@ class ValidationTool(Tool):
         value = kwargs["value"]
         return 0 <= value <= 100
 
-    async def execute(self, value: float) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        value = params["value"]
         if not await self.validate(value=value):
             return ToolResult(success=False, data=None, error="Invalid value")
         return ToolResult(success=True, data={"validated": value})
@@ -124,7 +135,9 @@ class CounterTool(Tool):
     def description(self) -> str:
         return "Counts occurrences"
 
-    async def execute(self, text: str, substring: str) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        text = params["text"]
+        substring = params["substring"]
         count = text.count(substring)
         return ToolResult(success=True, data={"count": count})
 
@@ -140,7 +153,8 @@ class EchoTool(Tool):
     def description(self) -> str:
         return "Echoes back input"
 
-    async def execute(self, message: str) -> ToolResult:
+    async def execute(self, params: dict[str, Any]) -> ToolResult:
+        message = params["message"]
         return ToolResult(success=True, data={"echo": message})
 
 

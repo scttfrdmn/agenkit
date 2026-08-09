@@ -147,8 +147,12 @@ class MockTool(Tool):
     def description(self) -> str:
         return self._description
 
-    async def execute(self, **kwargs: Any) -> str:
-        """Return mock tool result."""
+    async def execute(self, params: dict[str, Any]) -> str:
+        """Return mock tool result.
+
+        Takes a single positional `params` dict, matching the Tool.execute()
+        contract declared in agenkit/interfaces.py:377. See #762.
+        """
         return f"Tool {self._name} result"
 
 

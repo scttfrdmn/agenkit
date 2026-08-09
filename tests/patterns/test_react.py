@@ -13,17 +13,22 @@ from agenkit.patterns import ReActAgent, ReActStep, ToolResult
 
 
 class MockCalculator:
-    """Mock calculator tool for testing."""
+    """Mock calculator tool for testing.
+
+    Takes a single positional `params` dict, matching the Tool.execute()
+    contract that ReActAgent calls against (react.py:31, react.py:319). See #762.
+    """
 
     name = "calculator"
     description = "Performs calculations"
 
-    async def execute(self, input: str) -> str:
+    async def execute(self, params: dict) -> str:
         """Execute calculation."""
+        input_value = params.get("input", "")
         # Simple mock: just return the input
-        if "error" in input:
+        if "error" in input_value:
             raise ValueError("Calculation error")
-        return f"Result: {input}"
+        return f"Result: {input_value}"
 
 
 class MockSearch:
@@ -32,8 +37,9 @@ class MockSearch:
     name = "search"
     description = "Searches for information"
 
-    async def execute(self, query: str) -> str:
+    async def execute(self, params: dict) -> str:
         """Execute search."""
+        query = params.get("input", "")
         return f"Search results for: {query}"
 
 
@@ -43,7 +49,7 @@ class FailingTool:
     name = "failing"
     description = "Always fails"
 
-    async def execute(self, **kwargs) -> str:
+    async def execute(self, params: dict) -> str:
         """Always raises an error."""
         raise RuntimeError("Tool failure")
 

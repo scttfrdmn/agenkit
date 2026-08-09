@@ -435,6 +435,11 @@ pub const ReActAgent = struct {
         var action_input: []const u8 = "";
 
         // Parse line by line
+        //
+        // Also accepts the `Final Answer: <answer>` line-prefix convention used
+        // by the Go/Rust/TypeScript/C++/C# cores (see #765), in addition to this
+        // core's own `Action: Final Answer` / `Action Input:` form, so a
+        // cross-language prompt doesn't silently degrade into max_steps here.
         var lines = std.mem.splitScalar(u8, response, '\n');
         while (lines.next()) |line| {
             const trimmed = std.mem.trim(u8, line, " \t\r");
@@ -442,10 +447,13 @@ pub const ReActAgent = struct {
 
             if (std.mem.startsWith(u8, trimmed, "Thought:")) {
                 thought = std.mem.trim(u8, trimmed[8..], " ");
-            } else if (std.mem.startsWith(u8, trimmed, "Action:")) {
-                action = std.mem.trim(u8, trimmed[7..], " ");
+            } else if (std.mem.startsWith(u8, trimmed, "Final Answer:")) {
+                action = "Final Answer";
+                action_input = std.mem.trim(u8, trimmed[13..], " ");
             } else if (std.mem.startsWith(u8, trimmed, "Action Input:")) {
                 action_input = std.mem.trim(u8, trimmed[13..], " ");
+            } else if (std.mem.startsWith(u8, trimmed, "Action:")) {
+                action = std.mem.trim(u8, trimmed[7..], " ");
             }
         }
 
@@ -644,4 +652,41 @@ test "ReActAgent verbose mode" {
     const content = try response.contentAsText();
     // Verbose mode should include "Step" in output
     try std.testing.expect(std.mem.indexOf(u8, content, "Step") != null);
+}
+
+test "parseResponse accepts cross-core Final Answer: line prefix" {
+    // #765: Go/Rust/TypeScript/C++/C# signal completion with a
+    // `Final Answer: <answer>` line prefix rather than this core's own
+    // `Action: Final Answer` / `Action Input:` form. Without parser
+    // tolerance for both, a response using that convention would parse to
+    // action="" here (no recognized Action: line) and be treated as a
+    // non-final, actionless step rather than the final answer it is.
+    const allocator = std.testing.allocator;
+
+    var registry = ToolRegistry.init(allocator);
+    defer registry.deinit();
+
+    const calculator_fn = struct {
+        fn execute(alloc: Allocator, input: []const u8) AgentError![]const u8 {
+            _ = input;
+            return alloc.dupe(u8, "4") catch {
+                return AgentError.ProcessingFailed;
+            };
+        }
+    }.execute;
+
+    const tool = try Tool.init(allocator, "calculator", "Performs calculations", calculator_fn);
+    try registry.register(tool);
+
+    var react_agent = try ReActAgent.init(allocator, &registry, 5, false);
+    defer react_agent.deinit();
+
+    const response = "Thought: I know the answer\nFinal Answer: The answer is 4";
+    const step_opt = try react_agent.parseResponse(response, 0);
+    try std.testing.expect(step_opt != null);
+    var step = step_opt.?;
+    defer step.deinit();
+
+    try std.testing.expectEqualStrings("Final Answer", step.action);
+    try std.testing.expectEqualStrings("The answer is 4", step.action_input);
 }

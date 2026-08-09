@@ -63,10 +63,14 @@ class MockTool(Tool):
         """Tool parameters schema."""
         return {"type": "object", "properties": {}}
 
-    async def execute(self, **kwargs) -> ToolResult:
-        """Execute tool."""
+    async def execute(self, params: dict) -> ToolResult:
+        """Execute tool.
+
+        Takes a single positional `params` dict, matching the Tool.execute()
+        contract declared in agenkit/interfaces.py:377. See #762.
+        """
         self.call_count += 1
-        self.last_parameters = kwargs
+        self.last_parameters = params
         if isinstance(self._result, Exception):
             raise self._result
         return ToolResult(

@@ -171,7 +171,9 @@ class ToolCallTracker:
                 if "progress_reporter" in tool.execute.__code__.co_varnames:
                     args["progress_reporter"] = reporter
 
-            result = await tool.execute(**args)
+            # Positional `params` dict, matching the Tool.execute() contract
+            # declared in agenkit/interfaces.py:377. See #762.
+            result = await tool.execute(args)
 
             # Emit any buffered progress events
             if on_progress and progress_events:

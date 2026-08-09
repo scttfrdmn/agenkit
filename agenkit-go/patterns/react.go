@@ -296,6 +296,14 @@ func (r *ReActAgent) Process(ctx context.Context, message *agenkit.Message) (*ag
 }
 
 // parseResponse parses agent response into structured step.
+//
+// Accepts both final-answer conventions used across the 9 cores (#765):
+// this core's own `Final Answer: <answer>` line prefix, and the
+// `Action: Final Answer` / `Action Input: <answer>` form used by
+// Python and Zig. Without this, a cross-language prompt or few-shot
+// example written against the Python docs silently degrades into
+// max_steps here: "Final Answer" gets looked up as a tool name, misses,
+// and the loop retries the identical response until it gives up.
 func (r *ReActAgent) parseResponse(response string) ReActStep {
 	lines := strings.Split(response, "\n")
 	step := ReActStep{}
@@ -305,10 +313,6 @@ func (r *ReActAgent) parseResponse(response string) ReActStep {
 
 		if strings.HasPrefix(line, "Thought:") {
 			step.Thought = strings.TrimSpace(strings.TrimPrefix(line, "Thought:"))
-		} else if strings.HasPrefix(line, "Action:") {
-			step.Action = strings.TrimSpace(strings.TrimPrefix(line, "Action:"))
-		} else if strings.HasPrefix(line, "Action Input:") {
-			step.ActionInput = strings.TrimSpace(strings.TrimPrefix(line, "Action Input:"))
 		} else if strings.HasPrefix(line, "Final Answer:") {
 			if step.Thought == "" {
 				step.Thought = "Reached final answer"
@@ -316,7 +320,21 @@ func (r *ReActAgent) parseResponse(response string) ReActStep {
 			step.Observation = strings.TrimSpace(strings.TrimPrefix(line, "Final Answer:"))
 			step.IsFinal = true
 			break
+		} else if strings.HasPrefix(line, "Action Input:") {
+			step.ActionInput = strings.TrimSpace(strings.TrimPrefix(line, "Action Input:"))
+		} else if strings.HasPrefix(line, "Action:") {
+			step.Action = strings.TrimSpace(strings.TrimPrefix(line, "Action:"))
 		}
+	}
+
+	// Python/Zig convention: the sentinel is an action name, with the answer
+	// in a following Action Input: line, rather than a Final Answer: prefix.
+	if !step.IsFinal && strings.EqualFold(step.Action, "Final Answer") {
+		if step.Thought == "" {
+			step.Thought = "Reached final answer"
+		}
+		step.Observation = step.ActionInput
+		step.IsFinal = true
 	}
 
 	return step

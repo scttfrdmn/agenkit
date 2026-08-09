@@ -381,6 +381,13 @@ Begin!"""
         Thought: <reasoning>
         Action: <tool_name or "Final Answer">
         Action Input: <input for tool>
+
+        Also accepts the `Final Answer: <answer>` line-prefix convention used
+        by the Go/Rust/TypeScript/C++/C# cores (see #765) so a cross-language
+        prompt or few-shot example doesn't silently degrade into max_steps on
+        this core. Python's own system prompt (`_default_system_prompt`) still
+        only emits the `Action: Final Answer` / `Action Input:` form -- this
+        is parser tolerance, not a change to Python's own output format.
         """
         lines = response.strip().split("\n")
 
@@ -392,8 +399,10 @@ Begin!"""
             line = line.strip()
             if line.startswith("Thought:"):
                 thought = line[8:].strip()
-            elif line.startswith("Action:"):
-                action = line[7:].strip()
+            elif line.startswith("Final Answer:"):
+                # Cross-core convention (#765): a line prefix, not an action name.
+                action = "Final Answer"
+                action_input = {"input": line[13:].strip()}
             elif line.startswith("Action Input:"):
                 action_input_str = line[13:].strip()
                 # Try to parse as dict, otherwise use as string
@@ -407,6 +416,8 @@ Begin!"""
                         action_input = {"input": action_input_str}
                 except Exception:
                     action_input = {"input": action_input_str}
+            elif line.startswith("Action:"):
+                action = line[7:].strip()
 
         return ReActStep(
             thought=thought,

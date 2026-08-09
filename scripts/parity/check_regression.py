@@ -19,21 +19,25 @@ from typing import Any
 # hardcoded 43 -- which made Python, the reference implementation, report
 # "125.6% parity".
 #
-# Measured 2026-08: python 54, go 51, cpp 47, rust 46, typescript 44, zig 44,
-# csharp/java/scala 29 each.
+# Re-measured 2026-08 after #918 fixed all nine scanners to also scan
+# composition/ (Zig: composition.zig): python 55, go 52, cpp 48, rust 47,
+# typescript 45, zig 44, csharp/java/scala 32 each. C#/Java/Scala rose from
+# 29 to 32 (+3, matching Conditional/Parallel/Sequential now being counted);
+# the other six only rose by 1 each because they already duplicated most
+# composition classes inside patterns/ and only picked up ConditionalAgent.
 MIN_FEATURE_COUNTS = {
-    "python": 50,  # Reference implementation (54 measured)
-    "go": 48,  # 51 measured
-    "cpp": 44,  # 47 measured
-    "rust": 43,  # 46 measured
-    "typescript": 41,  # 44 measured
+    "python": 51,  # Reference implementation (55 measured)
+    "go": 49,  # 52 measured
+    "cpp": 45,  # 48 measured
+    "rust": 44,  # 47 measured
+    "typescript": 42,  # 45 measured
     "zig": 41,  # 44 measured
-    # C#/Java/Scala had no floor at all until now, despite being full-parity
+    # C#/Java/Scala had no floor at all until #918, despite being full-parity
     # implementations since v0.71.0-v0.73.0. They trail on llm_adapters (3 vs 7)
     # and have no techniques subsystem -- see #754.
-    "csharp": 27,  # 29 measured
-    "java": 27,  # 29 measured
-    "scala": 27,  # 29 measured
+    "csharp": 29,  # 32 measured
+    "java": 29,  # 32 measured
+    "scala": 29,  # 32 measured
 }
 
 # Reference language that other counts are expressed relative to.

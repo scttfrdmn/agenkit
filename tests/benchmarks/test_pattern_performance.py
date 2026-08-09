@@ -78,6 +78,7 @@ class EchoAgent(Agent):
     def name(self) -> str:
         return self._name
 
+    @property
     def capabilities(self) -> list[str]:
         return ["echo"]
 
@@ -97,6 +98,7 @@ class MockLLMClient(Agent):
     def name(self) -> str:
         return "mock-client"
 
+    @property
     def capabilities(self) -> list[str]:
         return ["chat"]
 
@@ -120,6 +122,7 @@ class MockCritic(Agent):
     def name(self) -> str:
         return "mock_critic"
 
+    @property
     def capabilities(self) -> list[str]:
         return ["critique"]
 

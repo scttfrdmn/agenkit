@@ -1,7 +1,8 @@
 """Parity matrix generator.
 
 Combines feature manifest and test counts to generate comprehensive
-parity matrix showing feature coverage across all 6 languages.
+parity matrix showing feature coverage across all languages (see
+check_regression.MIN_FEATURE_COUNTS for the current list).
 """
 
 import json
@@ -15,6 +16,22 @@ try:
 except ImportError:
     print("Error: jinja2 required. Install with: pip install jinja2", file=sys.stderr)
     sys.exit(1)
+
+try:
+    from scripts.parity.check_regression import MIN_FEATURE_COUNTS
+except ImportError:
+    # Running as a script rather than a package (e.g. `python matrix_generator.py`
+    # from inside scripts/parity/) -- fall back to a path-relative import.
+    sys.path.insert(0, str(Path(__file__).parent))
+    from check_regression import MIN_FEATURE_COUNTS  # type: ignore[import-not-found]
+
+# check_regression.MIN_FEATURE_COUNTS is the actively-maintained 9-language
+# list (its floors are recalibrated every time a language ships new
+# features). This module used to hardcode its own 6-language list, so
+# C#/Java/Scala were invisible in the generated docs even after a clean
+# regenerate -- see #918/#913.
+LANGUAGES = list(MIN_FEATURE_COUNTS.keys())
+CATEGORIES = ["patterns", "middleware", "llm_adapters", "memory", "techniques"]
 
 
 def load_feature_manifest() -> dict[str, Any]:
@@ -90,8 +107,8 @@ def build_matrix_data(
     Returns:
         Dict with all data needed for template rendering
     """
-    languages = ["python", "go", "typescript", "rust", "cpp", "zig"]
-    categories = ["patterns", "middleware", "llm_adapters", "memory"]
+    languages = LANGUAGES
+    categories = CATEGORIES
 
     # Collect all unique features across all languages
     all_features: dict[str, set[str]] = {cat: set() for cat in categories}
@@ -199,8 +216,8 @@ def generate_gap_analysis(feature_manifest: dict[str, Any]) -> str:
     Returns:
         Markdown string for gap analysis
     """
-    languages = ["python", "go", "typescript", "rust", "cpp", "zig"]
-    categories = ["patterns", "middleware", "llm_adapters", "memory"]
+    languages = LANGUAGES
+    categories = CATEGORIES
 
     # Use Python as baseline
     python_features = feature_manifest["languages"]["python"]

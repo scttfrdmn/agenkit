@@ -8,7 +8,7 @@ import ast
 from pathlib import Path
 from typing import Any
 
-from ._paths import scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -29,9 +29,11 @@ def scan() -> dict[str, Any]:
 
 
 def scan_patterns(root: Path) -> list[str]:
-    """Scan for agent patterns in agenkit/patterns/.
+    """Scan for agent patterns in agenkit/patterns/ and agenkit/composition/.
 
-    Detects classes with 'Agent' in their name.
+    Detects classes with 'Agent' in their name. composition/ additionally
+    declares a non-agent `AgentResult` dataclass, so that directory is
+    restricted to the known composition-pattern names (see #918).
 
     Args:
         root: Root directory of Python package
@@ -41,11 +43,9 @@ def scan_patterns(root: Path) -> list[str]:
     """
     patterns = []
     patterns_dir = root / "patterns"
+    composition_dir = root / "composition"
 
-    if not patterns_dir.exists():
-        return patterns
-
-    for py_file in patterns_dir.rglob("*.py"):
+    for py_file in patterns_dir.rglob("*.py") if patterns_dir.exists() else []:
         if py_file.name.startswith("_"):  # Skip __init__.py, etc.
             continue
 
@@ -60,6 +60,20 @@ def scan_patterns(root: Path) -> list[str]:
 
         except SyntaxError:
             # Skip files with syntax errors
+            continue
+
+    for py_file in composition_dir.rglob("*.py") if composition_dir.exists() else []:
+        if py_file.name.startswith("_"):
+            continue
+
+        try:
+            tree = ast.parse(py_file.read_text())
+
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef) and node.name in COMPOSITION_AGENT_NAMES:
+                    patterns.append(node.name)
+
+        except SyntaxError:
             continue
 
     return sorted(set(patterns))

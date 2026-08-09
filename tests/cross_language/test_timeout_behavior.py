@@ -25,6 +25,7 @@ class MockTimeoutAgent(Agent):
         self.response = response
         self.call_count = 0
 
+    @property
     def name(self) -> str:
         """Return agent name"""
         return "mock-timeout-agent"

@@ -42,13 +42,11 @@ class TestMatrixDataGeneration:
         assert "category_summaries" in matrix_data
         assert "has_test_data" in matrix_data
 
-        # Verify languages list
-        expected_langs = ["python", "go", "typescript", "rust", "cpp", "zig"]
-        assert matrix_data["languages"] == expected_langs
-
-        # Verify categories list
-        expected_cats = ["patterns", "middleware", "llm_adapters", "memory"]
-        assert matrix_data["categories"] == expected_cats
+        # Verify languages/categories match the single source of truth
+        # (check_regression.MIN_FEATURE_COUNTS) rather than a hardcoded copy
+        # that drifts every time a language is added -- see #918.
+        assert matrix_data["languages"] == matrix_generator.LANGUAGES
+        assert matrix_data["categories"] == matrix_generator.CATEGORIES
 
     def test_matrix_rows_format(self, feature_manifest, test_report):
         """Verify matrix rows have correct format."""
@@ -60,8 +58,8 @@ class TestMatrixDataGeneration:
             assert "feature" in row
             assert "languages" in row
 
-            # Languages should have status for all 6 languages
-            assert len(row["languages"]) == 6
+            # Languages should have status for every scanned language
+            assert len(row["languages"]) == len(matrix_generator.LANGUAGES)
 
             # Status should be either ✅ or ❌
             for status in row["languages"].values():
@@ -71,8 +69,8 @@ class TestMatrixDataGeneration:
         """Verify summary stats have correct format."""
         matrix_data = matrix_generator.build_matrix_data(feature_manifest, test_report)
 
-        # Should have stats for all 6 languages
-        assert len(matrix_data["summary_stats"]) == 6
+        # Should have stats for every scanned language
+        assert len(matrix_data["summary_stats"]) == len(matrix_generator.LANGUAGES)
 
         for stat in matrix_data["summary_stats"]:
             assert "language" in stat
@@ -91,8 +89,8 @@ class TestMatrixDataGeneration:
             assert "category" in summary
             assert "counts" in summary
 
-            # Should have counts for all 6 languages
-            assert len(summary["counts"]) == 6
+            # Should have counts for every scanned language
+            assert len(summary["counts"]) == len(matrix_generator.LANGUAGES)
 
             # All counts should be non-negative
             for count in summary["counts"].values():
@@ -119,10 +117,8 @@ class TestMatrixMarkdownGeneration:
         """Verify matrix includes all language names."""
         matrix_md = matrix_generator.generate_feature_matrix(feature_manifest, test_report)
 
-        languages = ["Python", "Go", "TypeScript", "Rust", "C++", "Zig"]
-
-        for lang in languages:
-            assert lang in matrix_md, f"Language {lang} not found in matrix"
+        for lang in matrix_generator.LANGUAGES:
+            assert lang.title() in matrix_md, f"Language {lang} not found in matrix"
 
     def test_matrix_contains_status_indicators(self, feature_manifest, test_report):
         """Verify matrix uses status indicators."""

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-02T02:45:47.336498+00:00",
+  "generated_at": "2026-08-08T23:54:50.354245+00:00",
   "version": "1.0",
   "languages": {
     "python": {
@@ -9,6 +9,7 @@
         "AutonomousAgent",
         "ClassifierAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConsensusAgent",
         "ConversationalAgent",
         "ConversationalAgentConfig",
@@ -73,6 +74,7 @@
         "AutonomousAgent",
         "ClassifierAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConsensusAgent",
         "ConversationalAgent",
         "FallbackAgent",
@@ -136,6 +138,7 @@
         "AutonomousAgent",
         "ClassifierAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConsensusAgent",
         "ConversationalAgent",
         "FallbackAgent",
@@ -191,6 +194,7 @@
       "patterns": [
         "AutonomousAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConsensusAgent",
         "ConversationalAgent",
         "FallbackAgent",
@@ -250,6 +254,7 @@
         "AutonomousAgent",
         "ClassifierAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConsensusAgent",
         "ConversationalAgent",
         "FallbackAgent",
@@ -364,17 +369,20 @@
       "patterns": [
         "AutonomousAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConversationalAgent",
         "FallbackAgent",
         "HumanInLoopAgent",
         "MemoryAugmentedAgent",
         "MultiAgentOrchestrator",
         "OrchestrationAgent",
+        "ParallelAgent",
         "PlanningAgent",
         "ReActAgent",
         "ReasoningWithToolsAgent",
         "ReflectionAgent",
         "RouterAgent",
+        "SequentialAgent",
         "SupervisorAgent",
         "TaskAgent"
       ],
@@ -404,17 +412,20 @@
       "patterns": [
         "AutonomousAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConversationalAgent",
         "FallbackAgent",
         "HumanInLoopAgent",
         "MemoryAugmentedAgent",
         "MultiAgentOrchestrator",
         "OrchestrationAgent",
+        "ParallelAgent",
         "PlanningAgent",
         "ReActAgent",
         "ReasoningWithToolsAgent",
         "ReflectionAgent",
         "RouterAgent",
+        "SequentialAgent",
         "SupervisorAgent",
         "TaskAgent"
       ],
@@ -444,17 +455,20 @@
       "patterns": [
         "AutonomousAgent",
         "CollaborativeAgent",
+        "ConditionalAgent",
         "ConversationalAgent",
         "FallbackAgent",
         "HumanInLoopAgent",
         "MemoryAugmentedAgent",
         "MultiAgentOrchestrator",
         "OrchestrationAgent",
+        "ParallelAgent",
         "PlanningAgent",
         "ReActAgent",
         "ReasoningWithToolsAgent",
         "ReflectionAgent",
         "RouterAgent",
+        "SequentialAgent",
         "SupervisorAgent",
         "TaskAgent"
       ],
@@ -483,15 +497,15 @@
   },
   "summary": {
     "patterns": {
-      "python": 24,
-      "go": 17,
-      "typescript": 17,
-      "rust": 15,
-      "cpp": 18,
+      "python": 25,
+      "go": 18,
+      "typescript": 18,
+      "rust": 16,
+      "cpp": 19,
       "zig": 13,
-      "csharp": 15,
-      "java": 15,
-      "scala": 15
+      "csharp": 18,
+      "java": 18,
+      "scala": 18
     },
     "middleware": {
       "python": 8,
@@ -538,15 +552,15 @@
       "scala": 0
     },
     "total": {
-      "python": 54,
-      "go": 51,
-      "typescript": 44,
-      "rust": 46,
-      "cpp": 47,
+      "python": 55,
+      "go": 52,
+      "typescript": 45,
+      "rust": 47,
+      "cpp": 48,
       "zig": 44,
-      "csharp": 29,
-      "java": 29,
-      "scala": 29
+      "csharp": 32,
+      "java": 32,
+      "scala": 32
     }
   }
 }

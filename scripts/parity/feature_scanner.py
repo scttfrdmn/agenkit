@@ -53,8 +53,12 @@ def validate_scan_paths() -> list[str]:
             errors.append(f"{lang}: scan root does not exist: {root}")
             continue
 
-        # Each category resolves `<category>_dir = root / "a" / "b"`.
-        for category, path_expr in re.findall(r'(\w+)_dir\s*=\s*root((?:\s*/\s*"[^"]+")+)', source):
+        # Each category resolves `<category>_dir = root / "a" / "b"`, or
+        # `<category>_file = root / "a.ext"` for a language whose category
+        # lives in a single file rather than a directory (Zig's composition.zig).
+        for category, path_expr in re.findall(
+            r'(\w+)_(?:dir|file)\s*=\s*root((?:\s*/\s*"[^"]+")+)', source
+        ):
             parts = re.findall(r'"([^"]+)"', path_expr)
             resolved = root.joinpath(*parts)
             if resolved.exists():

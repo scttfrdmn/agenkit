@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ._paths import scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -29,9 +29,12 @@ def scan() -> dict[str, Any]:
 
 
 def scan_patterns(root: Path) -> list[str]:
-    """Scan for agent patterns in agenkit-zig/src/patterns/.
+    """Scan for agent patterns in agenkit-zig/src/patterns/ and composition.zig.
 
-    Detects structs with 'Agent' in their name.
+    Detects structs with 'Agent' in their name. Unlike the other 8 languages,
+    Zig's composition code lives in a single file (composition.zig), not a
+    composition/ directory, and only declares SequentialAgent/FallbackAgent
+    there -- ParallelAgent/ConditionalAgent live in patterns/ (see #918).
 
     Args:
         root: Root directory of Zig package
@@ -41,15 +44,13 @@ def scan_patterns(root: Path) -> list[str]:
     """
     patterns = []
     patterns_dir = root / "patterns"
-
-    if not patterns_dir.exists():
-        return patterns
+    composition_file = root / "composition.zig"
 
     # Regex to find struct definitions with "Agent" in name
     # Matches: pub const FooAgent = struct
     agent_pattern = re.compile(r"pub\s+const\s+(\w*Agent)\s*=\s*struct")
 
-    for zig_file in patterns_dir.rglob("*.zig"):
+    for zig_file in patterns_dir.rglob("*.zig") if patterns_dir.exists() else []:
         if zig_file.name.startswith("_") or zig_file.name == "mod.zig":
             continue
 
@@ -71,6 +72,13 @@ def scan_patterns(root: Path) -> list[str]:
 
         except (UnicodeDecodeError, PermissionError):
             continue
+
+    if composition_file.exists():
+        content = composition_file.read_text()
+        for match in agent_pattern.finditer(content):
+            name = match.group(1)
+            if name in COMPOSITION_AGENT_NAMES:
+                patterns.append(name)
 
     return sorted(set(patterns))
 

@@ -87,6 +87,7 @@ class MockClassifier:
         """Return classifier name."""
         return "MockClassifier"
 
+    @property
     def capabilities(self) -> list[str]:
         """Return classifier capabilities."""
         return ["classification", "keyword-matching"]

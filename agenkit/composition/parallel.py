@@ -116,9 +116,7 @@ class ParallelAgent(Agent):
                     prefixed_key = f"{result.agent_name}.{key}"
                     combined_metadata[prefixed_key] = value
 
-        response = Message(role="agent", content="\n".join(content_parts))
-        response.metadata = combined_metadata
-        return response
+        return Message(role="agent", content="\n".join(content_parts), metadata=combined_metadata)
 
     def get_agents(self) -> list[Agent]:
         """Return the list of agents that run in parallel."""

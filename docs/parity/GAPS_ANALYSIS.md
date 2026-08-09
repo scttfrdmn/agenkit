@@ -1,5 +1,5 @@
 # Feature Gap Analysis
-Generated: 2026-03-16 16:35:24 UTC
+Generated: 2026-08-09 00:09:38 UTC
 
 This report shows features present in Python (baseline) but missing in other languages.
 
@@ -9,6 +9,7 @@ This report shows features present in Python (baseline) but missing in other lan
 
 - AgentTask
 - AgentTool
+- ConversationalAgentConfig
 - MultiAgentConfig
 - MultiAgentOrchestrator
 - OrchestrationAgent
@@ -18,81 +19,11 @@ This report shows features present in Python (baseline) but missing in other lan
 
 - MetricsDecorator
 
-### Missing Memory
+### Missing Techniques
 
-- EphemeralMemory
-
-## Typescript Gaps
-
-### Missing Patterns
-
-- AgentTask
-- AgentTool
-- MultiAgentConfig
-- MultiAgentOrchestrator
-- OrchestrationAgent
-- StreamingConversationalAgent
-
-### Missing Middleware
-
-- CircuitBreakerDecorator
-- MetricsDecorator
-- RetryDecorator
-- TimeoutDecorator
-
-### Missing Llm Adapters
-
-- AnthropicLLM
-- BedrockLLM
-- GeminiLLM
-- LiteLLMLLM
-- OllamaLLM
-- OpenAICompatibleLLM
-- OpenAILLM
-
-### Missing Memory
-
-- EphemeralMemory
-
-## Rust Gaps
-
-### Missing Patterns
-
-- AgentTask
-- AgentTool
-- ClassifierAgent
-- MultiAgentConfig
-- MultiAgentOrchestrator
-- OrchestrationAgent
-- PlannerAgent
-- StreamingConversationalAgent
-
-### Missing Middleware
-
-- BatchingDecorator
-- CachingDecorator
-- CircuitBreakerDecorator
-- MetricsDecorator
-- PerUserRateLimiterDecorator
-- RateLimiterDecorator
-- RetryDecorator
-- TimeoutDecorator
-
-### Missing Llm Adapters
-
-- AnthropicLLM
-- BedrockLLM
-- GeminiLLM
-- LiteLLMLLM
-- OllamaLLM
-- OpenAICompatibleLLM
-- OpenAILLM
-
-### Missing Memory
-
-- EndlessMemory
-- EphemeralMemory
-- HierarchyMemory
+- ActorCriticVariation
+- ExplorationStrategy
+- PlanAndSolve
 
 ## Cpp Gaps
 
@@ -100,6 +31,7 @@ This report shows features present in Python (baseline) but missing in other lan
 
 - AgentTask
 - AgentTool
+- ConversationalAgentConfig
 - MultiAgentConfig
 - MultiAgentOrchestrator
 - ReActAgent
@@ -131,28 +63,43 @@ This report shows features present in Python (baseline) but missing in other lan
 
 - EndlessMemory
 - EphemeralMemory
-- HierarchyMemory
-- RedisMemory
 - VectorMemory
 
-## Zig Gaps
+### Missing Techniques
+
+- ActorCriticVariation
+- ChainOfThought
+- ExplorationStrategy
+- GraphOfThought
+- LeastToMost
+- PlanAndSolve
+- SelfConsistency
+- TreeOfThought
+
+## Rust Gaps
 
 ### Missing Patterns
 
 - AgentTask
 - AgentTool
 - ClassifierAgent
-- ConsensusAgent
+- ConversationalAgentConfig
 - MultiAgentConfig
 - MultiAgentOrchestrator
 - OrchestrationAgent
 - PlannerAgent
-- RecoveryAgent
 - StreamingConversationalAgent
 
 ### Missing Middleware
 
+- BatchingDecorator
+- CachingDecorator
+- CircuitBreakerDecorator
 - MetricsDecorator
+- PerUserRateLimiterDecorator
+- RateLimiterDecorator
+- RetryDecorator
+- TimeoutDecorator
 
 ### Missing Llm Adapters
 
@@ -169,6 +116,258 @@ This report shows features present in Python (baseline) but missing in other lan
 - EndlessMemory
 - EphemeralMemory
 - HierarchyMemory
-- RedisMemory
+
+### Missing Techniques
+
+- ActorCriticVariation
+- ChainOfThought
+- ExplorationStrategy
+- GraphOfThought
+- LeastToMost
+- PlanAndSolve
+- SelfConsistency
+- TreeOfThought
+
+## Typescript Gaps
+
+### Missing Patterns
+
+- AgentTask
+- AgentTool
+- ConversationalAgentConfig
+- MultiAgentConfig
+- MultiAgentOrchestrator
+- OrchestrationAgent
+- StreamingConversationalAgent
+
+### Missing Middleware
+
+- CircuitBreakerDecorator
+- MetricsDecorator
+- RetryDecorator
+- TimeoutDecorator
+
+### Missing Llm Adapters
+
+- AnthropicLLM
+- BedrockLLM
+- GeminiLLM
+- LiteLLMLLM
+- OllamaLLM
+- OpenAICompatibleLLM
+- OpenAILLM
+
+### Missing Memory
+
+- EphemeralMemory
+
+### Missing Techniques
+
+- ActorCriticVariation
+- ExplorationStrategy
+- SelfConsistency
+
+## Zig Gaps
+
+### Missing Patterns
+
+- AgentTask
+- AgentTool
+- ClassifierAgent
+- ConditionalAgent
+- ConsensusAgent
+- ConversationalAgentConfig
+- MultiAgentConfig
+- MultiAgentOrchestrator
+- OrchestrationAgent
+- PlannerAgent
+- RecoveryAgent
+- StreamingConversationalAgent
+
+### Missing Middleware
+
+- MetricsDecorator
+
+### Missing Llm Adapters
+
+- OpenAICompatibleLLM
+
+### Missing Memory
+
+- EndlessMemory
+- EphemeralMemory
 - VectorMemory
+
+### Missing Techniques
+
+- ActorCriticVariation
+- ChainOfThought
+- ExplorationStrategy
+- GraphOfThought
+- LeastToMost
+- PlanAndSolve
+- SelfConsistency
+- TreeOfThought
+
+## Csharp Gaps
+
+### Missing Patterns
+
+- AgentTask
+- AgentTool
+- ClassifierAgent
+- ConsensusAgent
+- ConversationalAgentConfig
+- MultiAgentConfig
+- PlannerAgent
+- RecoveryAgent
+- StreamingConversationalAgent
+
+### Missing Middleware
+
+- BatchingDecorator
+- CachingDecorator
+- CircuitBreakerDecorator
+- MetricsDecorator
+- PerUserRateLimiterDecorator
+- RateLimiterDecorator
+- RetryDecorator
+- TimeoutDecorator
+
+### Missing Llm Adapters
+
+- AnthropicLLM
+- BedrockLLM
+- GeminiLLM
+- LiteLLMLLM
+- OllamaLLM
+- OpenAICompatibleLLM
+- OpenAILLM
+
+### Missing Memory
+
+- EndlessMemory
+- HierarchyMemory
+- RedisMemory
+
+### Missing Techniques
+
+- ActorCriticVariation
+- ChainOfThought
+- ExplorationStrategy
+- GraphOfThought
+- LeastToMost
+- PlanAndSolve
+- ReasoningGraph
+- ReasoningTree
+- SelfConsistency
+- TreeOfThought
+
+## Java Gaps
+
+### Missing Patterns
+
+- AgentTask
+- AgentTool
+- ClassifierAgent
+- ConsensusAgent
+- ConversationalAgentConfig
+- MultiAgentConfig
+- PlannerAgent
+- RecoveryAgent
+- StreamingConversationalAgent
+
+### Missing Middleware
+
+- BatchingDecorator
+- CachingDecorator
+- CircuitBreakerDecorator
+- MetricsDecorator
+- PerUserRateLimiterDecorator
+- RateLimiterDecorator
+- RetryDecorator
+- TimeoutDecorator
+
+### Missing Llm Adapters
+
+- AnthropicLLM
+- BedrockLLM
+- GeminiLLM
+- LiteLLMLLM
+- OllamaLLM
+- OpenAICompatibleLLM
+- OpenAILLM
+
+### Missing Memory
+
+- EndlessMemory
+- HierarchyMemory
+- RedisMemory
+
+### Missing Techniques
+
+- ActorCriticVariation
+- ChainOfThought
+- ExplorationStrategy
+- GraphOfThought
+- LeastToMost
+- PlanAndSolve
+- ReasoningGraph
+- ReasoningTree
+- SelfConsistency
+- TreeOfThought
+
+## Scala Gaps
+
+### Missing Patterns
+
+- AgentTask
+- AgentTool
+- ClassifierAgent
+- ConsensusAgent
+- ConversationalAgentConfig
+- MultiAgentConfig
+- PlannerAgent
+- RecoveryAgent
+- StreamingConversationalAgent
+
+### Missing Middleware
+
+- BatchingDecorator
+- CachingDecorator
+- CircuitBreakerDecorator
+- MetricsDecorator
+- PerUserRateLimiterDecorator
+- RateLimiterDecorator
+- RetryDecorator
+- TimeoutDecorator
+
+### Missing Llm Adapters
+
+- AnthropicLLM
+- BedrockLLM
+- GeminiLLM
+- LiteLLMLLM
+- OllamaLLM
+- OpenAICompatibleLLM
+- OpenAILLM
+
+### Missing Memory
+
+- EndlessMemory
+- HierarchyMemory
+- RedisMemory
+
+### Missing Techniques
+
+- ActorCriticVariation
+- ChainOfThought
+- ExplorationStrategy
+- GraphOfThought
+- LeastToMost
+- PlanAndSolve
+- ReasoningGraph
+- ReasoningTree
+- SelfConsistency
+- TreeOfThought
 

@@ -1,6 +1,14 @@
 # Feature Parity Validation System
 
-Automated feature detection and parity tracking across all 6 Agenkit language implementations.
+Automated feature detection and parity tracking across all 9 Agenkit language
+implementations (Python, Go, TypeScript, Rust, C++, Zig, C#, Java, Scala).
+
+This system counts *classes matching a naming convention*, not spec
+conformance -- it answers "does a class named `FooAgent` exist near a
+directory named for pattern X", not "does language X actually implement
+pattern X's contract". See #913 for the spec-conformance metric that is
+intended to supersede this as the project's public parity claim; this
+scanner remains as a secondary/diagnostic signal.
 
 ## Quick Start
 
@@ -20,7 +28,7 @@ pytest tests/parity/ -v
 
 The parity validation system automatically:
 
-1. **Detects Features**: Scans all 6 codebases (Python, Go, TypeScript, Rust, C++, Zig)
+1. **Detects Features**: Scans all 9 codebases (Python, Go, TypeScript, Rust, C++, Zig, C#, Java, Scala)
 2. **Generates Reports**: Creates visual parity matrix and gap analysis
 3. **Prevents Regressions**: CI validation ensures features don't disappear
 4. **Tracks Progress**: Historical view of parity improvements
@@ -55,13 +63,31 @@ Language-specific scanners use AST parsing (Python) or regex (others) to detect 
   - Regex-based: `pub const FooAgent = struct`
   - Handles Zig naming conventions
 
+- **C# Scanner** (`scripts/parity/scanners/csharp_scanner.py`)
+  - Regex-based: `public class FooAgent`
+
+- **Java Scanner** (`scripts/parity/scanners/java_scanner.py`)
+  - Regex-based: `public final class FooAgent`
+  - No techniques subsystem yet (#754)
+
+- **Scala Scanner** (`scripts/parity/scanners/scala_scanner.py`)
+  - Regex-based: `class`/`trait`/`object FooAgent`
+  - No techniques subsystem yet (#754)
+
+Every scanner also scans a language's `composition/` directory (Zig:
+`composition.zig`, a single file) for `SequentialAgent`/`ParallelAgent`/
+`FallbackAgent`/`ConditionalAgent`, restricted to that explicit name set so a
+non-agent type declared alongside them (e.g. Python/Go/Rust's `AgentResult`)
+or an inline test-only mock isn't miscounted as a pattern (#918).
+
 ### Feature Categories
 
 1. **Patterns**: Agent implementations (e.g., ReActAgent, ParallelAgent)
 2. **Middleware**: Decorators (e.g., TimeoutDecorator, RetryDecorator)
 3. **LLM Adapters**: LLM integrations (e.g., OpenAIAdapter, AnthropicAdapter)
 4. **Memory**: Memory backends (e.g., InMemoryMemory, VectorMemory)
-5. **Techniques**: Advanced techniques (future)
+5. **Techniques**: Advanced reasoning techniques (e.g., ChainOfThought, TreeOfThought).
+   Not yet implemented as a separate subsystem in C#/Java/Scala (#754).
 
 ### Reports
 
@@ -86,14 +112,11 @@ The regression checker (`scripts/parity/check_regression.py`) validates:
 
 ### Minimum Feature Counts
 
-| Language   | Minimum | Current |
-|------------|---------|---------|
-| Python     | 43      | 43      |
-| Go         | 43      | 43      |
-| TypeScript | 35      | 36      |
-| Rust       | 35      | 38      |
-| C++        | 35      | 37      |
-| Zig        | 25      | 27      |
+Floors live in `check_regression.MIN_FEATURE_COUNTS` (the single source of
+truth -- `matrix_generator.py` imports its language list from there rather
+than hardcoding its own, see #918). Run
+`python scripts/parity/check_regression.py` for current counts; do not copy
+numbers into this README, they drift the moment a language ships a feature.
 
 ### Critical Features
 
@@ -107,9 +130,9 @@ These checks use case-insensitive substring matching to handle naming variations
 
 The GitHub Actions workflow (`.github/workflows/parity-validation.yml`) runs on every PR:
 
-1. Scans all 6 languages
+1. Scans all 9 languages
 2. Generates parity matrix
-3. Runs 45 parity tests
+3. Runs `tests/parity/` (`pytest tests/parity/ -v` for the current count)
 4. Checks for regressions
 5. Posts parity summary to PR
 
@@ -142,10 +165,9 @@ echo $?
 ### Run Tests
 
 ```bash
-# All parity tests (45 tests, ~2.5s)
 pytest tests/parity/ -v
 
-# Specific test categories
+# Specific test files
 pytest tests/parity/test_feature_detection.py -v
 pytest tests/parity/test_matrix_generation.py -v
 pytest tests/parity/test_regression_check.py -v
@@ -161,20 +183,19 @@ python scripts/parity/scanners/typescript_scanner.py
 python scripts/parity/scanners/rust_scanner.py
 python scripts/parity/scanners/cpp_scanner.py
 python scripts/parity/scanners/zig_scanner.py
+python scripts/parity/scanners/csharp_scanner.py
+python scripts/parity/scanners/java_scanner.py
+python scripts/parity/scanners/scala_scanner.py
 ```
 
 ## Current Parity Status
 
-| Language   | Features | Parity % | Status |
-|------------|----------|----------|--------|
-| Python     | 43       | 100.0%   | ✅ Baseline |
-| Go         | 43       | 100.0%   | ✅ Complete |
-| TypeScript | 36       | 83.7%    | ✅ Strong |
-| Rust       | 38       | 88.4%    | ✅ Strong |
-| C++        | 37       | 86.0%    | ✅ Strong |
-| Zig        | 27       | 62.8%    | ⚠️ Growing |
-
-*Generated: 2026-02-04*
+Generated content, not maintained by hand -- see `docs/parity/FEATURE_MATRIX.md`
+for the current per-language counts and `docs/parity/GAPS_ANALYSIS.md` for
+what's missing where. Both are regenerated by CI on every push/PR
+(`.github/workflows/parity-validation.yml`); see #902 for adding a diff-check
+so a stale committed copy can't silently pass CI the way `GAPS_ANALYSIS.md`
+previously did for five months.
 
 ## Adding New Features
 
@@ -208,6 +229,13 @@ Check naming conventions:
 - Rust: `pub struct FooAgent`
 - C++: `class FooAgent`
 - Zig: `pub const FooAgent = struct`
+- C#/Java: `public class FooAgent`
+- Scala: `class`/`trait`/`object FooAgent`
+
+If the feature lives in `composition/` rather than `patterns/`, it is only
+detected when its name is one of `COMPOSITION_AGENT_NAMES` in
+`scripts/parity/scanners/_paths.py` -- that directory also holds non-agent
+types (e.g. `AgentResult`) that must not be miscounted (#918).
 
 ### False Positives
 
@@ -244,22 +272,27 @@ If a false positive appears, update the scanner's filter list.
 scripts/parity/
 ├── feature_scanner.py          # Main orchestrator
 ├── matrix_generator.py         # Report generation
-├── check_regression.py         # CI validation
+├── check_regression.py         # CI validation; MIN_FEATURE_COUNTS is the
+│                                  language-list source of truth
 ├── scanners/
-│   ├── python_scanner.py       # AST-based
-│   ├── go_scanner.py           # Regex-based
+│   ├── _paths.py                # Shared source-discovery + COMPOSITION_AGENT_NAMES
+│   ├── python_scanner.py        # AST-based
+│   ├── go_scanner.py            # Regex-based
 │   ├── typescript_scanner.py
 │   ├── rust_scanner.py
 │   ├── cpp_scanner.py
-│   └── zig_scanner.py
+│   ├── zig_scanner.py
+│   ├── csharp_scanner.py
+│   ├── java_scanner.py
+│   └── scala_scanner.py
 └── templates/
-    ├── matrix.md.j2            # Matrix template
-    └── gaps.md.j2              # Gap analysis template
+    └── matrix.md.j2            # Matrix template (gap analysis is built
+                                   directly in matrix_generator.py, no template)
 
 tests/parity/
-├── test_feature_detection.py   # Scanner tests (20 tests)
-├── test_matrix_generation.py   # Matrix tests (15 tests)
-└── test_regression_check.py    # Regression tests (10 tests)
+├── test_feature_detection.py   # Scanner tests
+├── test_matrix_generation.py   # Matrix tests
+└── test_regression_check.py    # Regression tests
 
 docs/parity/
 ├── README.md                   # This file

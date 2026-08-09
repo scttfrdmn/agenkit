@@ -191,8 +191,14 @@ class HTTPClient(MCPClient):
         self._server_info = MCPServerInfo()
 
     async def initialize(self) -> None:
-        """Open the HTTP client and perform the MCP initialize handshake."""
-        self._http = httpx.AsyncClient(timeout=self._timeout)
+        """Perform the MCP initialize handshake.
+
+        This is a genuine protocol step, not a lifecycle requirement: the
+        underlying transport is constructed lazily in ``_send`` (agenkit#837),
+        so ``list_tools()``/``call_tool()`` work even if this is never called
+        — matching the server's already-stateless handling of ``tools/call``
+        without a preceding ``initialize``.
+        """
         resp = await self._send("initialize", _INIT_PARAMS)
         if resp.error:
             raise RuntimeError(f"mcp initialize error {resp.error.code}: {resp.error.message}")
@@ -239,8 +245,14 @@ class HTTPClient(MCPClient):
             params=params,
         )
 
+        # Lazily construct the transport here rather than in initialize()
+        # (agenkit#837): the httpx.AsyncClient is a lifecycle detail, not a
+        # protocol requirement, so a caller that skips initialize() and goes
+        # straight to list_tools()/call_tool() still works — matching the
+        # server, which already accepts tools/call without a prior
+        # initialize.
         if self._http is None:
-            raise RuntimeError("mcp: client not initialized — call initialize() first")
+            self._http = httpx.AsyncClient(timeout=self._timeout)
 
         http_resp = await self._http.post(
             self._base_url,

@@ -108,6 +108,24 @@ _DECLARATION = r"(?:class|struct|type|trait|object|const|interface|enum)"
 # Protocols belong in their own category (unmeasured today -- see #654).
 _TECHNIQUE_SUBDIRS = frozenset({"reasoning", "compositions"})
 
+# Composition-pattern classes that live in a composition/ directory (Zig: a
+# single composition.zig file) alongside patterns/. Every language's *Agent
+# scan regex was previously only pointed at patterns/, so it never saw these
+# -- undercounting all nine languages by up to 3, invisibly in six of them
+# because those six also ship duplicate sequential.*/parallel.*/fallback.*
+# files directly inside patterns/ (see #918).
+#
+# That directory also holds non-agent types an unfiltered *Agent-suffix
+# regex would wrongly count: Python/Go/Rust's plain-data `AgentResult`, and
+# Rust's/Go's inline test-only mock structs (`CounterAgent`, `ErrorAgent`,
+# `TestAgent`, etc., guarded by `#[cfg(test)]` / `_test.go` but still matched
+# by a bare name regex). Restricting to this explicit set is what makes
+# reusing each language's existing patterns-scan regex safe against
+# composition/ without inventing a per-mock exclusion list.
+COMPOSITION_AGENT_NAMES = frozenset(
+    {"SequentialAgent", "ParallelAgent", "FallbackAgent", "ConditionalAgent"}
+)
+
 
 def scan_techniques_by_filename(
     directory: Path, pattern: str, *, required: bool = True

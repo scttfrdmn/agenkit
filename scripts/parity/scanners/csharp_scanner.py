@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ._paths import scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -29,9 +29,13 @@ def scan() -> dict[str, Any]:
 
 
 def scan_patterns(root: Path) -> list[str]:
-    """Scan for agent patterns in agenkit-cs/src/Agenkit/Patterns/.
+    """Scan for agent patterns in agenkit-cs/src/Agenkit/Patterns/ and
+    .../Composition/.
 
     Detects classes with 'Agent' or 'Orchestrator' in their name.
+    Composition/ (capital C -- the tracked path; the filesystem may resolve
+    it case-insensitively) is restricted to the known composition-pattern
+    names, matching the other scanners (#918).
 
     Args:
         root: Root directory of C# package
@@ -41,9 +45,7 @@ def scan_patterns(root: Path) -> list[str]:
     """
     patterns = []
     patterns_dir = root / "Patterns"
-
-    if not patterns_dir.exists():
-        return patterns
+    composition_dir = root / "Composition"
 
     # Regex to find class definitions with "Agent"/"Orchestrator" in name
     # Matches: public class FooAgent : IAgent, public class FooOrchestrator
@@ -51,7 +53,7 @@ def scan_patterns(root: Path) -> list[str]:
         r"public\s+(?:sealed\s+|abstract\s+)?class\s+(\w*(?:Agent|Orchestrator))\b"
     )
 
-    for cs_file in patterns_dir.rglob("*.cs"):
+    for cs_file in patterns_dir.rglob("*.cs") if patterns_dir.exists() else []:
         if cs_file.name.startswith("_"):
             continue
 
@@ -66,6 +68,21 @@ def scan_patterns(root: Path) -> list[str]:
                     and "mock" not in name.lower()
                     and name not in ["Agent", "MultiAgent"]
                 ):
+                    patterns.append(name)
+
+        except (UnicodeDecodeError, PermissionError):
+            continue
+
+    for cs_file in composition_dir.rglob("*.cs") if composition_dir.exists() else []:
+        if cs_file.name.startswith("_"):
+            continue
+
+        try:
+            content = cs_file.read_text()
+
+            for match in agent_pattern.finditer(content):
+                name = match.group(1)
+                if name in COMPOSITION_AGENT_NAMES:
                     patterns.append(name)
 
         except (UnicodeDecodeError, PermissionError):

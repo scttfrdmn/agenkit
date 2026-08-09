@@ -2,12 +2,11 @@
 
 **Generated**: {{ generated_at }}
 
-This matrix shows feature implementation status across all 6 Agenkit language implementations.
+This matrix shows feature implementation status across all {{ languages | length }} Agenkit language implementations.
 
 **Legend**:
 - ✅ **Implemented** - Feature present in language
 - ❌ **Missing** - Feature not yet implemented
-- 🔧 **Partial** - Implementation exists but incomplete (future)
 
 ---
 
@@ -28,16 +27,15 @@ This matrix shows feature implementation status across all 6 Agenkit language im
 
 {% set category_features = matrix_rows | selectattr('category', 'equalto', category) | list %}
 {% if category_features %}
-| Feature | Python | Go | TypeScript | Rust | C++ | Zig |
-|---------|--------|----|-----------| -----|-----|-----|
-{%- for row in category_features %}
-| {{ row.feature }} | {{ row.languages.python }} | {{ row.languages.go }} | {{ row.languages.typescript }} | {{ row.languages.rust }} | {{ row.languages.cpp }} | {{ row.languages.zig }} |
-{%- endfor %}
+| Feature | {% for lang in languages %}{{ lang.title() }} | {% endfor %}
+|---------|{% for lang in languages %}------|{% endfor %}
+{% for row in category_features %}| {{ row.feature }} | {% for lang in languages %}{{ row.languages[lang] }} | {% endfor %}
+{% endfor %}
 
 **Totals**:
 {%- for summary in category_summaries %}
 {%- if summary.category == category %}
-Python: {{ summary.counts.python }}, Go: {{ summary.counts.go }}, TypeScript: {{ summary.counts.typescript }}, Rust: {{ summary.counts.rust }}, C++: {{ summary.counts.cpp }}, Zig: {{ summary.counts.zig }}
+{% for lang in languages %}{{ lang.title() }}: {{ summary.counts[lang] }}{% if not loop.last %}, {% endif %}{% endfor %}
 {%- endif %}
 {%- endfor %}
 {% else %}
@@ -50,47 +48,20 @@ Python: {{ summary.counts.python }}, Go: {{ summary.counts.go }}, TypeScript: {{
 
 ## Category Breakdown
 
-| Category | Python | Go | TypeScript | Rust | C++ | Zig |
-|----------|--------|----|-----------| -----|-----|-----|
-{%- for summary in category_summaries %}
-| {{ summary.category.replace('_', ' ').title() }} | {{ summary.counts.python }} | {{ summary.counts.go }} | {{ summary.counts.typescript }} | {{ summary.counts.rust }} | {{ summary.counts.cpp }} | {{ summary.counts.zig }} |
-{%- endfor %}
+| Category | {% for lang in languages %}{{ lang.title() }} | {% endfor %}
+|----------|{% for lang in languages %}------|{% endfor %}
+{% for summary in category_summaries %}| {{ summary.category.replace('_', ' ').title() }} | {% for lang in languages %}{{ summary.counts[lang] }} | {% endfor %}
+{% endfor %}
 
 ---
 
-## Insights
+## Gap Analysis
 
-{% set python_total = summary_stats[0].total_features %}
-{% set go_total = summary_stats[1].total_features %}
-{% set ts_total = summary_stats[2].total_features %}
-{% set rust_total = summary_stats[3].total_features %}
-{% set cpp_total = summary_stats[4].total_features %}
-{% set zig_total = summary_stats[5].total_features %}
-
-### Top Performing Languages (by feature count)
-{%- if go_total >= python_total * 0.9 %}
-1. **Go** - {{ go_total }} features ({{ summary_stats[1].parity_percent }}% parity) - Excellent coverage!
-{%- endif %}
-{%- if ts_total >= python_total * 0.7 %}
-2. **TypeScript** - {{ ts_total }} features ({{ summary_stats[2].parity_percent }}% parity) - Strong implementation
-{%- endif %}
-{%- if rust_total >= python_total * 0.5 %}
-3. **Rust** - {{ rust_total }} features ({{ summary_stats[3].parity_percent }}% parity) - Growing rapidly
-{%- endif %}
-
-### Areas for Improvement
-{%- if rust_total == 0 %}
-- **Rust**: Scanner not yet implemented (Phase 3)
-{%- endif %}
-{%- if cpp_total == 0 %}
-- **C++**: Scanner not yet implemented (Phase 3)
-{%- endif %}
-{%- if zig_total == 0 %}
-- **Zig**: Scanner not yet implemented (Phase 3)
-{%- endif %}
+See `GAPS_ANALYSIS.md` for features present in the reference implementation
+(Python) but missing in other languages.
 
 {% if has_test_data %}
-### Test Coverage Highlights
+## Test Coverage Highlights
 {%- for stat in summary_stats %}
 {%- if stat.test_count > 0 %}
 - **{{ stat.language.title() }}**: {{ stat.test_count }} tests
@@ -99,14 +70,6 @@ Python: {{ summary.counts.python }}, Go: {{ summary.counts.go }}, TypeScript: {{
 {% else %}
 *Test coverage data not available. Run: `./scripts/test-parity.sh` to generate.*
 {% endif %}
-
----
-
-## Next Steps
-
-1. **Phase 3**: Implement Rust, C++, and Zig scanners to complete parity tracking
-2. **Gap Analysis**: Review `GAPS_ANALYSIS.md` for specific missing features
-3. **CI Integration**: Add parity validation to prevent regressions
 
 ---
 

@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ._paths import scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -29,9 +29,11 @@ def scan() -> dict[str, Any]:
 
 
 def scan_patterns(root: Path) -> list[str]:
-    """Scan for agent patterns in agenkit-java/.../patterns/.
+    """Scan for agent patterns in agenkit-java/.../patterns/ and .../composition/.
 
     Detects classes with 'Agent' or 'Orchestrator' in their name.
+    composition/ is restricted to the known composition-pattern names,
+    matching the other scanners (#918).
 
     Args:
         root: Root directory of Java package
@@ -41,9 +43,7 @@ def scan_patterns(root: Path) -> list[str]:
     """
     patterns = []
     patterns_dir = root / "patterns"
-
-    if not patterns_dir.exists():
-        return patterns
+    composition_dir = root / "composition"
 
     # Regex to find class definitions with "Agent"/"Orchestrator" in name
     # Matches: public final class FooAgent implements Agent
@@ -51,7 +51,7 @@ def scan_patterns(root: Path) -> list[str]:
         r"public\s+(?:final\s+|abstract\s+)?class\s+(\w*(?:Agent|Orchestrator))\b"
     )
 
-    for java_file in patterns_dir.rglob("*.java"):
+    for java_file in patterns_dir.rglob("*.java") if patterns_dir.exists() else []:
         if java_file.name.startswith("_"):
             continue
 
@@ -66,6 +66,21 @@ def scan_patterns(root: Path) -> list[str]:
                     and "mock" not in name.lower()
                     and name not in ["Agent", "MultiAgent"]
                 ):
+                    patterns.append(name)
+
+        except (UnicodeDecodeError, PermissionError):
+            continue
+
+    for java_file in composition_dir.rglob("*.java") if composition_dir.exists() else []:
+        if java_file.name.startswith("_"):
+            continue
+
+        try:
+            content = java_file.read_text()
+
+            for match in agent_pattern.finditer(content):
+                name = match.group(1)
+                if name in COMPOSITION_AGENT_NAMES:
                     patterns.append(name)
 
         except (UnicodeDecodeError, PermissionError):

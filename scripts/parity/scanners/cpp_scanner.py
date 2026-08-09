@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ._paths import scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -29,9 +29,11 @@ def scan() -> dict[str, Any]:
 
 
 def scan_patterns(root: Path) -> list[str]:
-    """Scan for agent patterns in agenkit-cpp/include/agenkit/patterns/.
+    """Scan for agent patterns in agenkit-cpp/include/agenkit/patterns/ and
+    .../composition/.
 
-    Detects classes with 'Agent' in their name.
+    Detects classes with 'Agent' in their name. composition/ is restricted to
+    the known composition-pattern names, matching the other scanners (#918).
 
     Args:
         root: Root directory of C++ package
@@ -41,15 +43,13 @@ def scan_patterns(root: Path) -> list[str]:
     """
     patterns = []
     patterns_dir = root / "patterns"
-
-    if not patterns_dir.exists():
-        return patterns
+    composition_dir = root / "composition"
 
     # Regex to find class definitions with "Agent" in name
     # Matches: class FooAgent, class FooAgent : public Agent
     agent_pattern = re.compile(r"class\s+(\w*Agent)")
 
-    for hpp_file in patterns_dir.rglob("*.hpp"):
+    for hpp_file in patterns_dir.rglob("*.hpp") if patterns_dir.exists() else []:
         if hpp_file.name.startswith("_"):
             continue
 
@@ -67,6 +67,21 @@ def scan_patterns(root: Path) -> list[str]:
                     and "Dummy" not in name
                     and "NoConfidence" not in name
                 ):
+                    patterns.append(name)
+
+        except (UnicodeDecodeError, PermissionError):
+            continue
+
+    for hpp_file in composition_dir.rglob("*.hpp") if composition_dir.exists() else []:
+        if hpp_file.name.startswith("_"):
+            continue
+
+        try:
+            content = hpp_file.read_text()
+
+            for match in agent_pattern.finditer(content):
+                name = match.group(1)
+                if name in COMPOSITION_AGENT_NAMES:
                     patterns.append(name)
 
         except (UnicodeDecodeError, PermissionError):

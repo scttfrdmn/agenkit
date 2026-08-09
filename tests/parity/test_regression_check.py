@@ -232,7 +232,8 @@ class TestMarkdownTable:
 
         table = check_regression.render_markdown_table(mock_manifest)
 
-        assert "| Python | 100 | 100.0% | 50 | ✅ Baseline |" in table
+        python_floor = check_regression.MIN_FEATURE_COUNTS["python"]
+        assert f"| Python | 100 | 100.0% | {python_floor} | ✅ Baseline |" in table
 
     def test_flags_a_language_below_its_floor(self, mock_manifest):
         """A count under the floor renders ⚠️, not ✅."""

@@ -393,3 +393,42 @@ class TestScanPathValidation:
         assert "ChainOfThought" in " ".join(techniques), (
             f"{language} is missing chain-of-thought: {techniques}"
         )
+
+
+class TestCompositionScanning:
+    """Every scanner must also see composition/ (Zig: composition.zig), not
+    just patterns/ -- #918. Six of nine languages masked this bug by also
+    shipping a duplicate sequential.*/parallel.*/fallback.* file directly in
+    patterns/; C#/Java/Scala had no such duplicate and visibly undercounted.
+    """
+
+    @pytest.mark.parametrize(
+        # Zig does not implement ConditionalAgent at all (composition.zig only
+        # declares SequentialAgent/FallbackAgent) -- excluded here, not a scan gap.
+        "language",
+        ["python", "go", "typescript", "rust", "cpp", "csharp", "java", "scala"],
+    )
+    def test_conditional_agent_is_detected(self, language):
+        """ConditionalAgent lives only in composition/ in every language."""
+        scanner = feature_scanner.load_scanner(language)
+        patterns = scanner.scan()["patterns"]
+
+        assert "ConditionalAgent" in patterns, (
+            f"{language} did not detect ConditionalAgent from composition/: {patterns}"
+        )
+
+    @pytest.mark.parametrize(
+        "language",
+        ["python", "go", "rust"],
+    )
+    def test_agent_result_is_not_miscounted_as_a_pattern(self, language):
+        """AgentResult is plain data declared alongside ParallelAgent in
+        composition/, not an agent -- an unfiltered *Agent-suffix regex would
+        wrongly count it as a pattern.
+        """
+        scanner = feature_scanner.load_scanner(language)
+        patterns = scanner.scan()["patterns"]
+
+        assert "AgentResult" not in patterns, (
+            f"{language} miscounted AgentResult as a pattern: {patterns}"
+        )

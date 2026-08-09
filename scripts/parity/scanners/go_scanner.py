@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ._paths import scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -29,9 +29,12 @@ def scan() -> dict[str, Any]:
 
 
 def scan_patterns(root: Path) -> list[str]:
-    """Scan for agent patterns in agenkit-go/patterns/.
+    """Scan for agent patterns in agenkit-go/patterns/ and agenkit-go/composition/.
 
-    Detects structs and types with 'Agent' in their name.
+    Detects structs and types with 'Agent' in their name. composition/
+    additionally declares a non-agent `AgentResult` struct and a
+    `composition_test.go` with a `TestAgent` mock, so that directory is
+    restricted to the known composition-pattern names (see #918).
 
     Args:
         root: Root directory of Go package
@@ -41,15 +44,13 @@ def scan_patterns(root: Path) -> list[str]:
     """
     patterns = []
     patterns_dir = root / "patterns"
-
-    if not patterns_dir.exists():
-        return patterns
+    composition_dir = root / "composition"
 
     # Regex to find type/struct definitions with "Agent" in name
     # Matches: type FooAgent struct, type FooAgent interface
     agent_pattern = re.compile(r"type\s+(\w*Agent)\s+(struct|interface)")
 
-    for go_file in patterns_dir.rglob("*.go"):
+    for go_file in patterns_dir.rglob("*.go") if patterns_dir.exists() else []:
         if go_file.name.startswith("_"):
             continue
 
@@ -61,6 +62,21 @@ def scan_patterns(root: Path) -> list[str]:
                 name = match.group(1)
                 # Skip private types and mocks
                 if not name.startswith("_") and "mock" not in name.lower():
+                    patterns.append(name)
+
+        except (UnicodeDecodeError, PermissionError):
+            continue
+
+    for go_file in composition_dir.rglob("*.go") if composition_dir.exists() else []:
+        if go_file.name.startswith("_") or go_file.name.endswith("_test.go"):
+            continue
+
+        try:
+            content = go_file.read_text()
+
+            for match in agent_pattern.finditer(content):
+                name = match.group(1)
+                if name in COMPOSITION_AGENT_NAMES:
                     patterns.append(name)
 
         except (UnicodeDecodeError, PermissionError):

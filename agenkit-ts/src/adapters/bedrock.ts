@@ -102,7 +102,13 @@ export interface BedrockConfig {
  */
 export class BedrockAdapter implements Agent {
   private client: BedrockRuntimeClient;
-  private config: Required<Omit<BedrockConfig, 'accessKeyId' | 'secretAccessKey' | 'sessionToken' | 'endpoint'>>;
+  private config: Required<
+    Omit<
+      BedrockConfig,
+      'accessKeyId' | 'secretAccessKey' | 'sessionToken' | 'endpoint' | 'temperature' | 'topP'
+    >
+  > &
+    Pick<BedrockConfig, 'temperature' | 'topP'>;
 
   /**
    * Creates a new Bedrock adapter.
@@ -113,9 +119,12 @@ export class BedrockAdapter implements Agent {
     this.config = {
       region: config.region || 'us-east-1',
       modelId: config.modelId || 'us.anthropic.claude-sonnet-5',
-      temperature: config.temperature ?? 0.7,
+      // undefined, not 0.7/1.0: Claude Sonnet 5+ on Bedrock rejects these
+      // sampling params outright (`temperature is deprecated for this model`)
+      // unless the caller explicitly opts in (#947).
+      temperature: config.temperature,
       maxTokens: config.maxTokens ?? 4096,
-      topP: config.topP ?? 1.0,
+      topP: config.topP,
       stopSequences: config.stopSequences || [],
       timeout: config.timeout ?? 60000,
     };

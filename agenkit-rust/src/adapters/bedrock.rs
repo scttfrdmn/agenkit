@@ -71,9 +71,12 @@ impl Default for BedrockConfig {
             access_key_id: None,
             secret_access_key: None,
             session_token: None,
-            temperature: Some(0.7),
+            // None, not Some(0.7)/Some(1.0): Claude Sonnet 5+ on Bedrock rejects
+            // these sampling params outright (`temperature is deprecated for this
+            // model`) unless the caller explicitly opts in (#947).
+            temperature: None,
             max_tokens: Some(4096),
-            top_p: Some(1.0),
+            top_p: None,
             stop_sequences: Vec::new(),
             timeout_seconds: 60,
         }
@@ -600,9 +603,9 @@ mod tests {
         let config = BedrockConfig::default();
         assert_eq!(config.region, "us-east-1");
         assert_eq!(config.model, "us.anthropic.claude-sonnet-5");
-        assert_eq!(config.temperature, Some(0.7));
+        assert_eq!(config.temperature, None);
         assert_eq!(config.max_tokens, Some(4096));
-        assert_eq!(config.top_p, Some(1.0));
+        assert_eq!(config.top_p, None);
         assert_eq!(config.timeout_seconds, 60);
     }
 

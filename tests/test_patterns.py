@@ -952,6 +952,7 @@ async def test_react_basic():
         def name(self) -> str:
             return "simple_llm"
 
+        @property
         def capabilities(self) -> list[str]:
             return ["chat"]
 
@@ -979,6 +980,7 @@ async def test_react_name_property():
         def name(self) -> str:
             return "simple_llm"
 
+        @property
         def capabilities(self) -> list[str]:
             return ["chat"]
 
@@ -1005,6 +1007,7 @@ async def test_planning_basic():
         def name(self) -> str:
             return "simple_planning_llm"
 
+        @property
         def capabilities(self) -> list[str]:
             return ["planning"]
 
@@ -1035,6 +1038,7 @@ async def test_planning_name_property():
         def name(self) -> str:
             return "simple_llm"
 
+        @property
         def capabilities(self) -> list[str]:
             return ["planning"]
 

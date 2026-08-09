@@ -36,6 +36,7 @@ class MockAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return self._capabilities
 
@@ -60,6 +61,7 @@ class FailingAgent:
     def name(self):
         return self._name
 
+    @property
     def capabilities(self):
         return ["fail"]
 
@@ -386,6 +388,7 @@ async def test_missing_confidence_defaults_zero():
         def name(self):
             return "no_conf"
 
+        @property
         def capabilities(self):
             return []
 
@@ -415,6 +418,7 @@ async def test_custom_confidence_key():
         def name(self):
             return "custom"
 
+        @property
         def capabilities(self):
             return []
 

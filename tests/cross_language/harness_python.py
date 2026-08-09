@@ -589,6 +589,7 @@ def execute_test(
                 def name(self):
                     return "TestClassifier"
 
+                @property
                 def capabilities(self):
                     return ["classification", "keyword-matching", "metadata-matching"]
 

@@ -116,9 +116,11 @@ class MockAgent:
         self._capabilities = list(capabilities or ["mock"])
         self._llm = MockLLMClient(responses, fail_calls=fail_calls)
 
+    @property
     def name(self) -> str:
         return self._name
 
+    @property
     def capabilities(self) -> list[str]:
         return list(self._capabilities)
 

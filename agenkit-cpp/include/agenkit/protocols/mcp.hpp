@@ -37,7 +37,7 @@ namespace mcp {
 // stateless core this module does not implement, so advertising that
 // literal would claim a handshake the wire no longer has).
 inline constexpr const char* PROTOCOL_VERSION = "2025-11-25";
-inline constexpr const char* CLIENT_VERSION = "0.90.0";
+inline constexpr const char* CLIENT_VERSION = "0.91.0";
 
 // ── Wire types ───────────────────────────────────────────────────────────────
 

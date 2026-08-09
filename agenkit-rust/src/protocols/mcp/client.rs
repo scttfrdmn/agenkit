@@ -18,7 +18,7 @@ fn init_params() -> serde_json::Value {
     serde_json::json!({
         "protocolVersion": PROTOCOL_VERSION,
         "capabilities": {},
-        "clientInfo": {"name": "agenkit", "version": "0.90.0"}
+        "clientInfo": {"name": "agenkit", "version": "0.91.0"}
     })
 }
 

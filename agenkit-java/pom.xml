@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.agenkit</groupId>
   <artifactId>agenkit</artifactId>
-  <version>0.90.0</version>
+  <version>0.91.0</version>
   <packaging>jar</packaging>
   <name>Agenkit</name>
   <description>Minimal, composable interfaces for AI agents — Java</description>

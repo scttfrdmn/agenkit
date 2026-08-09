@@ -18,7 +18,7 @@ final class McpConstants {
      * the wire no longer has).
      */
     static final String PROTOCOL_VERSION = "2025-11-25";
-    static final String CLIENT_VERSION = "0.90.0";
+    static final String CLIENT_VERSION = "0.91.0";
     static final String CLIENT_NAME = "agenkit";
 
     private McpConstants() {}

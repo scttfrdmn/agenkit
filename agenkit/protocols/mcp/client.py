@@ -35,7 +35,7 @@ from agenkit.protocols.mcp.types import (
 )
 
 _PROTOCOL_VERSION = "2024-11-05"
-_CLIENT_INFO = {"name": "agenkit", "version": "0.89.0"}
+_CLIENT_INFO = {"name": "agenkit", "version": "0.90.0"}
 _INIT_PARAMS = {
     "protocolVersion": _PROTOCOL_VERSION,
     "capabilities": {},

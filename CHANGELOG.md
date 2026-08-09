@@ -7,8 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.90.0] - 2026-08-09
+
+**33 commits since v0.89.0.** Two external deep reviews (8.0/10, then 8.4/10 after
+the first round of fixes) drove most of this release: contract-level bugs that
+survived a 2000+ test suite because the tests that would have caught them used
+mocks matching the bug's shape rather than the real contract, severe documentation
+drift (the project calling itself a "framework" while positioning itself as a
+toolkit; a parity table that undercounted three languages; a compatibility doc
+84 versions stale), and CI gates that looked connected but weren't (a "Parity
+Gate" that echoed success unconditionally; SBOM/signing that had never once
+succeeded across three releases).
+
+The second half of the release builds a **generic conformance-testing and
+spec-conformance infrastructure** so these classes of bug can't recur silently:
+a suite that checks the real `Agent`/`Tool` contract against every concrete
+implementation rather than per-pattern mocks, a doc-generation diff-check that
+fails the build when a generated doc drifts from its source, and a
+spec-presence conformance metric that answers "does language X implement
+pattern Y" directly instead of inferring it from a noisy class count.
+
 ### Fixed
 
+- **The `capabilities`-as-method bug (#904) was wider than first found, including
+  in the project's own most-reused test double** (#905, #910, #912, #916, #920).
+  `agenkit/interfaces.py`'s base `Agent.capabilities` is a `@property`;
+  `SequentialAgent` and 9 other pattern classes overrode it as a plain method,
+  raising `TypeError` against any conformant agent. A repo-wide grep found and
+  fixed all of them, plus the same shape in a tutorial and in
+  `tests/helpers/mock_llm.py`'s `MockAgent` — the reason the original bug went
+  undetected: the mock matched the bug's shape instead of the real contract.
+- **`ParallelAgent` (the `composition/` variant) could never succeed for any
+  input** (#920). `_combine_responses` rebound a frozen `Message`'s `metadata`
+  field after construction, raising `FrozenInstanceError` unconditionally. The 4
+  tests covering this had been wrapped in `pytest.raises(Exception)` with a
+  comment documenting it as "current behavior" — rewritten into real behavioral
+  assertions.
+- **The composition/-directory scanner bug was in all 9 language scanners, not
+  the 3 originally reported** (#918, #920). Every parity scanner only scanned
+  `patterns/`, never the sibling `composition/` directory holding
+  `SequentialAgent`/`ParallelAgent`/`FallbackAgent`/`ConditionalAgent`. Invisible
+  in 6 of 9 languages because those 6 also duplicate composition classes inside
+  `patterns/`; C#/Java/Scala don't, so they visibly undercounted (15/18 shown,
+  18/18 real).
+- Retired/stale LLM adapter model defaults bumped to Claude Sonnet 5 (#872, #888).
+- CodeQL Go autobuild toolchain bumped to match `go.mod`'s requirement (#883).
+- TypeScript README config fields, example path, and license mismatch corrected
+  (#884); ephemeral ports in `grpc.test.ts` to stop `EADDRINUSE` flakiness (#885).
+- Self-hosted (janus) CI job concurrency capped per-job to stop a merge-burst
+  disk-exhaustion incident (#892, #894); scheduled disk cleanup added (#877,
+  #887); push routing to self-hosted runners suspended pending #374's topology
+  decision (#895).
 - **SBOM generation + Sigstore signing had never once succeeded** (#867). The
   `release-security.yml` workflow was 6-for-6 *failures* across v0.86.0, v0.87.0 and
   v0.89.0, so **no agenkit release has ever shipped an SBOM, checksum manifest, or
@@ -35,11 +84,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `version.py` asserts a floor on its own declaration count — the reassuring "All 19"
   was the tell, and nothing had checked that 19 was the right number.
 
+### Added
+
+- **A generic Agent/Tool conformance test suite** (`tests/conformance/`, closes
+  #898). Every pattern's tests previously used their own hand-rolled mock rather
+  than asserting against the real `agenkit.interfaces.Agent` contract — exactly
+  what let the `capabilities`-as-method bug and the shared `MockAgent` bug both
+  survive undetected. An AST census (no imports, so it can't fail on an
+  optional LLM provider dependency) finds all 59 concrete `Agent` subclasses;
+  an explicit factory-lambda registry checks each statically (property shapes,
+  async signatures — no fixtures needed) and, for the 2 that are genuinely
+  zero-arg constructible today, behaviorally. A registry-coverage guard fails
+  CI if a new `Agent` subclass is added without being registered or explicitly
+  excluded with a reason. Tool conformance is deferred pending #762 with a
+  tripwire test, not a placeholder — it fires the day a second `Tool` subclass
+  appears.
+- **Doc-generation diff-check infrastructure** (closes #902).
+  `scripts/parity/matrix_generator.py --check` diffs a fresh regenerate against
+  the committed `docs/parity/*.md`, which is how `GAPS_ANALYSIS.md` went 5
+  months stale while CI stayed green the whole time — nothing had ever compared
+  the two. `scripts/docs_facts.py` complements it for facts embedded in
+  hand-written prose (README's "18 Core Patterns" list and language-support
+  table), modeled directly on `scripts/version.py`'s `Declaration`/`check`/
+  `sync` shape. Both wired into the existing `parity-validation.yml` and
+  `make check-docs-facts`.
+- **Spec-presence conformance matrix** (`scripts/parity/spec_conformance.py`,
+  #909 rung 1, closes #913). For each of the 18 named patterns in
+  `specs/patterns/*.yaml`, checks whether a source file implementing it exists
+  per language — the actual question #913 asked, which a raw class count
+  couldn't answer (it can't distinguish "no implementation" from "implementation
+  has an unconventional name," and undercounted C#/Java/Scala for months due to
+  the composition/-scanner bug above). Replaces README's class-count "Pattern
+  classes" column as the public parity metric; `feature-manifest.json` remains
+  as a secondary, diagnostic class-count signal.
+
+### Documentation
+
+- Stopped calling Agenkit itself a "framework" — it's a toolkit (#896).
+- Fixed `Message`/`ToolResult` docstrings, which overclaimed deep immutability;
+  both are shallow-frozen and several patterns deliberately mutate `metadata`
+  in place (#897, #914).
+- Fixed `COMPATIBILITY.md`'s wrong name, 84-version-stale header, and outdated
+  language coverage (#906); README's pattern-count self-contradiction and
+  unqualified `18x`/`20x`/`22x` performance claims (#918); `GETTING_STARTED.md`'s
+  stale language count and version requirements (#915); `CONTRIBUTING.md`'s body
+  to match its already-fixed toolkit/9-language opening (#917).
+- Renamed the cosmetic "Parity Gate" CI job, which echoed success unconditionally
+  regardless of the upstream job's actual result, to reflect that it's
+  informational-only (#900).
+- Removed ~27 root-level historical status/report files and a superseded
+  disabled workflow, both banned by `CLAUDE.md`'s project-tracking policy
+  (#890, #907, #908).
+- Added Scala README and C#/Java/Scala rows to cross-language tables (#886).
+
 ### Changed
 
 - `make check-release-gate` grew two probes: a suite that passes but dirties the tree
   must abort the release, and `uv.lock` must be a propagated declaration. Both verified
   negatively — with the fixes reverted, `release.sh` *tags* despite the dirty tree.
+- Bumped `h2` 4.3.0 → 4.4.1 (#870).
 
 ## [v0.89.0] - 2026-08-06
 

@@ -14,7 +14,7 @@ import (
 
 const (
 	mcpProtocolVersion = "2024-11-05"
-	mcpClientVersion   = "0.89.0"
+	mcpClientVersion   = "0.90.0"
 )
 
 // mcpInitParams returns the serialised params for the MCP initialize request.

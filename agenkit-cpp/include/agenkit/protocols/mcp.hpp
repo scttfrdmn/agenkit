@@ -26,7 +26,7 @@ namespace protocols {
 namespace mcp {
 
 inline constexpr const char* PROTOCOL_VERSION = "2024-11-05";
-inline constexpr const char* CLIENT_VERSION = "0.89.0";
+inline constexpr const char* CLIENT_VERSION = "0.90.0";
 
 // ── Wire types ───────────────────────────────────────────────────────────────
 

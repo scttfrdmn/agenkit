@@ -3,7 +3,7 @@ package io.agenkit.protocols.mcp
 import upickle.default.*
 
 val ProtocolVersion = "2024-11-05"
-val ClientVersion   = "0.89.0"
+val ClientVersion   = "0.90.0"
 
 // Wire types (private to package)
 private[mcp] case class JsonRpcRequest(

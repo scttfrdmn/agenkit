@@ -6,6 +6,7 @@ check_regression.MIN_FEATURE_COUNTS for the current list).
 """
 
 import json
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
@@ -207,6 +208,64 @@ def write_matrix(matrix_md: str, output_path: Path) -> None:
     print(f"✓ Feature matrix written to: {output_path}")
 
 
+# Matches both "**Generated**: <ts>" (FEATURE_MATRIX.md) and
+# "Generated: <ts>" (GAPS_ANALYSIS.md) -- the one line in each file that is a
+# function of wall-clock time rather than of feature-manifest.json's
+# content, and so must be normalized out before a byte-for-byte diff. Without
+# this, --check would fail on every run even when nothing substantive
+# changed, which is the opposite of what a staleness gate should do.
+_GENERATED_TIMESTAMP_LINE = re.compile(r"^\*{0,2}Generated\*{0,2}:.*$", re.MULTILINE)
+
+
+def _normalize_generated_timestamp(content: str) -> str:
+    return _GENERATED_TIMESTAMP_LINE.sub("Generated: <normalized>", content)
+
+
+def check_matrix_current(matrix_md: str, gap_md: str) -> list[str]:
+    """Diff freshly generated content against the committed files.
+
+    Returns a list of human-readable diffs; empty when both files are
+    current. This is #902's core mechanism: feature-manifest.json is already
+    regenerated fresh on every CI run, but nothing has ever compared that
+    fresh output to the committed docs/parity/*.md -- which is how
+    GAPS_ANALYSIS.md went five months stale while CI stayed green throughout.
+
+    Args:
+        matrix_md: Freshly generated FEATURE_MATRIX.md content.
+        gap_md: Freshly generated GAPS_ANALYSIS.md content.
+
+    Returns:
+        Unified diffs, one per stale file; empty if both are current.
+    """
+    import difflib
+
+    diffs = []
+    for label, fresh, path in (
+        ("docs/parity/FEATURE_MATRIX.md", matrix_md, Path("docs/parity/FEATURE_MATRIX.md")),
+        ("docs/parity/GAPS_ANALYSIS.md", gap_md, Path("docs/parity/GAPS_ANALYSIS.md")),
+    ):
+        if not path.exists():
+            diffs.append(f"{label}: does not exist -- run matrix_generator.py to create it")
+            continue
+
+        committed = _normalize_generated_timestamp(path.read_text())
+        rendered = _normalize_generated_timestamp(fresh)
+
+        if committed != rendered:
+            diff = "\n".join(
+                difflib.unified_diff(
+                    committed.splitlines(),
+                    rendered.splitlines(),
+                    fromfile=f"{label} (committed)",
+                    tofile=f"{label} (freshly generated)",
+                    lineterm="",
+                )
+            )
+            diffs.append(diff)
+
+    return diffs
+
+
 def generate_gap_analysis(feature_manifest: dict[str, Any]) -> str:
     """Generate gap analysis showing missing features per language.
 
@@ -264,12 +323,30 @@ def generate_gap_analysis(feature_manifest: dict[str, Any]) -> str:
     return "".join(gap_analysis)
 
 
+def _report_check_result(diffs: list[str]) -> int:
+    if diffs:
+        print("✗ Generated parity docs are stale:")
+        print()
+        for diff in diffs:
+            print(diff)
+            print()
+        print("=" * 70)
+        print("Run: uv run python scripts/parity/matrix_generator.py")
+        print("Then commit the regenerated docs/parity/*.md files.")
+        print("=" * 70)
+        return 1
+    print("✓ docs/parity/FEATURE_MATRIX.md and GAPS_ANALYSIS.md are current")
+    return 0
+
+
 def main() -> int:
     """Main entry point.
 
     Returns:
         Exit code (0 = success, 1 = error)
     """
+    check_only = "--check" in sys.argv
+
     print("=" * 70)
     print("Parity Matrix Generator")
     print("=" * 70)
@@ -294,14 +371,18 @@ def main() -> int:
         matrix_md = generate_feature_matrix(feature_manifest, test_report)
         print("✓")
 
-        # Write feature matrix
-        matrix_path = Path("docs/parity/FEATURE_MATRIX.md")
-        write_matrix(matrix_md, matrix_path)
-
         # Generate gap analysis
         print("Generating gap analysis...", end=" ")
         gap_md = generate_gap_analysis(feature_manifest)
         print("✓")
+        print()
+
+        if check_only:
+            return _report_check_result(check_matrix_current(matrix_md, gap_md))
+
+        # Write feature matrix
+        matrix_path = Path("docs/parity/FEATURE_MATRIX.md")
+        write_matrix(matrix_md, matrix_path)
 
         # Write gap analysis
         gap_path = Path("docs/parity/GAPS_ANALYSIS.md")

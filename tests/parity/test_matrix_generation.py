@@ -236,3 +236,79 @@ class TestDataIntegrity:
                 assert abs(stat["parity_percent"] - expected_parity) < 0.1, (
                     f"{stat['language']}: parity mismatch"
                 )
+
+
+class TestDiffCheck:
+    """check_matrix_current is #902's core mechanism: a fresh regenerate
+    diffed against the committed docs/parity/*.md. Verified behaviorally,
+    not by inspecting the diff-check's own source, per
+    scripts/check-release-gate.sh's precedent -- actually corrupt a copy
+    and assert the checker catches it, rather than trusting that the code
+    looks right.
+    """
+
+    def test_current_docs_produce_no_diff(self, feature_manifest, test_report):
+        """A repo whose committed docs/parity/*.md match a fresh regenerate
+        must report no diffs -- this is the expected steady state and must
+        not itself be a false positive.
+        """
+        matrix_md = matrix_generator.generate_feature_matrix(feature_manifest, test_report)
+        gap_md = matrix_generator.generate_gap_analysis(feature_manifest)
+
+        diffs = matrix_generator.check_matrix_current(matrix_md, gap_md)
+
+        assert diffs == [], (
+            f"Committed docs/parity/*.md disagree with a fresh regenerate "
+            f"-- run `uv run python scripts/parity/matrix_generator.py` "
+            f"and commit the result:\n{diffs}"
+        )
+
+    def test_corrupted_committed_file_is_detected(self, feature_manifest, test_report, tmp_path):
+        """Negative verification: append a line to a *copy* of the real
+        committed file (never touching the real one) and confirm the
+        checker's diff mechanics flag the mismatch.
+        """
+        import shutil
+
+        matrix_md = matrix_generator.generate_feature_matrix(feature_manifest, test_report)
+        gap_md = matrix_generator.generate_gap_analysis(feature_manifest)
+
+        real_gap_path = Path("docs/parity/GAPS_ANALYSIS.md")
+        corrupted = tmp_path / "GAPS_ANALYSIS.md"
+        shutil.copy(real_gap_path, corrupted)
+        with corrupted.open("a") as f:
+            f.write("\nSTALE INJECTED LINE FOR TEST\n")
+
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            # check_matrix_current reads from the real repo-relative paths,
+            # so point it at a scratch dir seeded with the corrupted copy
+            # (and the untouched real FEATURE_MATRIX.md) rather than
+            # mutating the actual committed file.
+            scratch_docs = tmp_path / "docs" / "parity"
+            scratch_docs.mkdir(parents=True)
+            shutil.copy(corrupted, scratch_docs / "GAPS_ANALYSIS.md")
+            shutil.copy(Path("docs/parity/FEATURE_MATRIX.md"), scratch_docs / "FEATURE_MATRIX.md")
+            os.chdir(tmp_path)
+
+            diffs = matrix_generator.check_matrix_current(matrix_md, gap_md)
+        finally:
+            os.chdir(original_cwd)
+
+        assert diffs, "Corrupted GAPS_ANALYSIS.md was not detected as stale"
+        assert any("STALE INJECTED LINE" in diff for diff in diffs)
+
+    def test_timestamp_only_change_is_not_a_false_positive(self):
+        """The one line in each generated file that is a function of
+        wall-clock time, not of feature-manifest.json's content, must be
+        normalized out -- otherwise --check would fail on every single run
+        even when nothing substantive changed.
+        """
+        committed = "**Generated**: 2026-01-01 00:00:00 UTC\nsame content\n"
+        fresh = "**Generated**: 2099-12-31 23:59:59 UTC\nsame content\n"
+
+        assert matrix_generator._normalize_generated_timestamp(
+            committed
+        ) == matrix_generator._normalize_generated_timestamp(fresh)

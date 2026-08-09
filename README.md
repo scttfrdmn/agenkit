@@ -567,35 +567,33 @@ that other languages fold into one class; C++ has a couple of duplicate class
 names for the same pattern), so a lower number does not always mean a missing
 pattern. Regenerate it yourself with:
 `uv run python -c "import json; d=json.load(open('feature-manifest.json')); [print(l, len(v['patterns'])) for l,v in d['languages'].items()]"`.
-Two caveats on these specific numbers, found while re-deriving them for this
-table: (1) C#/Java/Scala's scanners
-(`scripts/parity/scanners/{csharp,java,scala}_scanner.py`) only walk each
-language's `Patterns/` directory, but those three languages implement
-`SequentialAgent`/`ParallelAgent` under a sibling `Composition/` directory
-that the scanner never visits — so their manifest counts (15) undercount by
-2; by direct source inspection all three actually have 17 of 18 patterns.
-(2) The one gap in C#/Java/Scala that *is* real: none of the three implement
-`AgentsAsTools` (verified by `grep -rl AgentTool` finding no hits under
-`agenkit-cs`/`agenkit-java`/`agenkit-scala`). See #913 for a planned move to a
-spec-conformance metric that would replace this class count with a
-per-pattern ✅/❌ table generated from `specs/patterns/*.yaml`. The "Tests"
-column is the test count from the parity report; "Depth" reflects how many
-advanced subsystems (memory, skills, reasoning memory, full adapter set) are
-implemented.
+The one gap that is real across all nine languages: C#/Java/Scala do not
+implement `AgentsAsTools` (verified by `grep -rl AgentTool` finding no hits
+under `agenkit-cs`/`agenkit-java`/`agenkit-scala`) — the class-count column
+below already reflects that as their only shortfall. See #913 for a planned
+move to a spec-conformance metric that would replace this class count with a
+per-pattern ✅/❌ table generated from `specs/patterns/*.yaml`, and #902 for
+a diff-check that keeps this table from drifting silently the way it did
+before (#918). The "Tests" column is the test count from the parity report;
+"Depth" reflects how many advanced subsystems (memory, skills, reasoning
+memory, full adapter set) are implemented.
 
 | Language | Pattern classes (of 18 named patterns) | LLM Adapters | Tests | Depth |
 |----------|------------------------------------------|--------------|-------|-------|
-| **Python** | 24 (all 18 patterns) | 7 | 2229 | Reference — all subsystems |
-| **Go** | 17 (all 18 patterns) | 7 (+vLLM, SGLang) | 1330 | Complete — incl. reasoning memory, skills |
-| **TypeScript** | 17 (all 18 patterns) | 7 | 976 | Broad — no skills / reasoning memory |
-| **C++** | 18 (all 18 patterns) | 5 | 1133 | Broad — `safety/` not yet implemented |
-| **Rust** | 15 (all 18 patterns) | 6 | 1352 | Complete — incl. skills |
+| **Python** | 25 (all 18 patterns) | 7 | 2229 | Reference — all subsystems |
+| **Go** | 18 (all 18 patterns) | 7 (+vLLM, SGLang) | 1330 | Complete — incl. reasoning memory, skills |
+| **TypeScript** | 18 (all 18 patterns) | 7 | 976 | Broad — no skills / reasoning memory |
+| **C++** | 19 (all 18 patterns) | 5 | 1133 | Broad — `safety/` not yet implemented |
+| **Rust** | 16 (all 18 patterns) | 6 | 1352 | Complete — incl. skills |
 | **Zig** | 13 (all 18 patterns) | 8 | 671 | Broad — no skills |
-| **C#** (.NET) | 15 in manifest / 17 actual (missing `AgentsAsTools`) | 2 (+mock) | 272 | Newer — no skills |
-| **Java** | 15 in manifest / 17 actual (missing `AgentsAsTools`) | 2 (+mock) | 358 | Newer — no skills |
-| **Scala** | 15 in manifest / 17 actual (missing `AgentsAsTools`) | mock only | 363 | Newest — LLM adapters are stubs |
+| **C#** (.NET) | 18 (17 of 18, missing `AgentsAsTools`) | 2 (+mock) | 272 | Newer — no skills |
+| **Java** | 18 (17 of 18, missing `AgentsAsTools`) | 2 (+mock) | 358 | Newer — no skills |
+| **Scala** | 18 (17 of 18, missing `AgentsAsTools`) | mock only | 363 | Newest — LLM adapters are stubs |
 
-**18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): Task, Conversational, ReAct, Planning, Reflection, ReasoningWithTools, AgentsAsTools, Memory, Sequential, Parallel, Router, Fallback, Orchestration, Supervisor, Collaborative, HumanInLoop, MultiAgent, Autonomous. Six languages (Python, Go, TypeScript, Rust, C++, Zig) implement all 18; C#, Java, and Scala implement 17 of 18 (missing `AgentsAsTools`).
+<!-- GENERATED:pattern-list:start -->
+**18 Core Patterns** documented in the [Agent Patterns Book](../agent-patterns-book): AgentsAsTools, Autonomous, Collaborative, Conversational, Fallback, HumanInLoop, MemoryHierarchy, MultiAgent, Orchestration, Parallel, Planning, ReAct, ReasoningWithTools, Reflection, Router, Sequential, Supervisor, Task.
+<!-- GENERATED:pattern-list:end -->
+Six languages (Python, Go, TypeScript, Rust, C++, Zig) implement all 18; C#, Java, and Scala implement 17 of 18 (missing `AgentsAsTools`).
 
 ### Recent Highlights (v0.85 – v0.89)
 

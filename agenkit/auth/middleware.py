@@ -84,9 +84,8 @@ class BearerTokenAuth(Agent):
                 f"User {user.user_id} lacks required permission: {self.required_permission}"
             )
 
-        # Add user info to metadata for downstream use
-        if message.metadata is None:
-            message.metadata = {}
+        # Add user info to metadata for downstream use (Message.metadata is
+        # always a dict, never None -- normalized at construction, #919)
         message.metadata["authenticated_user"] = {
             "user_id": user.user_id,
             "roles": user.roles,
@@ -171,9 +170,8 @@ class APIKeyAuth(Agent):
         # Authenticate
         user = await self.provider.authenticate(api_key)
 
-        # Add user info to metadata
-        if message.metadata is None:
-            message.metadata = {}
+        # Add user info to metadata (Message.metadata is always a dict,
+        # never None -- normalized at construction, #919)
         message.metadata["authenticated_user"] = {"user_id": user.user_id, "roles": user.roles}
 
         # Process with underlying agent

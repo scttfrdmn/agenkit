@@ -351,9 +351,8 @@ class SupervisorAgent(Agent):
         except Exception as e:
             raise RuntimeError(f"synthesis failed: {e}") from e
 
-        # Add supervisor metadata
-        if final.metadata is None:
-            final.metadata = {}
+        # Add supervisor metadata (Message.metadata is always a dict, never
+        # None -- normalized at construction, #919)
         final.metadata["supervisor_subtasks"] = len(subtasks)
         final.metadata["supervisor_specialists"] = len(self._specialists)
         final.metadata["execution_order"] = execution_order

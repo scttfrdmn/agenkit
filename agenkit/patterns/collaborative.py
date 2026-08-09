@@ -237,10 +237,8 @@ class CollaborativeAgent(Agent):
         final_round = rounds[-1]
         merged = self._merge_func(final_round.responses)
 
-        # Add collaboration metadata
-        if merged.metadata is None:
-            merged.metadata = {}
-
+        # Add collaboration metadata (Message.metadata is always a dict,
+        # never None -- normalized at construction, #919)
         merged.metadata["collaboration_rounds"] = len(rounds)
         merged.metadata["collaboration_agents"] = len(self._agents)
         merged.metadata["stop_reason"] = stop_reason
@@ -380,8 +378,8 @@ class DefaultMergeFuncs:
         winner_content, max_votes = winner
 
         result = msg_by_content[winner_content]
-        if result.metadata is None:
-            result.metadata = {}
+        # Message.metadata is always a dict, never None -- normalized at
+        # construction, #919
         result.metadata["votes"] = max_votes
         result.metadata["total"] = len(messages)
 

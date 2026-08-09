@@ -171,9 +171,8 @@ class FallbackAgent(Agent):
 
     def _build_success_result(self, message: Message, attempts: list[AttemptResult]) -> Message:
         """Add fallback metadata to successful response."""
-        if message.metadata is None:
-            message.metadata = {}
-
+        # Message.metadata is always a dict, never None -- normalized at
+        # construction, #919
         successful_attempt = attempts[-1]
 
         message.metadata["fallback_attempts"] = len(attempts)
@@ -262,9 +261,8 @@ class RecoveryAgent(Agent):
                     f"primary agent failed: {e}; recovery failed: {recovery_err}"
                 ) from e
 
-            # Add recovery metadata
-            if recovered.metadata is None:
-                recovered.metadata = {}
+            # Add recovery metadata (Message.metadata is always a dict,
+            # never None -- normalized at construction, #919)
             recovered.metadata["recovery_used"] = True
             recovered.metadata["original_error"] = str(e)
 

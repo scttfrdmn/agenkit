@@ -279,8 +279,8 @@ class HumanInLoopAgent(Agent):
         if approval.modified_message is not None:
             # Use modified version
             final_response = approval.modified_message
-            if final_response.metadata is None:
-                final_response.metadata = {}
+            # Message.metadata is always a dict, never None -- normalized at
+            # construction, #919
             final_response.metadata["approval_status"] = "approved_with_modifications"
             final_response.metadata["original_response"] = response.content
         else:

@@ -660,9 +660,8 @@ class OrchestrationAgent(Agent):
 
         if agent:
             result = await agent.process(message)
-            # Add branching metadata
-            if result.metadata is None:
-                result.metadata = {}
+            # Add branching metadata (Message.metadata is always a dict,
+            # never None -- normalized at construction, #919)
             result.metadata["branch_taken"] = branch_taken
             result.metadata["agent_executed"] = agent_executed
             return result

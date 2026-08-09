@@ -132,9 +132,8 @@ class SequentialAgent(Agent):
             # Use result as input for next agent
             current = result
 
-        # Add pipeline metadata to final result
-        if current.metadata is None:
-            current.metadata = {}
+        # Add pipeline metadata to final result (Message.metadata is always
+        # a dict, never None -- normalized at construction, #919)
         current.metadata["pipeline_stages"] = stages
         current.metadata["pipeline_length"] = len(self._agents)
 

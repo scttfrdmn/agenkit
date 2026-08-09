@@ -1,0 +1,216 @@
+{
+  "generated_at": "2026-08-09T01:58:22.980433+00:00",
+  "version": "1.0",
+  "total_patterns": 18,
+  "patterns": {
+    "agents_as_tools": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": false,
+      "java": false,
+      "scala": false
+    },
+    "autonomous": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "collaborative": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "conversational": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "fallback": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "human_in_loop": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "memory_hierarchy": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "multiagent": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "orchestration": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "parallel": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "planning": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "react": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "reasoning_with_tools": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "reflection": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "router": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "sequential": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "supervisor": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    },
+    "task": {
+      "python": true,
+      "go": true,
+      "typescript": true,
+      "rust": true,
+      "cpp": true,
+      "zig": true,
+      "csharp": true,
+      "java": true,
+      "scala": true
+    }
+  },
+  "summary": {
+    "python": 18,
+    "go": 18,
+    "typescript": 18,
+    "rust": 18,
+    "cpp": 18,
+    "zig": 18,
+    "csharp": 17,
+    "java": 17,
+    "scala": 17
+  }
+}

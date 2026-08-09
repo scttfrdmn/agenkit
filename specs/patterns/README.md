@@ -1,13 +1,48 @@
 # Pattern Behavior Specifications
 
-This directory contains formal specifications for all 18 Agenkit agent patterns. These specifications enable automated cross-language equivalence testing.
+This directory contains structural specifications for all 18 Agenkit agent patterns.
 
-## Purpose
+## Two spec corpora, two different jobs
 
-- **Cross-Language Testing**: Verify that pattern implementations behave identically across Python, Go, TypeScript, Rust, C++, and Zig
-- **Contract Definition**: Define expected inputs, outputs, state transitions, and error conditions
-- **Test Generation**: Automatically generate test cases from specifications
-- **Documentation**: Serve as authoritative reference for pattern behavior
+There are two YAML spec corpora in this repo, and they are **not** duplicates of each
+other — each is authoritative for a different question, per #909/#913's design:
+
+| | `specs/patterns/` (this directory) | `tests/cross_language/specs/` |
+|---|---|---|
+| Answers | "What is this pattern's interface — constructor params, methods?" | "Does this implementation *behave* like the spec says?" |
+| Schema | `interface.constructor.parameters`, `interface.methods` | `test_scenarios` with `content_contains`/`content_pattern` fuzzy matchers |
+| Tooling | `scripts/parity/spec_conformance.py` (structural, #909 rung 1) | `tests/cross_language/spec_loader.py`'s `SpecificationLoader` (a real parser/validator) |
+| Scope | The 18 named patterns | The 18 patterns + 3 reasoning techniques (chain_of_thought, self_consistency, tree_of_thought) |
+
+**This directory (`specs/patterns/`) is authoritative for interface/structural
+conformance.** `tests/cross_language/specs/` is authoritative for behavioral scenario
+execution. Neither supersedes the other, and merging their schemas was considered and
+rejected — one is designed for fuzzy-matching LLM output across nine process harnesses,
+the other is a human-authored contract document, and a merged schema would serve both
+worse.
+
+**Known naming divergence**: this directory's `memory_hierarchy.yaml` is named
+`memory.yaml` in `tests/cross_language/specs/`. For every other of the 17 overlapping
+pattern stems, `pattern.name` matches exactly between the two corpora (verified, and
+enforced going forward by `tests/parity/test_spec_conformance.py`'s cross-corpus
+consistency check).
+
+## What is and isn't executable today
+
+Every file has a `test_cases` section with prose `assertions`, but this is **not**
+mechanically executable yet: fixture names referenced in `input`/`config.agents`
+(`"uppercase_agent"`, `"echo_agent"`, etc.) exist in no language's registry, expectation
+field names vary across files (`expected_output`/`expected_error`/`expected_behavior`/
+`expected_trace`/...), and 8 of 18 files have no `input` field at all — pure prose
+describing intended behavior. Treat `test_cases` as **documentation of intent**, not a
+generator input, until a named-fixture registry and one consistent expectation schema
+exist (tracked as future work; not yet filed as its own issue).
+
+What **is** buildable and built today: structural conformance — does a source file
+implementing pattern X exist per language (`scripts/parity/spec_conformance.py`, #909
+rung 1) — and, as a planned next step, whether each language's constructor actually
+matches `interface.constructor.parameters` (#924, rung 2, explicitly non-gating since it
+will immediately flag drift in the reference implementation itself).
 
 ## Specification Format
 
@@ -69,6 +104,13 @@ test_cases:
       - "Property to verify"
 ```
 
+Not every file has every section filled in — 8 of 18 are "stub" files with only
+`pattern`/`behavior`/`assertions` prose and no `interface`/`test_cases.input`. The 10
+"detailed" files (`agents_as_tools`, `autonomous`, `collaborative`, `fallback`,
+`human_in_loop`, `multiagent`, `orchestration`, `parallel`, `sequential`, `supervisor`,
+roughly) carry the `interface` section that `spec_conformance.py` and the planned rung-2
+checker actually read.
+
 ## Pattern Categories
 
 ### Composition (2 patterns)
@@ -99,33 +141,23 @@ test_cases:
 
 ## Usage
 
-### For Testing
-
-```python
-# Load specification
-import yaml
-with open('specs/patterns/sequential.yaml') as f:
-    spec = yaml.safe_load(f)
-
-# Run test cases
-for test_case in spec['test_cases']:
-    result = pattern.process(test_case['input']['message'])
-    assert result.content == test_case['expected_output']['message']['content']
-```
-
-### For Documentation Generation
+### Checking spec-presence conformance (what's built today)
 
 ```bash
-# Generate pattern documentation from specs
-python scripts/generate_docs.py specs/patterns/*.yaml > docs/PATTERNS_REFERENCE.md
+uv run python scripts/parity/spec_conformance.py
+cat spec-conformance.json
 ```
 
-### For Cross-Language Validation
+### For Cross-Language Behavioral Validation
+
+The behavioral scenario runner lives with its own spec corpus, not this one:
 
 ```bash
-# Run equivalence tests across all languages
-python tests/cross_language/test_equivalence.py --specs specs/patterns/*.yaml
+python tests/cross_language/run_equivalence_tests.py --specs tests/cross_language/specs/*.yaml
 ```
+
+(Currently reachable only via the disabled `.github/workflows/integration.yml.disabled`
+— see that file's own header comment for why.)
 
 ## Pattern List
 
@@ -160,5 +192,7 @@ Specifications follow semantic versioning:
 When modifying patterns:
 1. Update the specification first
 2. Update implementations across all languages
-3. Run cross-language equivalence tests
+3. If a language's constructor signature and this spec's `interface.constructor.parameters`
+   disagree, fix the spec to match the real signature — specs describe what was built, not
+   the reverse (see #924's rationale)
 4. Update this README if adding new patterns

@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.91.0] - 2026-08-09
+
+Contract-bug cluster identified by the v0.90.0 deep reviews, fixed as six
+independently-verified workstreams, plus the first real PyPI release.
+
+### Fixed
+
+- **`Tool.execute()` had two incompatible calling conventions** (#762).
+  `patterns/react.py` and `agents_as_tools.py` called `tool.execute(params)`
+  (one positional dict, matching the declared `Tool` protocol);
+  `reasoning_with_tools.py`, `tools/tool_agent.py`, and
+  `protocols/agui/tools.py` called `tool.execute(**kwargs)`. Converged all
+  five call sites on the declared contract.
+- **ReAct's "final answer" signal diverged across languages** (#765). Python
+  and Zig used `Action: Final Answer` (a sentinel action name); Go, Rust,
+  TypeScript, and C++ used a `Final Answer: <answer>` line prefix — neither
+  family tolerated the other's format, so cross-language ReAct interop
+  silently failed with a `max_steps` error instead of a real one. Every
+  core's parser now accepts both forms; no core's own emitted format
+  changed. Scala uses a third, unrelated `ANSWER:` convention, left as a
+  follow-up.
+- **None of the three wire protocols (MCP, AG-UI, A2A) negotiated their
+  advertised version — a mismatch was indistinguishable from a match**
+  (#781). MCP server/client types across all 9 languages gained a
+  `protocol_version` field (previously discarded outright); clients now
+  warn on a server-version mismatch, servers read the client's requested
+  version and warn on mismatch. The bare `"2024-11-05"` literal (16 sites)
+  is now one named constant per language. Also fixed a live interop bug:
+  Java/Scala servers advertised `capabilities: {}` with no `tools` key, and
+  Zig omitted `capabilities` entirely.
+- **MCP protocol revision bumped to `2025-11-25`** (#733) — the latest
+  ratified revision whose `initialize`/`tools/list`/`tools/call` surface is
+  additive over `2024-11-05`. Deliberately does not adopt `2026-07-28`,
+  which removes the `initialize` handshake for a stateless core agenkit
+  doesn't implement.
+- **`Message.metadata=None` raised `FrozenInstanceError`** at 13 call sites
+  across `patterns/` and `auth/middleware.py` (#919), each guarding with
+  `if x.metadata is None: x.metadata = {}` against a frozen dataclass.
+  Normalized `metadata=None` → `{}` once, in `Message.__post_init__`,
+  eliminating all 13 guards as dead code.
+- **`CallOptions.seed`/`.stop` were accepted, validated, and silently
+  dropped by every LLM adapter** in the four cores that carry those fields
+  (#818: Python, TypeScript, Rust, C++). Wired both through to each
+  provider's real request; where a provider genuinely can't honor a field
+  (Anthropic/Bedrock `seed`), the adapter now warns instead of discarding
+  silently. Go and Zig don't have these fields and were left alone.
+- **C++ was the only language with zero introspection support despite its
+  own docs claiming otherwise** (#850). `docs/API.md` documented
+  `Agent::introspect()`; no such method existed. Added it as a
+  virtual-with-default method (mirroring Rust's defaulted-trait-method
+  design, not Go's required-method design that rotted silently for ~8
+  months per #847) — zero existing subclasses needed changes.
+- `tutorials/01-getting-started.py` never fully executed: a missing
+  `SequentialAgent` constructor arg, a stale `agenkit.llm` import path, a
+  retired model literal, and a nonexistent `pipeline.agents` attribute
+  (#911).
+- Bedrock integration tests used a retired model ID; live-verified against
+  real AWS and fixed to a region-prefixed inference profile
+  (`us.anthropic.claude-sonnet-5`), since the repo's own current default
+  also fails live without one (#893; follow-up filed as #937 for the
+  Go/Rust/TS adapters' own defaults).
+
+### Added
+
+- **PyPI publishing is now automated** (#22). `pip install agenkit` had
+  404'd since the project's inception — never published. Added
+  `.github/workflows/pypi-publish.yml`, publishing via PyPI Trusted
+  Publisher (OIDC), triggered on each GitHub release. Also fixed a latent
+  packaging bug found while wiring this up: `pyproject.toml` had no
+  `[tool.hatch.build.targets.sdist]` scoping, so the sdist silently bundled
+  the entire 9-language monorepo (20MB) instead of just the Python
+  package (380K, scoped).
+
 ## [v0.90.0] - 2026-08-09
 
 **33 commits since v0.89.0.** Two external deep reviews (8.0/10, then 8.4/10 after

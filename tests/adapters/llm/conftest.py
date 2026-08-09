@@ -70,7 +70,17 @@ def gemini_api_key():
 
 @pytest.fixture
 def aws_profile():
-    """Get AWS profile for Bedrock testing."""
+    """Get AWS profile for Bedrock testing.
+
+    NOTE: The Bedrock integration tests that depend on this fixture
+    (test_bedrock_integration, test_bedrock_streaming_integration) only run
+    when a local AWS profile/credentials are configured, which in practice
+    means a single developer's laptop -- CI never has AWS credentials, so
+    these tests always skip there. A green `make test` for most contributors
+    means "skipped", not "verified against real Bedrock" -- don't read local
+    silence on this fixture as a signal that Bedrock connectivity was
+    actually exercised (#893).
+    """
     profile = os.getenv("AWS_PROFILE", "aws")
     # Check if AWS is configured
     has_creds = bool(

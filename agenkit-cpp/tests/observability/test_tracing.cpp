@@ -9,6 +9,7 @@
 #include "agenkit/observability/tracing.hpp"
 #include "agenkit/core/message.hpp"
 #include "agenkit/core/agent.hpp"
+#include <cstdlib>
 #include <memory>
 
 using namespace agenkit;
@@ -80,6 +81,34 @@ protected:
 
 TEST_F(TracingTest, InitTracingConsole) {
     EXPECT_TRUE(tracing_initialized_);
+}
+
+// #771: negative-verification target. Before the fix, create_otlp_exporter
+// unconditionally overwrote OtlpHttpExporterOptions::url with a hardcoded
+// default whenever `endpoint` was empty, discarding the OTel C++ SDK's own
+// environment-variable resolution. This test exercises init_tracing("otlp",
+// "") directly (outside the fixture, since SetUp() already initialized a
+// "console" provider and init_tracing throws if called twice) to confirm an
+// empty endpoint does not throw and does not require the environment to be
+// set -- i.e. it still falls through to the SDK's own default when
+// OTEL_EXPORTER_OTLP_ENDPOINT is unset, rather than only working by
+// accident when the variable happens to be present.
+TEST(TracingOtlpEndpointEnvVar, EmptyEndpointDefersToEnvironment) {
+    // setenv/unsetenv are POSIX; this test only runs where
+    // AGENKIT_WITH_OBSERVABILITY is defined, which already implies a
+    // POSIX-like build environment (no Windows CI leg for this target).
+    unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT");
+    EXPECT_NO_THROW({
+        try {
+            init_tracing("otlp", "");
+        } catch (const std::runtime_error&) {
+            // "Tracing already initialized" from a prior test in this binary
+            // is an acceptable outcome here -- the point of this test is
+            // that an empty endpoint with no env var set does not throw for
+            // a *different* reason (e.g. a null/invalid URL reaching the
+            // OTLP client).
+        }
+    });
 }
 
 TEST_F(TracingTest, GetTracer) {

@@ -27,7 +27,7 @@ than defining a synonym.
 | [Agent span attributes](#agent-span-attributes) | **Stable** | Emitted today |
 | [Span status](#span-status) | **Stable in Python/Go/TS/Rust/C++** | Ok / Error set by every implementation. The error *event* is Python/Go/TS only. |
 | [GenAI attributes](#genai-attributes) | **Planned** | Not emitted by any language yet — see [Gaps](#known-gaps) |
-| [Tree-node spans](#tree-node-spans) | **Planned** | No helper exists in any language yet |
+| [Tree-node spans](#tree-node-spans) | **Stable in Go; Planned elsewhere** | `StartNode` implemented in Go (#784); Python/TS/Rust still call `tracer.Start` directly |
 
 "Planned" means the key is reserved and specified here so that consumers and
 agenkit converge on the same name when it lands. Do not read a Planned key
@@ -195,10 +195,11 @@ bar. Summing them into one counter makes neither diagnosable.
 
 ## Tree-node spans
 
-**Planned — no helper exists in any language today.** A consumer with a
-tree-shaped workload must currently call `tracer.Start` directly. Until an
-agenkit helper lands, emit the following so the eventual helper is
-drop-in-compatible.
+**Implemented in Go (#784); still Planned in Python/TS/Rust.** A consumer with
+a tree-shaped workload (decomposition, map-reduce, multi-agent fan-out) can now
+call `observability.StartNode` in Go; other languages must still call
+`tracer.Start` directly. Emit the attributes below regardless, so the eventual
+helper in each remaining language is drop-in-compatible.
 
 The rule: **the span tree *is* the workload tree.** One span per node, each
 node's span parented to its parent node's span. Do not flatten a tree into
@@ -207,32 +208,45 @@ what makes the trace readable in Jaeger without a custom view.
 
 ### Live, not post-hoc
 
-The helper should start the span when the node *starts*, while the parent context
-is in hand — not build the tree after the run from buffered nodes. Buffering is
-tempting when a workload's completion callback fires child-before-parent (so the
-nesting does not exist yet at emission time), but it costs two things worth more
-than the convenience: nothing appears in the trace backend until the whole run
-ends, and the spans carry no measured durations, only fabricated or absent ones.
-A consumer cannot tell an invented duration from a measured one.
+`StartNode` starts the span when the node *starts*, while the parent context
+is in hand — it does not build the tree after the run from buffered nodes.
+Buffering is tempting when a workload's completion callback fires
+child-before-parent (so the nesting does not exist yet at emission time), but
+it costs two things worth more than the convenience: nothing appears in the
+trace backend until the whole run ends, and the spans carry no measured
+durations, only fabricated or absent ones. A consumer cannot tell an invented
+duration from a measured one.
 
-The API shape that supports both orders:
+The API shape that supports both orders (Go):
 
-```
-StartNode(ctx, parentSpanCtx, nodeID) (ctx, span)
+```go
+func StartNode(ctx context.Context, parentSpanCtx trace.SpanContext, nodeID string, opts NodeOptions) (context.Context, trace.Span)
 ```
 
 Taking the parent explicitly, rather than only implicitly from `ctx`, lets a
-caller whose completion order is inverted still produce correct parentage without
-buffering the whole tree.
+caller whose completion order is inverted still produce correct parentage
+without buffering the whole tree: pass `trace.SpanContext{}` (the zero value)
+for the root node, and each parent's returned span's `SpanContext()` for its
+children, independent of the order in which nodes complete.
 
 | Attribute | Type | Meaning |
 |---|---|---|
 | `agenkit.node.id` | string | Stable id for this node |
-| `agenkit.node.parent_id` | string | Parent's node id. Redundant with span parentage, and worth emitting anyway: it survives sampling that drops the parent span. |
+| `agenkit.node.parent_id` | string | Parent's node id. Redundant with span parentage, and worth emitting anyway: it survives sampling that drops the parent span. Absent on the root. |
 | `agenkit.node.depth` | int | 0 at the root |
 | `agenkit.node.state` | string | Node lifecycle state |
 | `agenkit.node.base_case_reason` | string | Why recursion stopped at this node. Absent on non-terminal nodes. |
 | `agenkit.node.gap` | string | Why this node produced no usable result (truncated, unreturnable). A node with a gap **also** sets span status `Error` — unlike a failed verification. |
+
+`surface_to_volume` from the original proposal is deliberately **not**
+emitted: it is derivable from other attributes, and a stored derived value is
+a second source of truth that can disagree with its inputs after a sampling or
+unit change.
+
+`StartNode` does not buffer anything — there is no flush obligation for the Go
+implementation. See [Flush obligation](#flush-obligation) below for the
+constraint any *buffering* implementation (should one be needed in another
+language) must satisfy.
 
 ### Flush obligation
 
@@ -297,29 +311,38 @@ claiming failure. Prefer the `NewVerificationResult` / `NotAssessed`
 constructors over a bare struct literal, which leaves `Verdict` at its zero
 value and can therefore disagree with `Passed`.
 
-## Collector endpoint
+## Collector endpoint and service name
 
-Agenkit **should** honour the spec-named environment variable:
+**Fixed in #771.** Agenkit honours the two spec-named environment variables as
+defaults, in every language, whenever the corresponding parameter is not
+explicitly supplied:
 
 ```
 OTEL_EXPORTER_OTLP_ENDPOINT
+OTEL_SERVICE_NAME
 ```
 
-**Rust honours it.** Passing `None` as the endpoint defers to the OTLP exporter's
-own resolution: `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, then
-`OTEL_EXPORTER_OTLP_ENDPOINT`, then the spec default `http://localhost:4317`. An
-explicitly passed endpoint overrides all three.
+**Precedence: an explicitly passed parameter always wins over the
+environment.** This matches the OTel SDK convention — env vars are defaults,
+not overrides — so it is the ordering a caller familiar with any other OTel
+SDK would expect.
 
-> **Python, Go, TypeScript, and C++ do not.** In those languages the endpoint is
-> a positional/config parameter, and if it is absent no OTLP exporter is
-> constructed at all — no environment variable is consulted. **Pass it
-> explicitly there.**
->
-> Several doc sites claim otherwise and disagree on the name:
-> `docs/observability.md:480` and `INSTALLATION.md:386` use the spec name
-> `OTEL_EXPORTER_OTLP_ENDPOINT` (and `INSTALLATION.md:389` adds
-> `OTEL_SERVICE_NAME`), while `agenkit-cpp/docs/OBSERVABILITY.md:628` uses a
-> non-spec `OTLP_ENDPOINT`. Tracked in #771.
+| Language | `otlp_endpoint` fallback | `service_name` fallback |
+|---|---|---|
+| Python | `init_tracing()` reads `OTEL_EXPORTER_OTLP_ENDPOINT` when `otlp_endpoint` is falsy | reads `OTEL_SERVICE_NAME`, then defaults to `"agenkit"` |
+| Go | `InitTracing()` reads `OTEL_EXPORTER_OTLP_ENDPOINT` when `otlpEndpoint == ""` | reads `OTEL_SERVICE_NAME`, then defaults to `"agenkit"` |
+| TypeScript | `initTracing()` reads `OTEL_EXPORTER_OTLP_ENDPOINT` when `otlpEndpoint` is not set | reads `OTEL_SERVICE_NAME`, then defaults to `"agenkit"` |
+| Rust | `init_tracing(_, None)` defers to the OTLP exporter's own resolution: `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, then `OTEL_EXPORTER_OTLP_ENDPOINT`, then the spec default `http://localhost:4317` | Rust has no `service_name` parameter on the 2-arg `init_tracing`; `init_tracing_with_config`'s `service_name: Option<&str>` follows the same explicit-wins rule, deferring to the SDK's own `OTEL_SERVICE_NAME` detection when `None` |
+| C++ | `init_tracing()`'s `OtlpHttpExporterOptions` reads `OTEL_EXPORTER_OTLP_ENDPOINT` (via the OTel C++ SDK's own default-constructor resolution) when `endpoint` is empty | C++ has no `service_name` parameter at all — a structural gap, not an env var gap; see [Known gaps](#known-gaps) |
+
+Before the fix, Python/Go/TypeScript/C++ ignored both variables outright: the
+endpoint and service name were parameters only, and an absent parameter meant
+no OTLP exporter was constructed at all, silently. Several doc sites also
+disagreed on the variable name — `docs/observability.md:480` and
+`INSTALLATION.md:386` used the correct spec name, `INSTALLATION.md:389` named
+`OTEL_SERVICE_NAME`, while `agenkit-rust/docs/OBSERVABILITY.md:737,781` and
+`agenkit-cpp/docs/OBSERVABILITY.md:628,638` used a non-spec `OTLP_ENDPOINT` —
+all now reconciled onto the two spec names above.
 
 ## Known gaps
 
@@ -329,9 +352,11 @@ Documented so consumers do not plan around capabilities that do not exist:
    language.** Usage data exists only as untyped `Message.metadata["usage"]`,
    set by some adapters, and is never promoted onto a span. Typed usage is #664;
    Bedrock cache counts are #665; promotion onto spans is #715.
-2. **No tree/DAG span helper exists.** `TracingMiddleware` wraps a single
-   `Agent.Process` and derives the span name from the agent name; there is no
-   "start a span for node N parented to node P" API.
+2. **No tree/DAG span helper in Python/TS/Rust.** `TracingMiddleware` wraps a
+   single `Agent.Process` and derives the span name from the agent name; there
+   is no "start a span for node N parented to node P" API in those languages.
+   Go has `observability.StartNode` (#784) — see
+   [Tree-node spans](#tree-node-spans).
 3. **Go's semconv pin is `v1.17.0`** (`agenkit-go/observability/tracing.go`),
    predating the GenAI conventions.
 4. **No Prometheus scrape endpoint in Rust.** `init_metrics("prometheus", ...)`
@@ -343,7 +368,8 @@ Documented so consumers do not plan around capabilities that do not exist:
 
 - #711 — the consumer request this document answers
 - #715 — the remaining implementation work: GenAI attributes on spans, tree-node helper, Go semconv bump
-- #771 — documented env vars that no implementation reads
+- #771 — env vars that no implementation read; fixed in Python/Go/TS/Rust/C++
+- #784 — tree-node span helper; fixed in Go (`StartNode`)
 - #769 — `VerificationResult.passed` could not express `not_assessed` (fixed: `Verdict`)
 - #768 — Rust OTLP export, `service.name`, and span status (fixed)
 - #772 — Rust `init_metrics` installed no exporter (fixed)

@@ -24,14 +24,49 @@ import { BaseMiddleware } from '../middleware/base';
  * Configuration for tracing initialization.
  */
 export interface TracingConfig {
-  /** Service name for traces */
-  serviceName: string;
-  /** OTLP endpoint URL (optional) */
+  /**
+   * Service name for traces. If not supplied, falls back to the
+   * OTEL_SERVICE_NAME environment variable, then the literal "agenkit".
+   */
+  serviceName?: string;
+  /**
+   * OTLP endpoint URL. If not supplied, falls back to the
+   * OTEL_EXPORTER_OTLP_ENDPOINT environment variable. OTLP export stays
+   * disabled if neither is set.
+   */
   otlpEndpoint?: string;
   /** Enable console export for development (default: false) */
   consoleExport?: boolean;
   /** Sampling rate (0.0 to 1.0). Default 1.0 (100%). For production, use lower rates (e.g., 0.01 = 1%) */
   sampleRate?: number;
+}
+
+/**
+ * OTel spec-named environment variables consulted by initTracing when the
+ * corresponding config field is not supplied. An explicitly passed config
+ * field always takes precedence over the environment — this matches the
+ * OTel SDK convention, where env vars are defaults, not overrides.
+ */
+const OTEL_EXPORTER_OTLP_ENDPOINT_ENV = 'OTEL_EXPORTER_OTLP_ENDPOINT';
+const OTEL_SERVICE_NAME_ENV = 'OTEL_SERVICE_NAME';
+
+/** Resolve the OTLP endpoint: explicit config wins, else the env var. */
+export function resolveOtlpEndpoint(otlpEndpoint?: string): string | undefined {
+  if (otlpEndpoint) {
+    return otlpEndpoint;
+  }
+  return process.env[OTEL_EXPORTER_OTLP_ENDPOINT_ENV] || undefined;
+}
+
+/**
+ * Resolve the service name: explicit config wins, else the env var, else
+ * the literal default "agenkit".
+ */
+export function resolveServiceName(serviceName?: string): string {
+  if (serviceName) {
+    return serviceName;
+  }
+  return process.env[OTEL_SERVICE_NAME_ENV] || 'agenkit';
 }
 
 /**
@@ -69,13 +104,20 @@ let tracer: Tracer | null = null;
  *   otlpEndpoint: 'http://localhost:4318/v1/traces',
  *   sampleRate: 0.01
  * });
+ *
+ * // Production: endpoint and service name from OTEL_EXPORTER_OTLP_ENDPOINT /
+ * // OTEL_SERVICE_NAME, set by the deployment environment.
+ * initTracing({ sampleRate: 0.01 });
  * ```
  */
 export function initTracing(config: TracingConfig): NodeTracerProvider {
+  const serviceName = resolveServiceName(config.serviceName);
+  const otlpEndpoint = resolveOtlpEndpoint(config.otlpEndpoint);
+
   // Create resource with service name
   const resource = defaultResource().merge(
     resourceFromAttributes({
-      [ATTR_SERVICE_NAME]: config.serviceName,
+      [ATTR_SERVICE_NAME]: serviceName,
     })
   );
 
@@ -93,9 +135,9 @@ export function initTracing(config: TracingConfig): NodeTracerProvider {
   if (config.consoleExport) {
     spanProcessors.push(new BaseSimpleSpanProcessor(new ConsoleSpanExporter()));
   }
-  if (config.otlpEndpoint) {
+  if (otlpEndpoint) {
     const otlpExporter = new OTLPTraceExporter({
-      url: config.otlpEndpoint,
+      url: otlpEndpoint,
     });
     spanProcessors.push(new BaseBatchSpanProcessor(otlpExporter));
   }

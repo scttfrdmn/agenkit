@@ -380,7 +380,7 @@ audit->log(
 ./build/examples/observability_distributed
 
 # Production configuration with OTLP
-export OTLP_ENDPOINT="http://localhost:4317"
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
 ./build/examples/observability_production
 ```
 

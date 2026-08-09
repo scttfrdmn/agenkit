@@ -5,6 +5,7 @@ Provides automatic span creation for agent processing with context propagation
 across process and language boundaries.
 """
 
+import os
 from dataclasses import replace
 from typing import Any
 
@@ -19,9 +20,31 @@ from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapProp
 
 from agenkit.interfaces import Agent, Message
 
+# OTel spec-named environment variables consulted by init_tracing when the
+# corresponding parameter is not supplied (None). An explicitly passed
+# parameter always takes precedence over the environment — this matches the
+# OTel SDK convention, where env vars are defaults, not overrides.
+_OTEL_EXPORTER_OTLP_ENDPOINT_ENV = "OTEL_EXPORTER_OTLP_ENDPOINT"
+_OTEL_SERVICE_NAME_ENV = "OTEL_SERVICE_NAME"
+
+
+def _resolve_otlp_endpoint(otlp_endpoint: str | None) -> str | None:
+    """Resolve the OTLP endpoint: explicit parameter wins, else the env var."""
+    if otlp_endpoint:
+        return otlp_endpoint
+    return os.environ.get(_OTEL_EXPORTER_OTLP_ENDPOINT_ENV) or None
+
+
+def _resolve_service_name(service_name: str | None) -> str:
+    """Resolve the service name: explicit parameter wins, else the env var,
+    else the literal default "agenkit"."""
+    if service_name:
+        return service_name
+    return os.environ.get(_OTEL_SERVICE_NAME_ENV) or "agenkit"
+
 
 def init_tracing(
-    service_name: str = "agenkit",
+    service_name: str | None = None,
     otlp_endpoint: str | None = None,
     console_export: bool = False,
     sample_rate: float = 1.0,
@@ -30,11 +53,20 @@ def init_tracing(
     Initialize OpenTelemetry tracing.
 
     Args:
-        service_name: Name of the service for trace identification
-        otlp_endpoint: Optional OTLP collector endpoint (e.g., "http://localhost:4317")
+        service_name: Name of the service for trace identification. If not
+            supplied, falls back to the OTEL_SERVICE_NAME environment
+            variable, then the literal "agenkit".
+        otlp_endpoint: Optional OTLP collector endpoint (e.g., "http://localhost:4317").
+            If not supplied, falls back to the OTEL_EXPORTER_OTLP_ENDPOINT
+            environment variable. OTLP export stays disabled if neither the
+            parameter nor the environment variable is set.
         console_export: If True, export spans to console for debugging
         sample_rate: Sampling rate (0.0 to 1.0). Default 1.0 (100%). For production,
                      use lower rates (e.g., 0.01 = 1%) to reduce overhead.
+
+    An explicitly passed service_name/otlp_endpoint always takes precedence
+    over the environment — this matches the OTel SDK convention of treating
+    env vars as defaults, not overrides.
 
     Returns:
         Configured TracerProvider
@@ -49,8 +81,15 @@ def init_tracing(
             otlp_endpoint="http://localhost:4317",
             sample_rate=0.01
         )
+
+        # Production: endpoint and service name from OTEL_EXPORTER_OTLP_ENDPOINT /
+        # OTEL_SERVICE_NAME, set by the deployment environment.
+        init_tracing(sample_rate=0.01)
     """
     global _tracer
+
+    service_name = _resolve_service_name(service_name)
+    otlp_endpoint = _resolve_otlp_endpoint(otlp_endpoint)
 
     # Create resource with service name
     resource = Resource(

@@ -375,7 +375,7 @@ kind: ConfigMap
 metadata:
   name: agenkit-observability
 data:
-  OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
   LOG_FORMAT: "json"
   LOG_LEVEL: "info"
 

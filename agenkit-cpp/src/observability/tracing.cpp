@@ -35,6 +35,15 @@ static std::shared_ptr<trace::TracerProvider> g_tracer_provider;
 
 /**
  * @brief Create OTLP HTTP exporter
+ *
+ * OtlpHttpExporterOptions' default constructor already resolves `url` from
+ * OTEL_EXPORTER_OTLP_ENDPOINT / OTEL_EXPORTER_OTLP_TRACES_ENDPOINT (falling
+ * back to the spec default http://localhost:4318/v1/traces if neither is
+ * set) -- see otlp_environment.h. Only overwrite `url` when the caller
+ * passed an explicit, non-empty endpoint: an explicit parameter must take
+ * precedence over the environment, but overwriting it unconditionally with
+ * a hardcoded default (as this used to do) would silently discard that
+ * environment-variable resolution and reintroduce the #771 bug.
  */
 static std::unique_ptr<trace_sdk::SpanExporter> create_otlp_exporter(
     const std::string& endpoint) {
@@ -42,9 +51,9 @@ static std::unique_ptr<trace_sdk::SpanExporter> create_otlp_exporter(
     otlp::OtlpHttpExporterOptions options;
     if (!endpoint.empty()) {
         options.url = endpoint;
-    } else {
-        options.url = "http://localhost:4318/v1/traces";  // Default OTLP HTTP endpoint
     }
+    // else: leave options.url as resolved by the default constructor above,
+    // which already consulted the environment.
 
     return std::make_unique<otlp::OtlpHttpExporter>(options);
 }

@@ -7,6 +7,7 @@ package observability
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 	"go.opentelemetry.io/otel"
@@ -21,16 +22,56 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// otelExporterOTLPEndpointEnv and otelServiceNameEnv are the OTel spec-named
+// environment variables consulted by InitTracing when the corresponding
+// parameter is not supplied (empty string). An explicitly passed parameter
+// always takes precedence over the environment — this matches the OTel SDK
+// convention, where env vars are defaults, not overrides.
+const (
+	otelExporterOTLPEndpointEnv = "OTEL_EXPORTER_OTLP_ENDPOINT"
+	otelServiceNameEnv          = "OTEL_SERVICE_NAME"
+)
+
 // TracerProvider global instance
 var globalTracerProvider *sdktrace.TracerProvider
+
+// resolveOTLPEndpoint returns otlpEndpoint if non-empty, otherwise the value
+// of OTEL_EXPORTER_OTLP_ENDPOINT. An empty result means OTLP export stays
+// disabled — neither the parameter nor the environment named an endpoint.
+func resolveOTLPEndpoint(otlpEndpoint string) string {
+	if otlpEndpoint != "" {
+		return otlpEndpoint
+	}
+	return os.Getenv(otelExporterOTLPEndpointEnv)
+}
+
+// resolveServiceName returns serviceName if non-empty, otherwise the value of
+// OTEL_SERVICE_NAME, otherwise the literal "agenkit".
+func resolveServiceName(serviceName string) string {
+	if serviceName != "" {
+		return serviceName
+	}
+	if name := os.Getenv(otelServiceNameEnv); name != "" {
+		return name
+	}
+	return "agenkit"
+}
 
 // InitTracing initializes OpenTelemetry tracing with the specified configuration.
 //
 // Parameters:
-//   - serviceName: Name of the service for trace identification
-//   - otlpEndpoint: Optional OTLP collector endpoint (e.g., "localhost:4317"). Empty string disables OTLP export.
+//   - serviceName: Name of the service for trace identification. If empty, falls
+//     back to the OTEL_SERVICE_NAME environment variable, then "agenkit".
+//   - otlpEndpoint: Optional OTLP collector endpoint (e.g., "localhost:4317"). If
+//     empty, falls back to the OTEL_EXPORTER_OTLP_ENDPOINT environment variable.
+//     OTLP export is disabled only if neither the parameter nor the environment
+//     variable is set.
 //   - consoleExport: If true, export spans to console for debugging
 //   - sampleRate: Sampling rate (0.0 to 1.0). Default 1.0 (100%). For production, use lower rates (e.g., 0.01 = 1%)
+//
+// An explicitly passed serviceName/otlpEndpoint always takes precedence over
+// the environment — this matches the OTel SDK convention of treating env vars
+// as defaults, not overrides.
 //
 // Example:
 //
@@ -39,7 +80,16 @@ var globalTracerProvider *sdktrace.TracerProvider
 //
 //	// Production: 1% sampling with OTLP export
 //	tp, _ := InitTracing("my-service", "localhost:4317", false, 0.01)
+//
+//	// Production: endpoint and service name from OTEL_EXPORTER_OTLP_ENDPOINT /
+//	// OTEL_SERVICE_NAME, set by the deployment environment.
+//	tp, _ := InitTracing("", "", false, 0.01)
 func InitTracing(serviceName string, otlpEndpoint string, consoleExport bool, sampleRate float64) (*sdktrace.TracerProvider, error) {
+	// Explicit parameters take precedence over the environment; the
+	// environment is consulted only when the parameter is not supplied.
+	serviceName = resolveServiceName(serviceName)
+	otlpEndpoint = resolveOTLPEndpoint(otlpEndpoint)
+
 	// Create resource with service name
 	res, err := resource.New(
 		context.Background(),

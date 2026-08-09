@@ -24,6 +24,7 @@
 #define AGENKIT_ADAPTERS_BEDROCK_AGENT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <vector>
@@ -115,7 +116,7 @@ struct BedrockConfig {
  * }
  * @endcode
  */
-class BedrockAgent : public core::Agent {
+class BedrockAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Construct a Bedrock agent with configuration
@@ -147,6 +148,24 @@ public:
      */
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
+
+    /**
+     * @brief Process a message, forwarding per-call options to the Bedrock API
+     *
+     * Same as process(), except that `options.temperature`/`max_tokens`/`top_p`
+     * override the config default when set, and `options.stop` is translated
+     * to `inferenceConfig.stopSequences` (the Converse API has no field named
+     * `stop`). `options.seed` has no Bedrock equivalent — the Converse API's
+     * `InferenceConfiguration` has no sampling-seed parameter — so a caller
+     * who sets one is warned rather than left to discover, via
+     * non-reproducible output, that it had no effect.
+     *
+     * @param message Input message (role and content)
+     * @param options Per-call options; unset fields fall back to config
+     * @return Future with Result containing response or error
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
 
     /**
      * @brief Get agent capabilities
@@ -205,10 +224,11 @@ private:
     /**
      * @brief Make API request to Bedrock Converse API
      * @param message Agent message
+     * @param options Per-call options; unset fields fall back to config
      * @return Agent message response or error
      */
     core::Result<core::Message, core::AgentError>
-    call_converse_api(const core::Message& message);
+    call_converse_api(const core::Message& message, const core::CallOptions& options);
 };
 
 /**

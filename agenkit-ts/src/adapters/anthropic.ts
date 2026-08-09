@@ -26,6 +26,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { MessageParam, MessageStreamEvent } from '@anthropic-ai/sdk/resources/messages';
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
+import type { CallOptions } from '../core/call-options';
 
 /**
  * Configuration for Anthropic adapter.
@@ -110,7 +111,32 @@ export class AnthropicAdapter implements Agent {
    * @returns Promise resolving to response message
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Processes a message with per-call inference options (#818).
+   *
+   * `stop` is translated to Anthropic's `stop_sequences` — the Messages API has
+   * no `stop` parameter, so forwarding it unchanged would be a TypeScript type
+   * error against the real SDK. `seed` has no Anthropic equivalent at all: the
+   * Messages API exposes no sampling-seed parameter, so a caller who set one is
+   * warned rather than left to discover — empirically, via non-reproducible
+   * output — that it had no effect.
+   *
+   * @param message - Input message
+   * @param options - Per-call inference options
+   * @returns Promise resolving to response message
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     validateMessage(message);
+
+    if (options.seed !== undefined) {
+      console.warn(
+        `AnthropicAdapter does not support 'seed': the Anthropic Messages API has ` +
+          'no sampling-seed parameter. The value was not sent to the provider.',
+      );
+    }
 
     const { messages, system } = this.convertToAnthropicFormat([message]);
 
@@ -118,10 +144,11 @@ export class AnthropicAdapter implements Agent {
       model: this.config.model,
       messages,
       system,
-      max_tokens: this.config.maxTokens,
-      temperature: this.config.temperature,
-      top_p: this.config.topP,
+      max_tokens: options.maxTokens ?? this.config.maxTokens,
+      temperature: options.temperature ?? this.config.temperature,
+      top_p: options.topP ?? this.config.topP,
       top_k: this.config.topK,
+      ...(options.stop !== undefined ? { stop_sequences: options.stop } : {}),
     });
 
     const textContent = response.content

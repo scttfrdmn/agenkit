@@ -39,12 +39,17 @@ std::string OpenAIAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 OpenAIAgent::process(core::Message message) {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+OpenAIAgent::process_with(core::Message message, const core::CallOptions& options) {
     // Convert message to OpenAI API format
     json messages = json::array();
     messages.push_back(message_to_json(message));
 
     // Make API call
-    auto result = call_api(messages);
+    auto result = call_api(messages, options);
 
     if (result.is_err()) {
         return core::make_ready_future(
@@ -117,33 +122,52 @@ void OpenAIAgent::set_config(const OpenAIConfig& config) {
     config_ = config;
 }
 
+json OpenAIAgent::build_request_body(const json& messages, const core::CallOptions& options) const {
+    // Build request body
+    json request_body = {
+        {"model", config_.model},
+        {"messages", messages},
+        {"max_tokens", options.max_tokens.value_or(config_.max_tokens)}
+    };
+
+    // Add optional parameters if not default, letting a per-call option
+    // override the config value when set.
+    double temperature = options.temperature.value_or(config_.temperature);
+    if (temperature != 0.7) {
+        request_body["temperature"] = temperature;
+    }
+    double top_p = options.top_p.value_or(config_.top_p);
+    if (top_p != 1.0) {
+        request_body["top_p"] = top_p;
+    }
+    if (config_.frequency_penalty != 0.0) {
+        request_body["frequency_penalty"] = config_.frequency_penalty;
+    }
+    if (config_.presence_penalty != 0.0) {
+        request_body["presence_penalty"] = config_.presence_penalty;
+    }
+
+    // seed and stop have no config-level equivalent: OpenAI's Chat Completions
+    // API accepts both natively, under these exact key names, so they are a
+    // straight passthrough with no translation.
+    if (options.seed.has_value()) {
+        request_body["seed"] = options.seed.value();
+    }
+    if (options.stop.has_value()) {
+        request_body["stop"] = options.stop.value();
+    }
+
+    return request_body;
+}
+
 core::Result<nlohmann::json, core::AgentError>
-OpenAIAgent::call_api(const json& messages) {
+OpenAIAgent::call_api(const json& messages, const core::CallOptions& options) {
     try {
         // Parse API base URL
         httplib::Client client(config_.api_base);
         client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
-        // Build request body
-        json request_body = {
-            {"model", config_.model},
-            {"messages", messages},
-            {"max_tokens", config_.max_tokens}
-        };
-
-        // Add optional parameters if not default
-        if (config_.temperature != 0.7) {
-            request_body["temperature"] = config_.temperature;
-        }
-        if (config_.top_p != 1.0) {
-            request_body["top_p"] = config_.top_p;
-        }
-        if (config_.frequency_penalty != 0.0) {
-            request_body["frequency_penalty"] = config_.frequency_penalty;
-        }
-        if (config_.presence_penalty != 0.0) {
-            request_body["presence_penalty"] = config_.presence_penalty;
-        }
+        json request_body = build_request_body(messages, options);
 
         // Set headers
         httplib::Headers headers = {
@@ -248,6 +272,10 @@ core::Message OpenAIAgent::json_to_message(const json& response) {
     return msg;
 }
 
+// Note (#818): stream() intentionally does not take a CallOptions. #818 scopes
+// per-call options to process()/process_with(); wiring seed/stop through the
+// streaming path too would duplicate build_request_body's logic against a
+// second, harder-to-test code path for a capability nothing currently exercises.
 core::Result<void, core::AgentError>
 OpenAIAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
     try {

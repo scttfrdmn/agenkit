@@ -30,6 +30,7 @@
  */
 
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
+import type { CallOptions } from '../core/call-options';
 
 /**
  * Configuration for Ollama adapter.
@@ -77,6 +78,10 @@ interface OllamaChatRequest {
     num_predict?: number;
     top_p?: number;
     top_k?: number;
+    /** Provider-side sampling seed. Ollama supports this natively (#818). */
+    seed?: number;
+    /** Stop sequences. Ollama supports this natively (#818). */
+    stop?: string[];
   };
 }
 
@@ -151,6 +156,20 @@ export class OllamaAdapter implements Agent {
    * @returns Response message with content and metadata
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Process a message through Ollama with per-call inference options (#818).
+   *
+   * `seed` and `stop` map onto Ollama's `options` object unchanged — Ollama's
+   * REST API supports both natively under those exact names.
+   *
+   * @param message - Input message
+   * @param options - Per-call inference options
+   * @returns Response message with content and metadata
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     validateMessage(message);
 
     // Convert single message to array for API
@@ -165,10 +184,12 @@ export class OllamaAdapter implements Agent {
       messages,
       stream: false,
       options: {
-        temperature: this.config.temperature,
-        num_predict: this.config.maxTokens,
-        top_p: this.config.topP,
+        temperature: options.temperature ?? this.config.temperature,
+        num_predict: options.maxTokens ?? this.config.maxTokens,
+        top_p: options.topP ?? this.config.topP,
         top_k: this.config.topK,
+        ...(options.seed !== undefined ? { seed: options.seed } : {}),
+        ...(options.stop !== undefined ? { stop: options.stop } : {}),
       },
     };
 

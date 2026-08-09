@@ -34,12 +34,17 @@ std::string OllamaAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 OllamaAgent::process(core::Message message) {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+OllamaAgent::process_with(core::Message message, const core::CallOptions& options) {
     // Convert message to Ollama API format
     json messages = json::array();
     messages.push_back(message_to_json(message));
 
     // Make API call
-    auto result = call_api(messages);
+    auto result = call_api(messages, options);
 
     if (result.is_err()) {
         return core::make_ready_future(
@@ -114,30 +119,53 @@ std::vector<std::string> OllamaAgent::list_models() const {
     return models;
 }
 
+json OllamaAgent::build_request_body(const json& messages, const core::CallOptions& options) const {
+    // Build request body
+    json request_body = {
+        {"model", config_.model},
+        {"messages", messages},
+        {"stream", config_.stream}
+    };
+
+    // Add optional parameters, letting a per-call option override the config
+    // value when set. Ollama's Options schema supports `seed` and `stop`
+    // natively under those exact keys, so both are a straight passthrough.
+    double temperature = options.temperature.value_or(config_.temperature);
+    json ollama_options;
+    bool has_options = false;
+
+    if (temperature >= 0.0) {
+        ollama_options["temperature"] = temperature;
+        has_options = true;
+    }
+    if (options.seed.has_value()) {
+        ollama_options["seed"] = options.seed.value();
+        has_options = true;
+    }
+    if (options.stop.has_value()) {
+        ollama_options["stop"] = options.stop.value();
+        has_options = true;
+    }
+
+    if (has_options) {
+        request_body["options"] = ollama_options;
+    }
+
+    if (!config_.system.empty()) {
+        request_body["system"] = config_.system;
+    }
+
+    return request_body;
+}
+
 core::Result<nlohmann::json, core::AgentError>
-OllamaAgent::call_api(const json& messages) {
+OllamaAgent::call_api(const json& messages, const core::CallOptions& options) {
     try {
         // Parse host URL
         httplib::Client client(config_.host);
         client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
-        // Build request body
-        json request_body = {
-            {"model", config_.model},
-            {"messages", messages},
-            {"stream", config_.stream}
-        };
-
-        // Add optional parameters
-        if (config_.temperature >= 0.0) {
-            request_body["options"] = {
-                {"temperature", config_.temperature}
-            };
-        }
-
-        if (!config_.system.empty()) {
-            request_body["system"] = config_.system;
-        }
+        json request_body = build_request_body(messages, options);
 
         // Set headers
         httplib::Headers headers = {
@@ -237,6 +265,9 @@ core::Message OllamaAgent::json_to_message(const json& response) {
     return msg;
 }
 
+// Note (#818): stream() intentionally does not take a CallOptions, same
+// rationale as OpenAIAgent::stream — #818 scopes per-call options to
+// process()/process_with().
 core::Result<void, core::AgentError>
 OllamaAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
     try {

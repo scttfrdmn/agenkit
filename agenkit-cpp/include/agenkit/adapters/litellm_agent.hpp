@@ -13,6 +13,7 @@
 #define AGENKIT_ADAPTERS_LITELLM_AGENT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <vector>
@@ -90,7 +91,7 @@ struct LiteLLMConfig {
  * }
  * @endcode
  */
-class LiteLLMAgent : public core::Agent {
+class LiteLLMAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Construct a LiteLLM agent with configuration
@@ -118,6 +119,22 @@ public:
     process(core::Message message) override;
 
     /**
+     * @brief Process a message, forwarding per-call options to the LiteLLM proxy
+     *
+     * Same as process(), except that `options` (temperature, max_tokens, top_p,
+     * seed, stop) are threaded into the outgoing request body, overriding the
+     * corresponding config default when set. The LiteLLM proxy normalizes
+     * `seed`/`stop` to whatever the routed provider supports (or forwards them
+     * as-is when unsupported), so both are a straight passthrough here.
+     *
+     * @param message Input message (role and content)
+     * @param options Per-call options; unset fields fall back to config
+     * @return Future with Result containing response or error
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
+    /**
      * @brief Get agent capabilities
      * @return List of capabilities: ["llm", "completion", "streaming", "universal-gateway"]
      */
@@ -135,16 +152,30 @@ public:
      */
     void set_config(const LiteLLMConfig& config);
 
+    /**
+     * @brief Build the outgoing OpenAI-compatible request body
+     *
+     * Exposed publicly so tests can assert on the exact JSON sent to the
+     * LiteLLM proxy without a live HTTP call. Per-call `options` values, when
+     * set, override the corresponding config default.
+     *
+     * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
+     * @return Request body JSON, not yet sent
+     */
+    nlohmann::json build_request_body(const nlohmann::json& messages, const core::CallOptions& options) const;
+
 private:
     LiteLLMConfig config_;
 
     /**
      * @brief Make HTTP request to LiteLLM proxy
      * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
      * @return JSON response or error
      */
     core::Result<nlohmann::json, core::AgentError>
-    call_api(const nlohmann::json& messages);
+    call_api(const nlohmann::json& messages, const core::CallOptions& options);
 
     /**
      * @brief Convert Agent message to OpenAI API format

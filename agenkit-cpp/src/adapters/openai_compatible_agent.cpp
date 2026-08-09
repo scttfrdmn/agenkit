@@ -28,12 +28,17 @@ std::string OpenAICompatibleAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 OpenAICompatibleAgent::process(core::Message message) {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+OpenAICompatibleAgent::process_with(core::Message message, const core::CallOptions& options) {
     // Convert message to OpenAI API format
     json messages = json::array();
     messages.push_back(message_to_json(message));
 
     // Make API call
-    auto result = call_api(messages);
+    auto result = call_api(messages, options);
 
     if (result.is_err()) {
         return core::make_ready_future(
@@ -72,27 +77,46 @@ void OpenAICompatibleAgent::set_config(const OpenAICompatibleConfig& config) {
     config_ = config;
 }
 
+json OpenAICompatibleAgent::build_request_body(const json& messages, const core::CallOptions& options) const {
+    // Build request body
+    json request_body = {
+        {"model", config_.model},
+        {"messages", messages},
+        {"max_tokens", options.max_tokens.value_or(config_.max_tokens)}
+    };
+
+    // Add optional parameters if not default, letting a per-call option
+    // override the config value when set.
+    double temperature = options.temperature.value_or(config_.temperature);
+    if (temperature != 0.7) {
+        request_body["temperature"] = temperature;
+    }
+    double top_p = options.top_p.value_or(config_.top_p);
+    if (top_p != 1.0) {
+        request_body["top_p"] = top_p;
+    }
+
+    // seed and stop have no config-level equivalent: this adapter shares
+    // OpenAI's Chat Completions request shape, which accepts both natively
+    // under these exact key names, so they are a straight passthrough.
+    if (options.seed.has_value()) {
+        request_body["seed"] = options.seed.value();
+    }
+    if (options.stop.has_value()) {
+        request_body["stop"] = options.stop.value();
+    }
+
+    return request_body;
+}
+
 core::Result<nlohmann::json, core::AgentError>
-OpenAICompatibleAgent::call_api(const json& messages) {
+OpenAICompatibleAgent::call_api(const json& messages, const core::CallOptions& options) {
     try {
         // Parse base URL
         httplib::Client client(config_.base_url);
         client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
-        // Build request body
-        json request_body = {
-            {"model", config_.model},
-            {"messages", messages},
-            {"max_tokens", config_.max_tokens}
-        };
-
-        // Add optional parameters if not default
-        if (config_.temperature != 0.7) {
-            request_body["temperature"] = config_.temperature;
-        }
-        if (config_.top_p != 1.0) {
-            request_body["top_p"] = config_.top_p;
-        }
+        json request_body = build_request_body(messages, options);
 
         // Set headers
         std::string api_key = config_.api_key.value_or("not-needed");

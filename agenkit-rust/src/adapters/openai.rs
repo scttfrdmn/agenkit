@@ -2,7 +2,7 @@
 //!
 //! This module provides an adapter for calling OpenAI's GPT API via HTTP.
 //! Supports GPT-4, GPT-4 Turbo, GPT-3.5 Turbo, and other OpenAI models.
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use futures::Stream;
 use serde::{Deserialize, Serialize};
@@ -81,6 +81,10 @@ struct ChatCompletionRequest {
     frequency_penalty: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     presence_penalty: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    seed: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop: Option<Vec<String>>,
 }
 
 /// OpenAI chat completion response.
@@ -215,6 +219,7 @@ impl OpenAIAgent {
     async fn call_api(
         &self,
         messages: Vec<ChatMessage>,
+        options: &CallOptions,
     ) -> Result<ChatCompletionResponse, AgentError> {
         let mut request = ChatCompletionRequest {
             model: self.config.model.clone(),
@@ -224,6 +229,8 @@ impl OpenAIAgent {
             top_p: None,
             frequency_penalty: None,
             presence_penalty: None,
+            seed: options.seed,
+            stop: options.stop.clone(),
         };
 
         // Only include optional parameters if not default
@@ -347,6 +354,12 @@ impl OpenAIAgent {
     }
 
     /// Internal streaming implementation.
+    ///
+    /// Does not take `&CallOptions`: `stream()` is not part of the `Agent`/
+    /// `OptionsAgent` contract this issue is about (#818 is scoped to `process`/
+    /// `process_with`), and threading per-call options through the SSE path here
+    /// would duplicate the same seed/stop wiring `call_api` already has for no
+    /// caller that can reach it today.
     #[cfg(feature = "native")]
     async fn stream_api_impl(
         &self,
@@ -365,6 +378,8 @@ impl OpenAIAgent {
             top_p: Some(self.config.top_p),
             frequency_penalty: Some(self.config.frequency_penalty),
             presence_penalty: Some(self.config.presence_penalty),
+            seed: None,
+            stop: None,
         })?;
 
         // Add stream parameter
@@ -435,18 +450,8 @@ impl Agent for OpenAIAgent {
         "openai"
     }
 
-    #[cfg(feature = "native")]
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        let chat_message = self.message_to_chat_message(&message);
-        let response = self.call_api(vec![chat_message]).await?;
-        Ok(self.response_to_message(response))
-    }
-
-    #[cfg(not(feature = "native"))]
-    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::Transport(
-            "OpenAI adapter requires 'native' feature".to_string(),
-        ))
+        self.process_with(message, &CallOptions::new()).await
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -455,6 +460,35 @@ impl Agent for OpenAIAgent {
             "text-generation".to_string(),
             "openai".to_string(),
         ]
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for OpenAIAgent {
+    #[cfg(feature = "native")]
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        let chat_message = self.message_to_chat_message(&message);
+        let response = self.call_api(vec![chat_message], options).await?;
+        Ok(self.response_to_message(response))
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn process_with(
+        &self,
+        _message: Message,
+        _options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        Err(AgentError::Transport(
+            "OpenAI adapter requires 'native' feature".to_string(),
+        ))
     }
 }
 
@@ -683,5 +717,102 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(response.role, "assistant");
+    }
+
+    #[tokio::test]
+    async fn test_process_with_forwards_seed_and_stop() {
+        // #818: seed/stop must reach the outgoing request body, not just live on
+        // CallOptions. mockito's PartialJson matcher makes the mock itself the
+        // assertion: if seed/stop are missing from the body, the mock never
+        // matches and the call fails with a 501, not a passing "success".
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/chat/completions")
+            .match_body(mockito::Matcher::PartialJson(json!({
+                "seed": 42,
+                "stop": ["\n", "END"],
+            })))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "id": "chatcmpl-seeded",
+                "object": "chat.completion",
+                "model": "gpt-4o",
+                "choices": [{
+                    "message": {"role": "assistant", "content": "ok"},
+                    "finish_reason": "stop",
+                    "index": 0
+                }],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = OpenAIConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OpenAIAgent::new(config);
+        let options = CallOptions::new()
+            .with_seed(42)
+            .with_stop(vec!["\n".to_string(), "END".to_string()]);
+
+        let response = agent
+            .process_with(Message::with_text("user", "hello"), &options)
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_process_does_not_forward_seed_or_stop_when_unset() {
+        // The counterpart to the forwarding test: an empty CallOptions (the path
+        // `process()` takes) must not send seed/stop keys at all.
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/chat/completions")
+            .match_request(|request| {
+                let body = request.utf8_lossy_body().unwrap_or_default();
+                !body.contains("\"seed\"") && !body.contains("\"stop\"")
+            })
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "id": "chatcmpl-noopts",
+                "object": "chat.completion",
+                "model": "gpt-4o",
+                "choices": [{
+                    "message": {"role": "assistant", "content": "ok"},
+                    "finish_reason": "stop",
+                    "index": 0
+                }],
+                "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = OpenAIConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = OpenAIAgent::new(config);
+
+        let response = agent
+            .process(Message::with_text("user", "hello"))
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
     }
 }

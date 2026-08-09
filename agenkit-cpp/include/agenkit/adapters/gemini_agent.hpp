@@ -12,6 +12,7 @@
 #define AGENKIT_ADAPTERS_GEMINI_AGENT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <vector>
@@ -90,7 +91,7 @@ struct GeminiConfig {
  * }
  * @endcode
  */
-class GeminiAgent : public core::Agent {
+class GeminiAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Construct a Gemini agent with configuration
@@ -119,6 +120,23 @@ public:
     process(core::Message message) override;
 
     /**
+     * @brief Process a message, forwarding per-call options to the Gemini API
+     *
+     * Same as process(), except that `options` (temperature, max_tokens, top_p,
+     * seed, stop) are threaded into `generationConfig`, overriding the
+     * corresponding config default for that one call. Gemini's REST API
+     * supports `seed` directly (an integer field on `generationConfig`) and
+     * `stopSequences` (`options.stop` overrides `config_.stop_sequences`
+     * rather than merging with it, for that one call).
+     *
+     * @param message Input message (role and content)
+     * @param options Per-call options; unset fields fall back to config
+     * @return Future with Result containing response or error
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
+    /**
      * @brief Get agent capabilities
      * @return List of capabilities: ["llm", "completion", "chat"]
      */
@@ -135,6 +153,19 @@ public:
      * @param config New configuration
      */
     void set_config(const GeminiConfig& config);
+
+    /**
+     * @brief Build the outgoing generateContent request body
+     *
+     * Exposed publicly so tests can assert on the exact JSON sent to Gemini
+     * without a live HTTP call. Per-call `options` values, when set, override
+     * the corresponding config default in `generationConfig`.
+     *
+     * @param contents JSON array of content
+     * @param options Per-call options; unset fields fall back to config
+     * @return Request body JSON, not yet sent
+     */
+    nlohmann::json build_request_body(const nlohmann::json& contents, const core::CallOptions& options) const;
 
     /**
      * @brief Stream completion chunks from Gemini API
@@ -165,10 +196,11 @@ private:
     /**
      * @brief Make HTTP request to Gemini API
      * @param contents JSON array of content
+     * @param options Per-call options; unset fields fall back to config
      * @return JSON response or error
      */
     core::Result<nlohmann::json, core::AgentError>
-    call_api(const nlohmann::json& contents);
+    call_api(const nlohmann::json& contents, const core::CallOptions& options);
 
     /**
      * @brief Convert Agent message to Gemini API format

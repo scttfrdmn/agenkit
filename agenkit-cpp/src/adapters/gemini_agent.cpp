@@ -48,12 +48,17 @@ std::string GeminiAgent::name() const {
 
 std::future<core::Result<core::Message, core::AgentError>>
 GeminiAgent::process(core::Message message) {
+    return process_with(std::move(message), core::CallOptions{});
+}
+
+std::future<core::Result<core::Message, core::AgentError>>
+GeminiAgent::process_with(core::Message message, const core::CallOptions& options) {
     // Convert message to Gemini API format
     json contents = json::array();
     contents.push_back(message_to_json(message));
 
     // Make API call
-    auto result = call_api(contents);
+    auto result = call_api(contents, options);
 
     if (result.is_err()) {
         return core::make_ready_future(
@@ -119,8 +124,64 @@ void GeminiAgent::load_api_key_from_env() {
     }
 }
 
+json GeminiAgent::build_request_body(const json& contents, const core::CallOptions& options) const {
+    // Build request body
+    json request_body = {
+        {"contents", contents}
+    };
+
+    // Add generation config if any parameters are set. A per-call option
+    // overrides the config default for that one call rather than merging
+    // with it (e.g. options.stop replaces config_.stop_sequences wholesale).
+    json generation_config;
+    bool has_config = false;
+
+    std::optional<double> temperature = options.temperature.has_value() ? options.temperature : config_.temperature;
+    if (temperature.has_value()) {
+        generation_config["temperature"] = temperature.value();
+        has_config = true;
+    }
+    std::optional<int> max_tokens = options.max_tokens.has_value() ? options.max_tokens : config_.max_tokens;
+    if (max_tokens.has_value()) {
+        generation_config["maxOutputTokens"] = max_tokens.value();
+        has_config = true;
+    }
+    std::optional<double> top_p = options.top_p.has_value() ? options.top_p : config_.top_p;
+    if (top_p.has_value()) {
+        generation_config["topP"] = top_p.value();
+        has_config = true;
+    }
+    if (config_.top_k.has_value()) {
+        generation_config["topK"] = config_.top_k.value();
+        has_config = true;
+    }
+
+    // seed: Gemini's REST API supports it directly as an integer field on
+    // generationConfig, no translation needed.
+    if (options.seed.has_value()) {
+        generation_config["seed"] = options.seed.value();
+        has_config = true;
+    }
+
+    // stop -> stopSequences: options.stop overrides config_.stop_sequences
+    // for this call when set, rather than merging with it.
+    if (options.stop.has_value()) {
+        generation_config["stopSequences"] = options.stop.value();
+        has_config = true;
+    } else if (!config_.stop_sequences.empty()) {
+        generation_config["stopSequences"] = config_.stop_sequences;
+        has_config = true;
+    }
+
+    if (has_config) {
+        request_body["generationConfig"] = generation_config;
+    }
+
+    return request_body;
+}
+
 core::Result<nlohmann::json, core::AgentError>
-GeminiAgent::call_api(const json& contents) {
+GeminiAgent::call_api(const json& contents, const core::CallOptions& options) {
     try {
         // Build API endpoint URL
         // Format: /v1beta/models/{model}:generateContent?key={api_key}
@@ -132,39 +193,7 @@ GeminiAgent::call_api(const json& contents) {
         httplib::Client client(config_.api_base);
         client.set_read_timeout(std::chrono::duration_cast<std::chrono::seconds>(config_.timeout).count(), 0);
 
-        // Build request body
-        json request_body = {
-            {"contents", contents}
-        };
-
-        // Add generation config if any parameters are set
-        json generation_config;
-        bool has_config = false;
-
-        if (config_.temperature.has_value()) {
-            generation_config["temperature"] = config_.temperature.value();
-            has_config = true;
-        }
-        if (config_.max_tokens.has_value()) {
-            generation_config["maxOutputTokens"] = config_.max_tokens.value();
-            has_config = true;
-        }
-        if (config_.top_p.has_value()) {
-            generation_config["topP"] = config_.top_p.value();
-            has_config = true;
-        }
-        if (config_.top_k.has_value()) {
-            generation_config["topK"] = config_.top_k.value();
-            has_config = true;
-        }
-        if (!config_.stop_sequences.empty()) {
-            generation_config["stopSequences"] = config_.stop_sequences;
-            has_config = true;
-        }
-
-        if (has_config) {
-            request_body["generationConfig"] = generation_config;
-        }
+        json request_body = build_request_body(contents, options);
 
         // Set headers
         httplib::Headers headers = {
@@ -296,6 +325,9 @@ core::Message GeminiAgent::json_to_message(const json& response) {
     return msg;
 }
 
+// Note (#818): stream() intentionally does not take a CallOptions, same
+// rationale as OpenAIAgent::stream — #818 scopes per-call options to
+// process()/process_with().
 core::Result<void, core::AgentError>
 GeminiAgent::stream(core::Message message, std::function<bool(const std::string&)> callback) {
     try {

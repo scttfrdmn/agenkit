@@ -35,6 +35,33 @@ async def test_complete_success(simple_test_message):
         assert response.metadata["usage"]["prompt_tokens"] == 10
 
 
+@pytest.mark.asyncio
+async def test_complete_forwards_seed_and_stop(simple_test_message):
+    """
+    seed and stop must reach litellm.acompletion (#818).
+
+    LiteLLM's acompletion supports both "seed" and "stop" natively under those
+    exact names (it normalizes provider differences internally), so no
+    translation is needed here -- the values just need to survive the **kwargs
+    passthrough from CallOptions.to_kwargs().
+    """
+    llm = LiteLLMLLM(model="gpt-4")
+
+    mock_response = MagicMock()
+    mock_response.choices = [MagicMock(message=MagicMock(content="hi"))]
+    mock_response.model = "gpt-4"
+    mock_response.usage = MagicMock(prompt_tokens=1, completion_tokens=1, total_tokens=2)
+
+    with patch(
+        "litellm.acompletion", new=AsyncMock(return_value=mock_response)
+    ) as mock_acompletion:
+        await llm.complete(simple_test_message, seed=918273645, stop=["END", "STOP"])
+
+        call_kwargs = mock_acompletion.call_args.kwargs
+        assert call_kwargs["seed"] == 918273645
+        assert call_kwargs["stop"] == ["END", "STOP"]
+
+
 def test_message_conversion(test_messages):
     """Test Agenkit Message to LiteLLM (OpenAI-style) format conversion."""
     llm = LiteLLMLLM(model="gpt-4")

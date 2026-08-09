@@ -34,6 +34,7 @@
  */
 
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
+import type { CallOptions } from '../core/call-options';
 
 /**
  * Configuration for LiteLLM adapter.
@@ -79,6 +80,10 @@ interface LiteLLMRequest {
   max_tokens?: number;
   top_p?: number;
   stream?: boolean;
+  /** Provider-side sampling seed. LiteLLM forwards this to providers that support it (#818). */
+  seed?: number;
+  /** Stop sequences. LiteLLM forwards this to providers that support it (#818). */
+  stop?: string[];
 }
 
 /**
@@ -192,6 +197,21 @@ export class LiteLLMAdapter implements Agent {
    * @returns Promise resolving to response message
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Processes a message with per-call inference options (#818).
+   *
+   * `seed` and `stop` map onto LiteLLM's OpenAI-compatible request body
+   * unchanged — LiteLLM normalizes both to whatever the routed provider
+   * supports, and forwards them as-is when the provider does not.
+   *
+   * @param message - Input message
+   * @param options - Per-call inference options
+   * @returns Promise resolving to response message
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     validateMessage(message);
 
     const messages = this.convertMessages([message]);
@@ -199,9 +219,11 @@ export class LiteLLMAdapter implements Agent {
     const request: LiteLLMRequest = {
       model: this.config.model,
       messages,
-      temperature: this.config.temperature,
-      max_tokens: this.config.maxTokens,
-      top_p: this.config.topP,
+      temperature: options.temperature ?? this.config.temperature,
+      max_tokens: options.maxTokens ?? this.config.maxTokens,
+      top_p: options.topP ?? this.config.topP,
+      ...(options.seed !== undefined ? { seed: options.seed } : {}),
+      ...(options.stop !== undefined ? { stop: options.stop } : {}),
     };
 
     const response = await this.makeRequest(request);

@@ -12,6 +12,7 @@
 #define AGENKIT_ADAPTERS_OPENAI_AGENT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <memory>
@@ -80,7 +81,7 @@ struct OpenAIConfig {
  * }
  * @endcode
  */
-class OpenAIAgent : public core::Agent {
+class OpenAIAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Construct an OpenAI agent with configuration
@@ -107,6 +108,21 @@ public:
      */
     std::future<core::Result<core::Message, core::AgentError>>
     process(core::Message message) override;
+
+    /**
+     * @brief Process a message, forwarding per-call options to the OpenAI API
+     *
+     * Same as process(), except that `options` (temperature, max_tokens, top_p,
+     * seed, stop) are threaded into the outgoing request body, overriding the
+     * corresponding config default when set. OpenAI's Chat Completions API
+     * supports `seed` and `stop` natively, so both are forwarded unchanged.
+     *
+     * @param message Input message (role and content)
+     * @param options Per-call options; unset fields fall back to config
+     * @return Future with Result containing response or error
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
 
     /**
      * @brief Stream response from OpenAI API
@@ -139,16 +155,32 @@ public:
      */
     void set_config(const OpenAIConfig& config);
 
+    /**
+     * @brief Build the outgoing Chat Completions request body
+     *
+     * Exposed publicly (alongside message_to_json/json_to_message) so tests
+     * can assert on the exact JSON sent to OpenAI without a live HTTP call or
+     * a mock server. Per-call `options` values, when set, override the
+     * corresponding config default; `seed` and `stop` have no config-level
+     * equivalent and are only present when the caller sets them.
+     *
+     * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
+     * @return Request body JSON, not yet sent
+     */
+    nlohmann::json build_request_body(const nlohmann::json& messages, const core::CallOptions& options) const;
+
 private:
     OpenAIConfig config_;
 
     /**
      * @brief Make HTTP request to OpenAI API
      * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
      * @return JSON response or error
      */
     core::Result<nlohmann::json, core::AgentError>
-    call_api(const nlohmann::json& messages);
+    call_api(const nlohmann::json& messages, const core::CallOptions& options);
 
     /**
      * @brief Convert Agent message to OpenAI API format

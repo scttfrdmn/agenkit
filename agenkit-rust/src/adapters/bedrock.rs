@@ -2,7 +2,7 @@
 //!
 //! Provides integration with Amazon Bedrock's foundation models including
 //! Claude, Llama, Mistral, and Titan. Supports both completion and streaming modes.
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use futures::stream::Stream;
 use serde_json::json;
@@ -160,25 +160,37 @@ impl BedrockAdapter {
         Ok(Self { config })
     }
 
-    /// Call Bedrock Converse API with messages.
-    #[cfg(feature = "native")]
-    async fn call_api(
-        &self,
-        messages: Vec<BedrockMessage>,
-        system: Option<Vec<aws_sdk_bedrockruntime::types::SystemContentBlock>>,
-    ) -> Result<aws_sdk_bedrockruntime::operation::converse::ConverseOutput, AgentError> {
-        let mut request = self
-            .client
-            .converse()
-            .model_id(&self.config.model)
-            .set_messages(Some(messages));
-
-        // Add system messages if provided
-        if let Some(system_blocks) = system {
-            request = request.set_system(Some(system_blocks));
+    /// Warn that the Bedrock Converse API's `InferenceConfiguration` has no
+    /// `seed` field at all.
+    ///
+    /// Unlike `stop`, which maps onto the real `stop_sequences` setter, there is
+    /// no translation for `seed` to fall back to — the builder simply has no
+    /// setter for it. Silently ignoring `CallOptions.seed` would recreate the
+    /// #818 defect this method exists to avoid: a caller who asked for
+    /// reproducible sampling gets a successful call that is not reproducible,
+    /// with nothing to tell them why.
+    fn warn_seed_unsupported(options: &CallOptions) {
+        if options.seed.is_some() {
+            tracing::warn!(
+                "CallOptions.seed is not supported by the Bedrock Converse API and was not sent"
+            );
         }
+    }
 
-        // Add inference configuration
+    /// Build the per-call inference configuration, letting `options` override
+    /// the config-level default field by field — the same override precedent
+    /// every adapter in this crate uses for `CallOptions` (#818).
+    ///
+    /// Does not set `seed`: `InferenceConfigurationBuilder` has no such method
+    /// (confirmed against the `aws-sdk-bedrockruntime` 1.135 source — the
+    /// Converse API's `InferenceConfiguration` has no `seed` field at all), so
+    /// `call_api` warns and drops it separately via [`Self::warn_seed_unsupported`]
+    /// rather than pretending there is somewhere to put it here.
+    #[cfg(feature = "native")]
+    fn inference_config_for(
+        &self,
+        options: &CallOptions,
+    ) -> aws_sdk_bedrockruntime::types::InferenceConfiguration {
         let mut inference_config = aws_sdk_bedrockruntime::types::InferenceConfiguration::builder();
 
         if let Some(temperature) = self.config.temperature {
@@ -193,12 +205,44 @@ impl BedrockAdapter {
             inference_config = inference_config.top_p(top_p);
         }
 
-        if !self.config.stop_sequences.is_empty() {
-            inference_config =
-                inference_config.set_stop_sequences(Some(self.config.stop_sequences.clone()));
+        // A per-call stop overrides the config-level default, the same
+        // precedent every adapter in this crate uses for CallOptions (#818).
+        let stop_sequences = match &options.stop {
+            Some(stop) => Some(stop.clone()),
+            None if !self.config.stop_sequences.is_empty() => {
+                Some(self.config.stop_sequences.clone())
+            }
+            None => None,
+        };
+        if let Some(stop_sequences) = stop_sequences {
+            inference_config = inference_config.set_stop_sequences(Some(stop_sequences));
         }
 
-        request = request.inference_config(inference_config.build());
+        inference_config.build()
+    }
+
+    /// Call Bedrock Converse API with messages.
+    #[cfg(feature = "native")]
+    async fn call_api(
+        &self,
+        messages: Vec<BedrockMessage>,
+        system: Option<Vec<aws_sdk_bedrockruntime::types::SystemContentBlock>>,
+        options: &CallOptions,
+    ) -> Result<aws_sdk_bedrockruntime::operation::converse::ConverseOutput, AgentError> {
+        Self::warn_seed_unsupported(options);
+
+        let mut request = self
+            .client
+            .converse()
+            .model_id(&self.config.model)
+            .set_messages(Some(messages));
+
+        // Add system messages if provided
+        if let Some(system_blocks) = system {
+            request = request.set_system(Some(system_blocks));
+        }
+
+        request = request.inference_config(self.inference_config_for(options));
 
         let response = request
             .send()
@@ -470,18 +514,8 @@ impl Agent for BedrockAdapter {
         "bedrock"
     }
 
-    #[cfg(feature = "native")]
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        let (bedrock_messages, system) = self.messages_to_bedrock_format(&[message]);
-        let response = self.call_api(bedrock_messages, system).await?;
-        self.response_to_message(response)
-    }
-
-    #[cfg(not(feature = "native"))]
-    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::Transport(
-            "Bedrock adapter requires 'native' feature".to_string(),
-        ))
+        self.process_with(message, &CallOptions::new()).await
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -491,6 +525,35 @@ impl Agent for BedrockAdapter {
             "bedrock".to_string(),
             "aws".to_string(),
         ]
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for BedrockAdapter {
+    #[cfg(feature = "native")]
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        let (bedrock_messages, system) = self.messages_to_bedrock_format(&[message]);
+        let response = self.call_api(bedrock_messages, system, options).await?;
+        self.response_to_message(response)
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn process_with(
+        &self,
+        _message: Message,
+        _options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        Err(AgentError::Transport(
+            "Bedrock adapter requires 'native' feature".to_string(),
+        ))
     }
 }
 
@@ -635,5 +698,74 @@ mod tests {
         assert_eq!(config.stop_sequences.len(), 2);
         assert_eq!(config.stop_sequences[0], "STOP");
         assert_eq!(config.stop_sequences[1], "END");
+    }
+
+    // Bedrock talks to AWS over SigV4-signed requests rather than a plain JSON
+    // POST, so mocking the wire the way openai.rs/anthropic.rs do is not
+    // practical here. `inference_config_for` is the exact function `call_api`
+    // uses to build the outgoing `InferenceConfiguration`, so testing it (and
+    // its getters, which the real SDK type exposes) still proves stop reaches
+    // the request and seed has nowhere to go (#818).
+
+    #[tokio::test]
+    async fn test_inference_config_forwards_stop() {
+        let config = BedrockConfig::default();
+        let adapter = BedrockAdapter::new(config).await;
+        if let Ok(adapter) = adapter {
+            let options = CallOptions::new().with_stop(vec!["\n".to_string(), "END".to_string()]);
+            let inference_config = adapter.inference_config_for(&options);
+            assert_eq!(
+                inference_config.stop_sequences(),
+                ["\n".to_string(), "END".to_string()]
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_inference_config_per_call_stop_overrides_config_default() {
+        let config = BedrockConfig {
+            stop_sequences: vec!["CONFIG_STOP".to_string()],
+            ..Default::default()
+        };
+        let adapter = BedrockAdapter::new(config).await;
+        if let Ok(adapter) = adapter {
+            let options = CallOptions::new().with_stop(vec!["CALL_STOP".to_string()]);
+            let inference_config = adapter.inference_config_for(&options);
+            assert_eq!(inference_config.stop_sequences(), ["CALL_STOP".to_string()]);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_inference_config_falls_back_to_config_default_stop() {
+        let config = BedrockConfig {
+            stop_sequences: vec!["CONFIG_STOP".to_string()],
+            ..Default::default()
+        };
+        let adapter = BedrockAdapter::new(config).await;
+        if let Ok(adapter) = adapter {
+            let inference_config = adapter.inference_config_for(&CallOptions::new());
+            assert_eq!(
+                inference_config.stop_sequences(),
+                ["CONFIG_STOP".to_string()]
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn test_inference_config_has_no_seed_field_to_set() {
+        // There is no `seed` setter on InferenceConfigurationBuilder at all, so
+        // this test documents the absence structurally: building with a seed set
+        // on CallOptions produces exactly the same InferenceConfiguration as
+        // without one, because inference_config_for never reads options.seed.
+        let config = BedrockConfig::default();
+        let adapter = BedrockAdapter::new(config).await;
+        if let Ok(adapter) = adapter {
+            let with_seed = adapter.inference_config_for(&CallOptions::new().with_seed(42));
+            let without_seed = adapter.inference_config_for(&CallOptions::new());
+            assert_eq!(with_seed.temperature(), without_seed.temperature());
+            assert_eq!(with_seed.max_tokens(), without_seed.max_tokens());
+            assert_eq!(with_seed.top_p(), without_seed.top_p());
+            assert_eq!(with_seed.stop_sequences(), without_seed.stop_sequences());
+        }
     }
 }

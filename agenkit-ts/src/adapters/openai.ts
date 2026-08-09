@@ -25,6 +25,7 @@
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam, ChatCompletionChunk } from 'openai/resources/chat/completions';
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
+import type { CallOptions } from '../core/call-options';
 
 /**
  * Configuration for OpenAI adapter.
@@ -120,6 +121,21 @@ export class OpenAIAdapter implements Agent {
    * @returns Promise resolving to response message
    */
   async process(message: Message): Promise<Message> {
+    return this.processWith(message, {});
+  }
+
+  /**
+   * Processes a message with per-call inference options (#818).
+   *
+   * `seed` and `stop` map onto OpenAI's chat.completions.create() unchanged —
+   * the OpenAI API supports both natively under those exact names — so this is
+   * a straight passthrough with no translation, unlike Anthropic/Bedrock/Gemini.
+   *
+   * @param message - Input message
+   * @param options - Per-call inference options
+   * @returns Promise resolving to response message
+   */
+  async processWith(message: Message, options: CallOptions): Promise<Message> {
     validateMessage(message);
 
     const messages = this.convertToOpenAIFormat([message]);
@@ -127,11 +143,13 @@ export class OpenAIAdapter implements Agent {
     const response = await this.client.chat.completions.create({
       model: this.config.model,
       messages,
-      temperature: this.config.temperature,
-      max_tokens: this.config.maxTokens,
-      top_p: this.config.topP,
+      temperature: options.temperature ?? this.config.temperature,
+      max_tokens: options.maxTokens ?? this.config.maxTokens,
+      top_p: options.topP ?? this.config.topP,
       frequency_penalty: this.config.frequencyPenalty,
       presence_penalty: this.config.presencePenalty,
+      ...(options.seed !== undefined ? { seed: options.seed } : {}),
+      ...(options.stop !== undefined ? { stop: options.stop } : {}),
     });
 
     const choice = response.choices[0];

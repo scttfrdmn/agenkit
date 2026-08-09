@@ -104,6 +104,7 @@ class AnthropicLLM(LLM):
         """
         # Validate parameters
         self._validate_llm_params(temperature, max_tokens, **kwargs)
+        kwargs = self._translate_options(kwargs)
 
         # Convert Agenkit Messages to Anthropic format
         anthropic_messages = self._convert_messages(messages)
@@ -162,6 +163,7 @@ class AnthropicLLM(LLM):
         """
         # Validate parameters
         self._validate_llm_params(temperature, max_tokens, **kwargs)
+        kwargs = self._translate_options(kwargs)
 
         # Convert messages
         anthropic_messages = self._convert_messages(messages)
@@ -205,6 +207,39 @@ class AnthropicLLM(LLM):
             anthropic_messages.append({"role": role, "content": str(msg.content)})
 
         return anthropic_messages
+
+    def _translate_options(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+        """
+        Translate portable :class:`~agenkit.CallOptions` fields to Anthropic's names.
+
+        ``stop`` (the portable field, set via ``CallOptions.stop``) maps to
+        Anthropic's ``stop_sequences`` — the Messages API has no parameter named
+        ``stop``, so forwarding it unchanged would raise ``TypeError`` at the SDK
+        boundary rather than reach the request.
+
+        ``seed`` has no Anthropic equivalent: the Messages API does not expose a
+        sampling seed at all, so a caller who set one for reproducibility is
+        warned rather than left to discover — empirically, via non-reproducible
+        output — that the option was dropped (#818, the same defect as #801's
+        ``temperature``).
+
+        Args:
+            kwargs: Rendered ``CallOptions`` kwargs (from ``to_kwargs()``) plus any
+                other provider kwargs the caller passed directly.
+
+        Returns:
+            ``kwargs`` with ``stop`` renamed to ``stop_sequences`` and ``seed``
+            removed (after warning, if it was set).
+        """
+        kwargs = dict(kwargs)
+        if "stop" in kwargs:
+            kwargs["stop_sequences"] = kwargs.pop("stop")
+        if "seed" in kwargs:
+            kwargs.pop("seed")
+            self._warn_unsupported_option(
+                "seed", "the Anthropic Messages API has no sampling-seed parameter"
+            )
+        return kwargs
 
     def _extract_system_message(self, messages: list[Message]) -> str | None:
         """

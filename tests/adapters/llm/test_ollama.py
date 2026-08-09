@@ -27,6 +27,27 @@ async def test_complete_success(mock_ollama_response, simple_test_message):
     assert response.metadata["eval_count"] == 15
 
 
+@pytest.mark.asyncio
+async def test_complete_forwards_seed_and_stop(mock_ollama_response, simple_test_message):
+    """
+    seed and stop must reach the Ollama request options dict (#818).
+
+    Ollama's Options TypedDict supports both "seed" and "stop" natively under
+    those exact names, so no translation is needed -- they just need to survive
+    options.update(kwargs).
+    """
+    from unittest.mock import AsyncMock
+
+    llm = OllamaLLM(model="llama2")
+    llm._client.chat = AsyncMock(return_value=mock_ollama_response)
+
+    await llm.complete(simple_test_message, seed=918273645, stop=["END", "STOP"])
+
+    call_kwargs = llm._client.chat.call_args.kwargs
+    assert call_kwargs["options"]["seed"] == 918273645
+    assert call_kwargs["options"]["stop"] == ["END", "STOP"]
+
+
 def test_message_conversion(test_messages):
     """Test Agenkit Message to Ollama format conversion."""
     llm = OllamaLLM(model="llama2")

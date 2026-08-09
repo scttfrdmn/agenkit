@@ -26,6 +26,27 @@ async def test_complete_success(mock_gemini_client, simple_test_message):
     assert response.metadata["usage"]["completion_tokens"] == 15
 
 
+@pytest.mark.asyncio
+async def test_complete_forwards_seed_and_translates_stop(mock_gemini_client, simple_test_message):
+    """
+    seed and stop must reach the Gemini request (#818).
+
+    Gemini's GenerateContentConfig supports "seed" directly under that name, but
+    has no "stop" field -- only "stop_sequences" -- so the portable CallOptions
+    field must be renamed or the real SDK raises a pydantic ValidationError
+    ("Extra inputs are not permitted") rather than reaching the request.
+    """
+    llm = GeminiLLM(api_key="test-key")
+    llm._client = mock_gemini_client
+
+    await llm.complete(simple_test_message, seed=918273645, stop=["END", "STOP"])
+
+    call_kwargs = mock_gemini_client.aio.models.generate_content.call_args.kwargs
+    config = call_kwargs["config"]
+    assert config.seed == 918273645
+    assert config.stop_sequences == ["END", "STOP"]
+
+
 def test_message_conversion(test_messages):
     """Test Agenkit Message to Gemini format conversion."""
     llm = GeminiLLM(api_key="test-key")

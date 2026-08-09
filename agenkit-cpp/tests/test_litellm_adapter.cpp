@@ -5,10 +5,13 @@
 
 #include <gtest/gtest.h>
 #include "agenkit/adapters/litellm_agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
+#include <nlohmann/json.hpp>
 
 using namespace agenkit::core;
 using namespace agenkit::adapters;
+using json = nlohmann::json;
 
 // Test 1: Constructor validation with valid config
 TEST(LiteLLMAgentTest, ConstructorWithValidConfig) {
@@ -204,4 +207,71 @@ TEST(LiteLLMAgentTest, TimeoutConfiguration) {
     LiteLLMAgent agent(config);
 
     EXPECT_EQ(agent.config().timeout.count(), 30000);
+}
+
+// --- CallOptions / OptionsAgent wiring (#818) ---
+
+TEST(LiteLLMAgentTest, IsAnOptionsAgent) {
+    LiteLLMConfig config;
+    config.model = "gpt-3.5-turbo";
+    config.base_url = "http://localhost:4000";
+    LiteLLMAgent agent(config);
+
+    EXPECT_TRUE(supports_options(&agent));
+    EXPECT_NE(dynamic_cast<OptionsAgent*>(&agent), nullptr);
+}
+
+// build_request_body must omit seed/stop entirely when CallOptions is empty.
+TEST(LiteLLMAgentTest, RequestBodyOmitsSeedAndStopWhenUnset) {
+    LiteLLMConfig config;
+    config.model = "gpt-3.5-turbo";
+    config.base_url = "http://localhost:4000";
+    LiteLLMAgent agent(config);
+
+    auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
+    auto body = agent.build_request_body(messages, CallOptions{});
+
+    EXPECT_FALSE(body.contains("seed"));
+    EXPECT_FALSE(body.contains("stop"));
+}
+
+// The LiteLLM proxy normalizes seed/stop to whatever the routed provider
+// supports (or forwards them as-is), so both are a straight passthrough.
+TEST(LiteLLMAgentTest, RequestBodyIncludesSeedAndStopWhenSet) {
+    LiteLLMConfig config;
+    config.model = "gpt-3.5-turbo";
+    config.base_url = "http://localhost:4000";
+    LiteLLMAgent agent(config);
+
+    auto options = CallOptions{}.with_seed(42).with_stop({"STOP", "END"});
+    auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
+    auto body = agent.build_request_body(messages, options);
+
+    ASSERT_TRUE(body.contains("seed"));
+    EXPECT_EQ(body["seed"].get<uint64_t>(), 42u);
+
+    ASSERT_TRUE(body.contains("stop"));
+    std::vector<std::string> stop = body["stop"].get<std::vector<std::string>>();
+    ASSERT_EQ(stop.size(), 2u);
+    EXPECT_EQ(stop[0], "STOP");
+    EXPECT_EQ(stop[1], "END");
+}
+
+// A per-call temperature/max_tokens/top_p must override the config default.
+TEST(LiteLLMAgentTest, RequestBodyPerCallOptionsOverrideConfigDefaults) {
+    LiteLLMConfig config;
+    config.model = "gpt-4";
+    config.base_url = "http://localhost:4000";
+    config.temperature = 0.7;
+    config.max_tokens = 1024;
+    config.top_p = 1.0;
+    LiteLLMAgent agent(config);
+
+    auto options = CallOptions{}.with_temperature(0.2).with_max_tokens(128).with_top_p(0.5);
+    auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
+    auto body = agent.build_request_body(messages, options);
+
+    EXPECT_DOUBLE_EQ(body["temperature"].get<double>(), 0.2);
+    EXPECT_EQ(body["max_tokens"].get<int>(), 128);
+    EXPECT_DOUBLE_EQ(body["top_p"].get<double>(), 0.5);
 }

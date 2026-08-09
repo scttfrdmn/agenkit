@@ -12,6 +12,7 @@
 #define AGENKIT_ADAPTERS_CLAUDE_AGENT_HPP
 
 #include "agenkit/core/agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
 #include <string>
 #include <memory>
@@ -74,7 +75,7 @@ struct ClaudeConfig {
  * }
  * @endcode
  */
-class ClaudeAgent : public core::Agent {
+class ClaudeAgent : public core::Agent, public core::OptionsAgent {
 public:
     /**
      * @brief Construct a Claude agent with configuration
@@ -103,6 +104,23 @@ public:
     process(core::Message message) override;
 
     /**
+     * @brief Process a message, forwarding per-call options to the Claude API
+     *
+     * Same as process(), except that `options.temperature`/`max_tokens` override
+     * the config default when set, and `options.stop` is translated to
+     * Anthropic's `stop_sequences` (the Messages API has no `stop` field).
+     * `options.seed` has no Anthropic equivalent — the Messages API exposes no
+     * sampling-seed parameter — so a caller who sets one is warned rather than
+     * left to discover, via non-reproducible output, that it had no effect.
+     *
+     * @param message Input message (role and content)
+     * @param options Per-call options; unset fields fall back to config
+     * @return Future with Result containing response or error
+     */
+    std::future<core::Result<core::Message, core::AgentError>>
+    process_with(core::Message message, const core::CallOptions& options) override;
+
+    /**
      * @brief Get agent capabilities
      * @return List of capabilities: ["llm", "text-generation", "claude"]
      */
@@ -119,6 +137,21 @@ public:
      * @param config New configuration
      */
     void set_config(const ClaudeConfig& config);
+
+    /**
+     * @brief Build the outgoing Messages API request body
+     *
+     * Exposed publicly so tests can assert on the exact JSON sent to Claude
+     * without a live HTTP call. `options.seed`, if set, is never added to the
+     * returned body (proving the drop rather than merely the absence of a crash);
+     * a caller should check for that via process_with()'s warning side effect,
+     * not via this method, which builds the request only.
+     *
+     * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
+     * @return Request body JSON, not yet sent
+     */
+    nlohmann::json build_request_body(const nlohmann::json& messages, const core::CallOptions& options) const;
 
     /**
      * @brief Stream completion chunks from Claude API
@@ -149,10 +182,11 @@ private:
     /**
      * @brief Make HTTP request to Claude API
      * @param messages JSON array of messages
+     * @param options Per-call options; unset fields fall back to config
      * @return JSON response or error
      */
     core::Result<nlohmann::json, core::AgentError>
-    call_api(const nlohmann::json& messages);
+    call_api(const nlohmann::json& messages, const core::CallOptions& options);
 
     /**
      * @brief Convert Agent message to Claude API format

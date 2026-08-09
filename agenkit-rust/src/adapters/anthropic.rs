@@ -2,7 +2,7 @@
 //!
 //! This module provides an adapter for calling Anthropic's Claude API via HTTP.
 //! Supports Claude 3 Opus, Sonnet, and Haiku models with both completion and streaming.
-use crate::core::{Agent, AgentError, Message};
+use crate::core::{Agent, AgentError, CallOptions, Message, OptionsAgent};
 use async_trait::async_trait;
 use futures::stream::Stream;
 use serde::{Deserialize, Serialize};
@@ -82,6 +82,11 @@ struct MessagesRequest {
     top_k: Option<i32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     stream: Option<bool>,
+    /// Anthropic's Messages API has no `seed` parameter at all — see
+    /// `process_with`, which warns and drops `CallOptions.seed` rather than
+    /// putting it here (#818).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    stop_sequences: Option<Vec<String>>,
 }
 
 /// Anthropic messages response.
@@ -327,13 +332,32 @@ impl AnthropicAgent {
         }))
     }
 
+    /// Warn that the Anthropic Messages API has no `seed` parameter.
+    ///
+    /// Anthropic's API has nowhere to put a sampling seed — unlike `stop`, which
+    /// maps onto the real `stop_sequences` field, there is no translation to fall
+    /// back to. Silently ignoring `CallOptions.seed` would recreate the #818
+    /// defect this method exists to avoid: a caller who asked for reproducible
+    /// sampling gets a successful call that is not reproducible, with nothing to
+    /// tell them why.
+    fn warn_seed_unsupported(options: &CallOptions) {
+        if options.seed.is_some() {
+            tracing::warn!(
+                "CallOptions.seed is not supported by the Anthropic Messages API and was not sent"
+            );
+        }
+    }
+
     /// Call Anthropic API with messages.
     #[cfg(feature = "native")]
     async fn call_api(
         &self,
         messages: Vec<ClaudeMessage>,
         system: Option<String>,
+        options: &CallOptions,
     ) -> Result<MessagesResponse, AgentError> {
+        Self::warn_seed_unsupported(options);
+
         let mut request = MessagesRequest {
             model: self.config.model.clone(),
             max_tokens: self.config.max_tokens,
@@ -343,6 +367,7 @@ impl AnthropicAgent {
             top_p: None,
             top_k: None,
             stream: None,
+            stop_sequences: options.stop.clone(),
         };
 
         // Only include optional parameters if not default
@@ -414,6 +439,9 @@ impl AnthropicAgent {
             top_p: None,
             top_k: None,
             stream: Some(true),
+            // Streaming is not part of the OptionsAgent contract this issue is
+            // about (#818); see the equivalent decision in openai.rs.
+            stop_sequences: None,
         };
 
         // Only include optional parameters if not default
@@ -543,18 +571,8 @@ impl Agent for AnthropicAgent {
         "anthropic"
     }
 
-    #[cfg(feature = "native")]
     async fn process(&self, message: Message) -> Result<Message, AgentError> {
-        let (system, messages) = self.message_to_claude_message(&message);
-        let response = self.call_api(messages, system).await?;
-        Ok(self.response_to_message(response))
-    }
-
-    #[cfg(not(feature = "native"))]
-    async fn process(&self, _message: Message) -> Result<Message, AgentError> {
-        Err(AgentError::Transport(
-            "Anthropic adapter requires 'native' feature".to_string(),
-        ))
+        self.process_with(message, &CallOptions::new()).await
     }
 
     fn capabilities(&self) -> Vec<String> {
@@ -564,6 +582,35 @@ impl Agent for AnthropicAgent {
             "anthropic".to_string(),
             "claude".to_string(),
         ]
+    }
+
+    fn as_options_agent(&self) -> Option<&dyn OptionsAgent> {
+        Some(self)
+    }
+}
+
+#[async_trait]
+impl OptionsAgent for AnthropicAgent {
+    #[cfg(feature = "native")]
+    async fn process_with(
+        &self,
+        message: Message,
+        options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        let (system, messages) = self.message_to_claude_message(&message);
+        let response = self.call_api(messages, system, options).await?;
+        Ok(self.response_to_message(response))
+    }
+
+    #[cfg(not(feature = "native"))]
+    async fn process_with(
+        &self,
+        _message: Message,
+        _options: &CallOptions,
+    ) -> Result<Message, AgentError> {
+        Err(AgentError::Transport(
+            "Anthropic adapter requires 'native' feature".to_string(),
+        ))
     }
 }
 
@@ -785,5 +832,98 @@ mod tests {
         // System messages are extracted separately, not passed as user messages
         let response = agent.process(msg).await.unwrap();
         assert!(!response.content_as_str().unwrap_or("").is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_process_with_forwards_stop_as_stop_sequences() {
+        // #818: CallOptions.stop must reach the wire as stop_sequences, the
+        // Anthropic Messages API's real field name.
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/messages")
+            .match_body(mockito::Matcher::PartialJson(json!({
+                "stop_sequences": ["\n", "END"],
+            })))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "id": "msg_stop",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "ok"}],
+                "model": "claude-sonnet-5",
+                "stop_reason": "stop_sequence",
+                "usage": {"input_tokens": 1, "output_tokens": 1}
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let options = CallOptions::new().with_stop(vec!["\n".to_string(), "END".to_string()]);
+
+        let response = agent
+            .process_with(Message::with_text("user", "hello"), &options)
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    async fn test_process_with_drops_seed_without_sending_it() {
+        // #818: Anthropic's Messages API has no seed parameter. A caller who sets
+        // CallOptions.seed must not get an error and must not have a "seed" key
+        // silently invented in the request either — this proves it's dropped, not
+        // sent, without crashing (the warning itself is not independently
+        // asserted here; matching on absence in the actual request body is the
+        // part that catches a regression that starts sending it wrong).
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/messages")
+            .match_request(|request| {
+                let body = request.utf8_lossy_body().unwrap_or_default();
+                !body.contains("\"seed\"")
+            })
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "id": "msg_noseed",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "ok"}],
+                "model": "claude-sonnet-5",
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 1, "output_tokens": 1}
+            }"#,
+            )
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let options = CallOptions::new().with_seed(42);
+
+        let response = agent
+            .process_with(Message::with_text("user", "hello"), &options)
+            .await
+            .unwrap();
+
+        assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
     }
 }

@@ -5,10 +5,13 @@
 
 #include <gtest/gtest.h>
 #include "agenkit/adapters/openai_compatible_agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
+#include <nlohmann/json.hpp>
 
 using namespace agenkit::core;
 using namespace agenkit::adapters;
+using json = nlohmann::json;
 
 // Test 1: Constructor with all parameters
 TEST(OpenAICompatibleAgentTest, ConstructorWithAllParameters) {
@@ -277,4 +280,71 @@ TEST(OpenAICompatibleAgentTest, AgentCreationFromHelpers) {
     auto tensorrt_config = OpenAICompatibleProviders::tensorrt("model4");
     OpenAICompatibleAgent tensorrt_agent(tensorrt_config);
     EXPECT_EQ(tensorrt_agent.name(), "tensorrt");
+}
+
+// --- CallOptions / OptionsAgent wiring (#818) ---
+
+TEST(OpenAICompatibleAgentTest, IsAnOptionsAgent) {
+    OpenAICompatibleConfig config;
+    config.base_url = "http://localhost:8000/v1";
+    config.model = "llama-2-7b";
+    OpenAICompatibleAgent agent(config);
+
+    EXPECT_TRUE(supports_options(&agent));
+    EXPECT_NE(dynamic_cast<OptionsAgent*>(&agent), nullptr);
+}
+
+// build_request_body must omit seed/stop entirely when CallOptions is empty.
+TEST(OpenAICompatibleAgentTest, RequestBodyOmitsSeedAndStopWhenUnset) {
+    OpenAICompatibleConfig config;
+    config.base_url = "http://localhost:8000/v1";
+    config.model = "llama-2-7b";
+    OpenAICompatibleAgent agent(config);
+
+    auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
+    auto body = agent.build_request_body(messages, CallOptions{});
+
+    EXPECT_FALSE(body.contains("seed"));
+    EXPECT_FALSE(body.contains("stop"));
+}
+
+// This adapter shares OpenAI's Chat Completions request shape, so seed/stop
+// are a straight passthrough, same as OpenAIAgent.
+TEST(OpenAICompatibleAgentTest, RequestBodyIncludesSeedAndStopWhenSet) {
+    OpenAICompatibleConfig config;
+    config.base_url = "http://localhost:8000/v1";
+    config.model = "llama-2-7b";
+    OpenAICompatibleAgent agent(config);
+
+    auto options = CallOptions{}.with_seed(42).with_stop({"STOP", "END"});
+    auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
+    auto body = agent.build_request_body(messages, options);
+
+    ASSERT_TRUE(body.contains("seed"));
+    EXPECT_EQ(body["seed"].get<uint64_t>(), 42u);
+
+    ASSERT_TRUE(body.contains("stop"));
+    std::vector<std::string> stop = body["stop"].get<std::vector<std::string>>();
+    ASSERT_EQ(stop.size(), 2u);
+    EXPECT_EQ(stop[0], "STOP");
+    EXPECT_EQ(stop[1], "END");
+}
+
+// A per-call temperature/max_tokens/top_p must override the config default.
+TEST(OpenAICompatibleAgentTest, RequestBodyPerCallOptionsOverrideConfigDefaults) {
+    OpenAICompatibleConfig config;
+    config.base_url = "http://localhost:8000/v1";
+    config.model = "llama-2-7b";
+    config.temperature = 0.7;
+    config.max_tokens = 1024;
+    config.top_p = 1.0;
+    OpenAICompatibleAgent agent(config);
+
+    auto options = CallOptions{}.with_temperature(0.2).with_max_tokens(128).with_top_p(0.5);
+    auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
+    auto body = agent.build_request_body(messages, options);
+
+    EXPECT_DOUBLE_EQ(body["temperature"].get<double>(), 0.2);
+    EXPECT_EQ(body["max_tokens"].get<int>(), 128);
+    EXPECT_DOUBLE_EQ(body["top_p"].get<double>(), 0.5);
 }

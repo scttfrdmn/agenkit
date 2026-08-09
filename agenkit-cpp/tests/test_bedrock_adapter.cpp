@@ -9,7 +9,9 @@
 
 #include <gtest/gtest.h>
 #include "agenkit/adapters/bedrock_agent.hpp"
+#include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
+#include <type_traits>
 
 using namespace agenkit::core;
 using namespace agenkit::adapters;
@@ -263,6 +265,37 @@ TEST(BedrockAgentTest, ProcessReturnsErrorWithoutAWSSDK) {
 #else
     EXPECT_TRUE(true);  // Skip if SDK is available
 #endif
+}
+
+// --- CallOptions / OptionsAgent wiring (#818) ---
+//
+// BedrockAgent's constructor either throws (no AWS SDK compiled in) or, with
+// AWS SDK compiled in, requires Aws::InitAPI()/ShutdownAPI() bracketing that
+// nothing in this test binary currently provides (a pre-existing gap,
+// unrelated to #818 — the existing #ifdef AGENKIT_HAS_AWS_SDK tests above
+// this point never actually construct a live agent and call the network
+// either). A live instance is therefore not obtainable here without adding
+// that SDK lifecycle plumbing, which is out of scope for #818. The
+// compile-time checks below prove the interface wiring — OptionsAgent
+// inheritance and the process_with override — without needing a live object,
+// consistent with this file's existing "config/interface only" scope (see
+// file header comment).
+
+// BedrockAgent must derive from both Agent and OptionsAgent so
+// supports_options()'s dynamic_cast can find it, exactly like the other six
+// adapters in #818.
+TEST(BedrockAgentTest, DerivesFromOptionsAgent) {
+    EXPECT_TRUE((std::is_base_of<OptionsAgent, BedrockAgent>::value));
+    EXPECT_TRUE((std::is_base_of<Agent, BedrockAgent>::value));
+}
+
+// process_with must be declared with the exact signature OptionsAgent
+// requires, so it participates in the OptionsAgent vtable rather than being
+// an unrelated overload that dynamic_cast + a virtual call would silently miss.
+TEST(BedrockAgentTest, ProcessWithHasOptionsAgentSignature) {
+    using ProcessWithSignature = std::future<Result<Message, AgentError>>(BedrockAgent::*)(Message, const CallOptions&);
+    ProcessWithSignature fn = &BedrockAgent::process_with;
+    EXPECT_NE(fn, nullptr);
 }
 
 // Test 15: All model families have constants

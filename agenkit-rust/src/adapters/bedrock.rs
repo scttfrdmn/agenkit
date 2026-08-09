@@ -26,10 +26,13 @@ pub struct BedrockConfig {
     /// AWS region (default: us-east-1)
     pub region: String,
 
-    /// Bedrock model identifier
+    /// Bedrock model identifier. Anthropic models on Bedrock require a
+    /// region-prefixed cross-region inference profile ID rather than the bare
+    /// foundation-model ID — the bare ID does not support on-demand
+    /// throughput and is rejected by the Converse API.
     /// Examples:
-    /// - "anthropic.claude-sonnet-5"
-    /// - "anthropic.claude-haiku-4-5"
+    /// - "us.anthropic.claude-sonnet-5"
+    /// - "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     /// - "meta.llama3-70b-instruct-v1:0"
     /// - "mistral.mistral-large-2402-v1:0"
     /// - "amazon.titan-text-premier-v1:0"
@@ -64,7 +67,7 @@ impl Default for BedrockConfig {
     fn default() -> Self {
         Self {
             region: "us-east-1".to_string(),
-            model: "anthropic.claude-sonnet-5".to_string(),
+            model: "us.anthropic.claude-sonnet-5".to_string(),
             access_key_id: None,
             secret_access_key: None,
             session_token: None,
@@ -99,7 +102,7 @@ impl Default for BedrockConfig {
 /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ///     let config = BedrockConfig {
 ///         region: "us-east-1".to_string(),
-///         model: "anthropic.claude-sonnet-5".to_string(),
+///         model: "us.anthropic.claude-sonnet-5".to_string(),
 ///         ..Default::default()
 ///     };
 ///
@@ -467,7 +470,7 @@ impl BedrockAdapter {
     /// async fn main() -> Result<(), Box<dyn std::error::Error>> {
     ///     let config = BedrockConfig {
     ///         region: "us-east-1".to_string(),
-    ///         model: "anthropic.claude-sonnet-5".to_string(),
+    ///         model: "us.anthropic.claude-sonnet-5".to_string(),
     ///         ..Default::default()
     ///     };
     ///
@@ -560,9 +563,9 @@ impl OptionsAgent for BedrockAdapter {
 /// Available Bedrock model identifiers.
 pub mod models {
     // Claude models
-    pub const CLAUDE_3_5_SONNET: &str = "anthropic.claude-sonnet-5";
+    pub const CLAUDE_3_5_SONNET: &str = "us.anthropic.claude-sonnet-5";
     pub const CLAUDE_3_OPUS: &str = "anthropic.claude-3-opus-20240229-v1:0";
-    pub const CLAUDE_3_HAIKU: &str = "anthropic.claude-haiku-4-5";
+    pub const CLAUDE_3_HAIKU: &str = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
     // Llama models
     pub const LLAMA_3_70B: &str = "meta.llama3-70b-instruct-v1:0";
@@ -596,7 +599,7 @@ mod tests {
     fn test_bedrock_config_default() {
         let config = BedrockConfig::default();
         assert_eq!(config.region, "us-east-1");
-        assert_eq!(config.model, "anthropic.claude-sonnet-5");
+        assert_eq!(config.model, "us.anthropic.claude-sonnet-5");
         assert_eq!(config.temperature, Some(0.7));
         assert_eq!(config.max_tokens, Some(4096));
         assert_eq!(config.top_p, Some(1.0));
@@ -647,12 +650,15 @@ mod tests {
 
     #[test]
     fn test_model_constants() {
-        assert_eq!(models::CLAUDE_3_5_SONNET, "anthropic.claude-sonnet-5");
+        assert_eq!(models::CLAUDE_3_5_SONNET, "us.anthropic.claude-sonnet-5");
         assert_eq!(
             models::CLAUDE_3_OPUS,
             "anthropic.claude-3-opus-20240229-v1:0"
         );
-        assert_eq!(models::CLAUDE_3_HAIKU, "anthropic.claude-haiku-4-5");
+        assert_eq!(
+            models::CLAUDE_3_HAIKU,
+            "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+        );
         assert_eq!(models::LLAMA_3_70B, "meta.llama3-70b-instruct-v1:0");
         assert_eq!(models::MISTRAL_LARGE, "mistral.mistral-large-2402-v1:0");
         assert_eq!(models::TITAN_PREMIER, "amazon.titan-text-premier-v1:0");
@@ -662,7 +668,7 @@ mod tests {
     fn test_bedrock_config_with_credentials() {
         let config = BedrockConfig {
             region: "us-east-1".to_string(),
-            model: "anthropic.claude-sonnet-5".to_string(),
+            model: "us.anthropic.claude-sonnet-5".to_string(),
             access_key_id: Some("test-key".to_string()),
             secret_access_key: Some("test-secret".to_string()),
             session_token: None,
@@ -677,7 +683,7 @@ mod tests {
     fn test_bedrock_config_without_credentials() {
         let config = BedrockConfig {
             region: "us-east-1".to_string(),
-            model: "anthropic.claude-sonnet-5".to_string(),
+            model: "us.anthropic.claude-sonnet-5".to_string(),
             access_key_id: None,
             secret_access_key: None,
             session_token: None,

@@ -38,7 +38,11 @@ class BedrockLLM(LLM):
     - STS assume role
 
     Args:
-        model_id: Bedrock model identifier (e.g., "anthropic.claude-sonnet-5")
+        model_id: Bedrock model identifier. Anthropic models on Bedrock require a
+            region-prefixed cross-region inference profile ID rather than the bare
+            foundation-model ID (e.g., "us.anthropic.claude-sonnet-5") — the bare ID
+            does not support on-demand throughput and is rejected by the Converse
+            API. See: https://docs.aws.amazon.com/bedrock/latest/userguide/cross-region-inference.html
         region_name: AWS region (default: us-east-1)
         aws_access_key_id: AWS access key (optional)
         aws_secret_access_key: AWS secret key (optional)
@@ -52,17 +56,17 @@ class BedrockLLM(LLM):
         >>> from agenkit import Message
         >>>
         >>> # Use IAM role (ECS/EKS/EC2)
-        >>> llm = BedrockLLM(model_id="anthropic.claude-sonnet-5")
+        >>> llm = BedrockLLM(model_id="us.anthropic.claude-sonnet-5")
         >>>
         >>> # Use AWS profile
         >>> llm = BedrockLLM(
-        ...     model_id="anthropic.claude-sonnet-5",
+        ...     model_id="us.anthropic.claude-sonnet-5",
         ...     profile_name="production"
         ... )
         >>>
         >>> # Use explicit credentials
         >>> llm = BedrockLLM(
-        ...     model_id="anthropic.claude-sonnet-5",
+        ...     model_id="us.anthropic.claude-sonnet-5",
         ...     aws_access_key_id="...",
         ...     aws_secret_access_key="..."
         ... )
@@ -72,13 +76,15 @@ class BedrockLLM(LLM):
 
     VPC endpoint example:
         >>> llm = BedrockLLM(
-        ...     model_id="anthropic.claude-sonnet-5",
+        ...     model_id="us.anthropic.claude-sonnet-5",
         ...     endpoint_url="https://bedrock-runtime.us-east-1.vpce-xxx.amazonaws.com"
         ... )
 
     Popular model IDs:
-        - anthropic.claude-sonnet-5 - Claude Sonnet 5
-        - anthropic.claude-haiku-4-5 - Claude Haiku 4.5
+        - us.anthropic.claude-sonnet-5 - Claude Sonnet 5 (cross-region inference profile)
+        - us.anthropic.claude-haiku-4-5-20251001-v1:0 - Claude Haiku 4.5 (cross-region inference profile;
+          the full date-suffixed ID is required — the bare "anthropic.claude-haiku-4-5" alias does not
+          exist on Bedrock and returns "The provided model identifier is invalid")
         - meta.llama3-70b-instruct-v1:0 - Llama 3 70B
         - mistral.mistral-large-2402-v1:0 - Mistral Large
         - amazon.titan-text-premier-v1:0 - Amazon Titan
@@ -86,7 +92,7 @@ class BedrockLLM(LLM):
 
     def __init__(
         self,
-        model_id: str = "anthropic.claude-sonnet-5",
+        model_id: str = "us.anthropic.claude-sonnet-5",
         region_name: str = "us-east-1",
         aws_access_key_id: str | None = None,
         aws_secret_access_key: str | None = None,

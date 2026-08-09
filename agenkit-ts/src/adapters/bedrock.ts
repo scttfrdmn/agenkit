@@ -10,7 +10,7 @@
  *
  * const adapter = new BedrockAdapter({
  *   region: 'us-east-1',
- *   modelId: 'anthropic.claude-sonnet-5',
+ *   modelId: 'us.anthropic.claude-sonnet-5',
  * });
  *
  * const response = await adapter.process({
@@ -43,7 +43,12 @@ export interface BedrockConfig {
   /** AWS region (default: 'us-east-1') */
   region?: string;
 
-  /** Bedrock model identifier (e.g., 'anthropic.claude-sonnet-5') */
+  /**
+   * Bedrock model identifier. Anthropic models on Bedrock require a
+   * region-prefixed cross-region inference profile ID rather than the bare
+   * foundation-model ID (e.g., 'us.anthropic.claude-sonnet-5') — the bare ID
+   * does not support on-demand throughput and is rejected by the Converse API.
+   */
   modelId?: string;
 
   /** AWS access key ID (optional - uses default credential chain if not provided) */
@@ -87,8 +92,10 @@ export interface BedrockConfig {
  * - System message support
  *
  * Popular model IDs:
- * - anthropic.claude-sonnet-5 - Claude Sonnet 5
- * - anthropic.claude-haiku-4-5 - Claude Haiku 4.5
+ * - us.anthropic.claude-sonnet-5 - Claude Sonnet 5 (cross-region inference profile)
+ * - us.anthropic.claude-haiku-4-5-20251001-v1:0 - Claude Haiku 4.5 (cross-region inference profile;
+ *   the full date-suffixed ID is required — the bare 'anthropic.claude-haiku-4-5' alias does not
+ *   exist on Bedrock and returns "The provided model identifier is invalid")
  * - meta.llama3-70b-instruct-v1:0 - Llama 3 70B
  * - mistral.mistral-large-2402-v1:0 - Mistral Large
  * - amazon.titan-text-premier-v1:0 - Amazon Titan
@@ -105,7 +112,7 @@ export class BedrockAdapter implements Agent {
   constructor(config: BedrockConfig = {}) {
     this.config = {
       region: config.region || 'us-east-1',
-      modelId: config.modelId || 'anthropic.claude-sonnet-5',
+      modelId: config.modelId || 'us.anthropic.claude-sonnet-5',
       temperature: config.temperature ?? 0.7,
       maxTokens: config.maxTokens ?? 4096,
       topP: config.topP ?? 1.0,

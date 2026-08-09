@@ -167,6 +167,9 @@ Issues = "https://github.com/scttfrdmn/agenkit/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["agenkit", "proto"]
 
+[tool.hatch.build.targets.sdist]
+include = ["/agenkit", "/proto", "/README.md", "/LICENSE", "/pyproject.toml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

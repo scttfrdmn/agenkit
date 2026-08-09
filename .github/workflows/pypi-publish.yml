@@ -1,0 +1,58 @@
+name: PyPI Publish
+
+# On each published GitHub release, build the Python sdist/wheel and publish
+# to PyPI via Trusted Publisher (OIDC) — no stored API token to leak or rotate.
+# Requires a one-time "pypi" Trusted Publisher registered on the PyPI project
+# page for scttfrdmn/agenkit, environment "pypi" (see #22).
+#
+# PyPI permanently blocks re-uploading a version number, even after deletion —
+# this job must never run against an already-published version. workflow_dispatch
+# exists only to retry a run that failed AFTER a version was already live (e.g.
+# a transient network error) using the exact tag's workflow file, mirroring
+# release-security.yml's backfill pattern; it does not bypass PyPI's own
+# duplicate-version rejection.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: >
+          Release tag to publish (e.g. v0.91.0). Leave empty to use the ref this
+          workflow was dispatched against.
+        required: false
+        type: string
+
+concurrency:
+  group: pypi-publish-${{ github.event.release.tag_name || inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # PyPI trusted publishing (OIDC)
+
+jobs:
+  build-and-publish:
+    name: Build + Publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: pypi
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build sdist + wheel
+        run: uv build --out-dir dist
+
+      - name: Check package metadata
+        run: uvx twine check dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/

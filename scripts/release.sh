@@ -317,12 +317,13 @@ else
     echo ""
 fi
 
-# 8. Build and publish Python package (optional)
+# 8. Python package
 echo "📦 Python package..."
 echo ""
-echo "   To publish to PyPI:"
-echo "   1. Build: python -m build"
-echo "   2. Publish: python -m twine upload dist/*"
+echo "   Publishing to PyPI is automated: .github/workflows/pypi-publish.yml"
+echo "   runs on this release being published (via Trusted Publisher OIDC,"
+echo "   no manual upload). To retry a failed run: gh workflow run pypi-publish.yml"
+echo "   -f tag=$VERSION"
 echo ""
 
 # Done!

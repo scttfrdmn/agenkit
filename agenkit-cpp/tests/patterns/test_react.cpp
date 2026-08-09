@@ -326,6 +326,48 @@ TEST(ReactTest, MetadataPreservation) {
     EXPECT_EQ(response.metadata()["pattern"], "react");
 }
 
+// Mock agent that uses the Python/Zig "Action: Final Answer" convention
+// instead of this core's own "Final Answer:" line prefix.
+class PythonStyleFinalAnswerAgent : public core::Agent {
+public:
+    std::string name() const override { return "python_style_agent"; }
+
+    std::future<core::Result<core::Message, core::AgentError>>
+    process(core::Message /* message */) override {
+        std::string response = "Thought: I know the answer\n";
+        response += "Action: Final Answer\n";
+        response += "Action Input: The answer is 42";
+        auto msg = core::Message::with_text("assistant", response);
+        return core::make_ready_future(
+            core::Result<core::Message, core::AgentError>::ok(msg)
+        );
+    }
+};
+
+// Test: accepts the Python/Zig "Action: Final Answer" convention (#765).
+// Without parser tolerance for both forms, "Final Answer" is looked up as a
+// tool name, misses, and the loop burns every step until max_steps instead
+// of returning the answer the agent already had.
+TEST(ReactTest, AcceptsFinalAnswerAsActionConvention) {
+    auto agent = std::make_shared<PythonStyleFinalAnswerAgent>();
+    auto tool = std::make_shared<MockCalculatorTool>();
+
+    patterns::ReactAgent react_agent(agent, 3);
+    react_agent.add_tool(tool);
+
+    auto msg = core::Message::with_text("user", "What is 40 + 2?");
+    auto future = react_agent.process(std::move(msg));
+    auto result = future.get();
+
+    ASSERT_TRUE(result.is_ok());
+    auto response = result.unwrap();
+
+    EXPECT_EQ(response.content_as_str(), "The answer is 42");
+    // History should be empty: the agent answered on the first turn, so no
+    // tool call was ever made (and none should have been attempted).
+    EXPECT_EQ(react_agent.get_history().size(), 0);
+}
+
 // Test: ReAct history structure
 TEST(ReactTest, HistoryStructure) {
     auto agent = std::make_shared<MockReActAgent>(2);

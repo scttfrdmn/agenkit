@@ -125,6 +125,17 @@ error_handling:
     error_type: null
     behavior: "Early stop, return best effort result"
 
+# Final-answer convention (#765): the 6 measured cores split 2-4 on how an
+# agent signals completion. Python and Zig use `Action: Final Answer` (a
+# sentinel action name, with the answer in a following `Action Input:`
+# line); Go, Rust, TypeScript, and C++ use a `Final Answer: <answer>` line
+# prefix (no "Final Answer" action concept at all). Each core's own system
+# prompt still only emits its own form, but every core's parser now accepts
+# BOTH forms, so a prompt or few-shot example written against either
+# convention works across all 6 -- this test_cases block uses
+# `action: "Final Answer"` + a separate `observation:` field (never a
+# combined `"Final Answer: <answer>"` string) so the two forms aren't
+# conflated in the one place both are documented together.
 test_cases:
   - name: "Simple calculation with tool"
     description: "Use calculator tool to solve math"
@@ -140,7 +151,8 @@ test_cases:
         action: "calculator(25 * 4)"
         observation: "100"
       - thought: "I have the answer"
-        action: "Final Answer: 100"
+        action: "Final Answer"
+        observation: "100"
     assertions:
       - "Calculator tool called exactly once"
       - "Final answer is 100"
@@ -178,7 +190,8 @@ test_cases:
       - tool_call: "weather_api(InvalidCity)"
         observation_contains: "error"
       - thought_contains: "error occurred"
-      - action: "Final Answer: Unable to fetch weather"
+      - action: "Final Answer"
+        observation: "Unable to fetch weather"
     assertions:
       - "Error observation recorded"
       - "Agent continues after error"
@@ -194,7 +207,8 @@ test_cases:
         tools: ["search", "calculator"]
     expected_trace:
       - thought: "I know this answer"
-        action: "Final Answer: Paris"
+        action: "Final Answer"
+        observation: "Paris"
     assertions:
       - "No tools called"
       - "Completed in 1 iteration"
@@ -232,4 +246,4 @@ examples:
 cross_language_equivalence:
   verified: false
   test_required: true
-  notes: "LLM non-determinism may cause different reasoning paths. Test should verify final answer correctness, not exact trace matching."
+  notes: "LLM non-determinism may cause different reasoning paths. Test should verify final answer correctness, not exact trace matching. #765 fixed a real (non-LLM-noise) divergence: the final-answer convention split described above -- confirmed by manually driving the Go and Rust cross-language harnesses with a Python-style response and observing max_steps before the fix, final_answer after. The equivalence runner itself remains unwired into CI/Makefile (#763), so this field still reflects that gap, not the parser fix's correctness."

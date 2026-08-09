@@ -792,10 +792,10 @@ def execute_test(
             # ReAct equivalence scenarios diverge from TypeScript and Zig -- which
             # agree with each other -- for as long as the mocks were wrong. See #762.
             #
-            # Note ReasoningWithTools below deliberately keeps **kwargs: that
-            # pattern calls `tool.execute(**parameters)`. The two conventions
-            # coexist in the toolkit today, so this harness has to implement both;
-            # #762 tracks unifying them.
+            # ReasoningWithTools below now uses the same positional-`params`
+            # convention: #762 converged the toolkit's two competing
+            # `tool.execute()` calling conventions onto the one declared by the
+            # real `Tool` ABC in agenkit/interfaces.py -- `execute(self, params)`.
             class MockCalculator:
                 name = "calculator"
                 description = "Performs calculations"
@@ -956,18 +956,15 @@ def execute_test(
         elif pattern_name == "ReasoningWithTools":
             # Create mock tool.
             #
-            # **kwargs here is correct and deliberate, unlike the ReAct mocks
-            # above: ReasoningWithTools calls `tool.execute(**parameters)`
-            # (reasoning_with_tools.py:265) where ReAct calls
-            # `tool.execute(params)`. The toolkit has both conventions and no
-            # shared Tool base, so a tool is not portable between the two
-            # patterns; #762 tracks unifying them. Do not "fix" this to match the
-            # ReAct mocks without changing the pattern first.
+            # Positional `params` dict, same convention as the ReAct mocks
+            # above: `reasoning_with_tools.py:265` now calls
+            # `tool.execute(params)`, converged with `Tool.execute()`'s
+            # declared contract (agenkit/interfaces.py:377) by #762.
             class MockTool:
                 name = "search"
                 description = "Searches for information"
 
-                async def execute(self, **kwargs):
+                async def execute(self, params: dict[str, Any]):
                     return "Found information"
 
             agent = pattern_class(

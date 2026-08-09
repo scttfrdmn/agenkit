@@ -651,3 +651,67 @@ func TestParseResponse_FinalAnswer(t *testing.T) {
 		t.Error("expected IsFinal true")
 	}
 }
+
+// TestParseResponse_FinalAnswerAsAction verifies the parser also accepts the
+// Python/Zig convention: "Final Answer" as an action name, with the answer
+// in a following "Action Input:" line, rather than this core's own
+// "Final Answer: <answer>" line prefix. See #765 -- without this, a
+// Python-style response reaching the Go core looked up "Final Answer" as a
+// tool name, missed, and burned every step until max_steps.
+func TestParseResponse_FinalAnswerAsAction(t *testing.T) {
+	agent := &mockReActAgent{name: "test", responses: []string{}}
+	tool := &mockTool{name: "test", description: "Test", response: "result"}
+	reactAgent, err := NewReActAgent(&ReActConfig{
+		Agent: agent,
+		Tools: []agenkit.Tool{tool},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	response := "Thought: I know the answer\nAction: Final Answer\nAction Input: 42"
+	parsed := reactAgent.parseResponse(response)
+
+	if parsed.Thought != "I know the answer" {
+		t.Errorf("expected thought 'I know the answer', got %s", parsed.Thought)
+	}
+	if parsed.Observation != "42" {
+		t.Errorf("expected observation '42', got %s", parsed.Observation)
+	}
+	if !parsed.IsFinal {
+		t.Error("expected IsFinal true")
+	}
+}
+
+// TestReActAgent_FinalAnswerAsActionEndToEnd verifies the full Process loop
+// completes (rather than burning to max_steps) when the agent's response
+// uses the Python/Zig "Action: Final Answer" convention. See #765.
+func TestReActAgent_FinalAnswerAsActionEndToEnd(t *testing.T) {
+	agent := &mockReActAgent{
+		name: "test",
+		responses: []string{
+			"Thought: I know the answer\nAction: Final Answer\nAction Input: The answer is 42",
+		},
+	}
+	tool := &mockTool{name: "search", description: "Test", response: "result"}
+	reactAgent, err := NewReActAgent(&ReActConfig{
+		Agent:    agent,
+		Tools:    []agenkit.Tool{tool},
+		MaxSteps: 3,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	result, err := reactAgent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "test"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.ContentString() != "The answer is 42" {
+		t.Errorf("expected final answer content, got %q", result.ContentString())
+	}
+	if result.Metadata["stop_reason"] != string(StopReasonFinalAnswer) {
+		t.Errorf("expected stop_reason final_answer, got %v", result.Metadata["stop_reason"])
+	}
+}

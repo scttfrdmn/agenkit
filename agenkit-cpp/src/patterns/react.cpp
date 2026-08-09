@@ -6,6 +6,7 @@
 #include "agenkit/patterns/react.hpp"
 #include <sstream>
 #include <algorithm>
+#include <cctype>
 #include <stdexcept>
 
 namespace agenkit {
@@ -137,20 +138,75 @@ ToolResult ReactAgent::execute_tool(const std::string& tool_name, const std::str
     }
 }
 
+namespace {
+
+/// Case-insensitive string equality, used to recognize the "Final Answer"
+/// sentinel action name regardless of case.
+bool iequals(const std::string& a, const std::string& b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    return std::equal(a.begin(), a.end(), b.begin(), [](char x, char y) {
+        return std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y));
+    });
+}
+
+/// Extracts the trimmed action name from a response's "Action:" line, if any.
+/// Returns an empty string if no such line is present.
+std::string extract_action_line(const std::string& response) {
+    std::istringstream stream(response);
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (line.find("Action:") == 0) {
+            std::string action = line.substr(7);
+            action.erase(0, action.find_first_not_of(" \t\n\r"));
+            auto last = action.find_last_not_of(" \t\n\r");
+            if (last != std::string::npos) {
+                action.erase(last + 1);
+            }
+            return action;
+        }
+    }
+    return "";
+}
+
+} // namespace
+
 bool ReactAgent::is_final_answer(const std::string& response) {
-    return response.find("Final Answer:") != std::string::npos;
+    if (response.find("Final Answer:") != std::string::npos) {
+        return true;
+    }
+
+    // Python/Zig convention (#765): "Final Answer" as a sentinel *action
+    // name*, with the answer in a following "Action Input:" line, rather
+    // than this core's own "Final Answer:" line prefix. Without this, a
+    // Python-style response reaching this core looks up "Final Answer" as
+    // a tool name (via parse_action's "tool_name: input" split), misses,
+    // and silently degrades into max_steps.
+    return iequals(extract_action_line(response), "Final Answer");
 }
 
 std::string ReactAgent::extract_final_answer(const std::string& response) {
     auto pos = response.find("Final Answer:");
-    if (pos == std::string::npos) {
-        return response;
+    if (pos != std::string::npos) {
+        std::string answer = response.substr(pos + 13);
+        // Trim whitespace
+        answer.erase(0, answer.find_first_not_of(" \t\n\r"));
+        return answer;
     }
 
-    std::string answer = response.substr(pos + 13);
-    // Trim whitespace
-    answer.erase(0, answer.find_first_not_of(" \t\n\r"));
-    return answer;
+    // Python/Zig convention: the answer lives in the "Action Input:" line.
+    std::istringstream stream(response);
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (line.find("Action Input:") == 0) {
+            std::string answer = line.substr(13);
+            answer.erase(0, answer.find_first_not_of(" \t\n\r"));
+            return answer;
+        }
+    }
+
+    return response;
 }
 
 core::Message ReactAgent::create_continuation_prompt(

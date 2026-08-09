@@ -61,8 +61,13 @@ class SearchTool(Tool):
     def description(self) -> str:
         return "Search for information"
 
-    async def execute(self, **kwargs) -> ToolResult:
-        query = kwargs.get("query", "")
+    async def execute(self, params: dict) -> ToolResult:
+        """Execute the tool.
+
+        Takes a single positional `params` dict, matching the Tool.execute()
+        contract declared in agenkit/interfaces.py:377. See #762.
+        """
+        query = params.get("query", "")
         return ToolResult(
             success=True,
             data={"results": [f"Result for {query}"]},

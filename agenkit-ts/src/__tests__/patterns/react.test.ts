@@ -173,6 +173,26 @@ describe('ReActAgent', () => {
 
       expect(typeof result.metadata?.steps).toBe('number');
     });
+
+    // #765: Python and Zig signal completion with "Action: Final Answer"
+    // (a sentinel action name, answer in a following "Action Input:" line)
+    // rather than this core's own "Final Answer: <answer>" line prefix.
+    // Without parser tolerance for both forms, a Python-style response
+    // reaching this core looks up "Final Answer" as a tool name, misses,
+    // and burns every step until max_steps.
+    it('should accept "Action: Final Answer" / "Action Input:" as an alternate final-answer form', async () => {
+      const agent = createMockAgent(
+        'llm',
+        'Thought: I know the answer\nAction: Final Answer\nAction Input: The result is 4'
+      );
+      const tool = new MockTool('calc', 'Calculator', '4');
+
+      const react = new ReActAgent({ agent, tools: [tool], maxSteps: 3 });
+      const result = await react.process(createMessage('user', 'What is 2+2?'));
+
+      expect(result.content).toContain('The result is 4');
+      expect(result.metadata?.stopReason).toBe(ReActStopReason.FINAL_ANSWER);
+    });
   });
 
   describe('Max Steps', () => {

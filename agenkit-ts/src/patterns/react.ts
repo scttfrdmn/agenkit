@@ -229,6 +229,14 @@ Begin!`;
 
   /**
    * Parse agent response into structured step.
+   *
+   * Accepts both final-answer conventions used across the 9 cores (#765):
+   * this core's own `Final Answer: <answer>` line prefix, and the
+   * `Action: Final Answer` / `Action Input: <answer>` form used by Python
+   * and Zig. Without this, a cross-language prompt or few-shot example
+   * written against the Python docs silently degrades into max_steps here:
+   * "Final Answer" gets looked up as a tool name, misses, and the loop
+   * retries the identical response until it gives up.
    */
   private parseResponse(response: string): ReActStep {
     const lines = response.split('\n').map(l => l.trim());
@@ -240,16 +248,24 @@ Begin!`;
     for (const line of lines) {
       if (line.startsWith('Thought:')) {
         step.thought = line.substring('Thought:'.length).trim();
-      } else if (line.startsWith('Action:')) {
-        step.action = line.substring('Action:'.length).trim();
-      } else if (line.startsWith('Action Input:')) {
-        step.actionInput = line.substring('Action Input:'.length).trim();
       } else if (line.startsWith('Final Answer:')) {
         step.thought = step.thought || 'Reached final answer';
         step.observation = line.substring('Final Answer:'.length).trim();
         step.isFinal = true;
         break;
+      } else if (line.startsWith('Action Input:')) {
+        step.actionInput = line.substring('Action Input:'.length).trim();
+      } else if (line.startsWith('Action:')) {
+        step.action = line.substring('Action:'.length).trim();
       }
+    }
+
+    // Python/Zig convention: the sentinel is an action name, with the
+    // answer in a following Action Input: line.
+    if (!step.isFinal && step.action?.toLowerCase() === 'final answer') {
+      step.thought = step.thought || 'Reached final answer';
+      step.observation = step.actionInput;
+      step.isFinal = true;
     }
 
     return step;

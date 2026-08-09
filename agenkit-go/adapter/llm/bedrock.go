@@ -28,25 +28,27 @@ import (
 //
 //	// Use IAM role (ECS/EKS/EC2)
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID: "anthropic.claude-sonnet-5",
+//	    ModelID: "us.anthropic.claude-sonnet-5",
 //	})
 //
 //	// Use AWS profile
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID: "anthropic.claude-sonnet-5",
+//	    ModelID: "us.anthropic.claude-sonnet-5",
 //	    Profile: "production",
 //	})
 //
 //	// Use explicit credentials
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID:         "anthropic.claude-sonnet-5",
+//	    ModelID:         "us.anthropic.claude-sonnet-5",
 //	    AccessKeyID:     "...",
 //	    SecretAccessKey: "...",
 //	})
 //
 // Popular model IDs:
-//   - anthropic.claude-sonnet-5 - Claude Sonnet 5
-//   - anthropic.claude-haiku-4-5 - Claude Haiku 4.5
+//   - us.anthropic.claude-sonnet-5 - Claude Sonnet 5 (cross-region inference profile)
+//   - us.anthropic.claude-haiku-4-5-20251001-v1:0 - Claude Haiku 4.5 (cross-region inference
+//     profile; the full date-suffixed ID is required — the bare "anthropic.claude-haiku-4-5"
+//     alias does not exist on Bedrock and returns "The provided model identifier is invalid")
 //   - meta.llama3-70b-instruct-v1:0 - Llama 3 70B
 //   - mistral.mistral-large-2402-v1:0 - Mistral Large
 //   - amazon.titan-text-premier-v1:0 - Amazon Titan
@@ -57,7 +59,11 @@ type BedrockLLM struct {
 
 // BedrockConfig holds configuration for creating a Bedrock LLM adapter.
 type BedrockConfig struct {
-	// ModelID is the Bedrock model identifier (e.g., "anthropic.claude-sonnet-5")
+	// ModelID is the Bedrock model identifier. Anthropic models on Bedrock
+	// require a region-prefixed cross-region inference profile ID rather
+	// than the bare foundation-model ID (e.g., "us.anthropic.claude-sonnet-5")
+	// — the bare ID does not support on-demand throughput and is rejected by
+	// the Converse API.
 	ModelID string
 
 	// Region is the AWS region (default: us-east-1)
@@ -92,7 +98,7 @@ type BedrockConfig struct {
 // Example:
 //
 //	llm, err := NewBedrockLLM(context.Background(), BedrockConfig{
-//	    ModelID: "anthropic.claude-sonnet-5",
+//	    ModelID: "us.anthropic.claude-sonnet-5",
 //	    Region:  "us-west-2",
 //	})
 //	if err != nil {
@@ -101,7 +107,7 @@ type BedrockConfig struct {
 func NewBedrockLLM(ctx context.Context, cfg BedrockConfig) (*BedrockLLM, error) {
 	// Set defaults
 	if cfg.ModelID == "" {
-		cfg.ModelID = "anthropic.claude-sonnet-5"
+		cfg.ModelID = "us.anthropic.claude-sonnet-5"
 	}
 	if cfg.Region == "" {
 		cfg.Region = "us-east-1"

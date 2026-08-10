@@ -8,23 +8,18 @@ import "github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 // Metadata["usage"] map (which varies in both key names and value types across
 // providers).
 //
+// Aliased from the core agenkit package (#782), where the type now lives so
+// that observability.TracingMiddleware can promote usage onto GenAI span
+// attributes without importing adapter/llm — which transitively pulls in the
+// AWS SDK via the Bedrock adapter (#805, the same reasoning that moved
+// CallOptions). This is a true alias, not a conversion: llm.Usage and
+// agenkit.Usage are the same type, so existing code using llm.Usage /
+// llm.UsageFromMessage is unaffected.
+//
 // Fields are zero when the provider does not report them. The cache fields are
 // provider-dependent (e.g. Anthropic prompt caching, including via Bedrock) and
 // are zero when caching is inactive or unsupported.
-type Usage struct {
-	PromptTokens     int
-	CompletionTokens int
-	TotalTokens      int
-
-	// CacheReadTokens is the number of prompt tokens served from a provider
-	// prompt cache. These are typically billed at a fraction of normal input
-	// token cost. Zero when unknown or caching is inactive.
-	CacheReadTokens int
-
-	// CacheCreationTokens is the number of prompt tokens written to a provider
-	// prompt cache on this request. Zero when unknown or caching is inactive.
-	CacheCreationTokens int
-}
+type Usage = agenkit.Usage
 
 // UsageReporter is an optional interface an LLM adapter may implement to let
 // consumers detect typed-usage support at compile time. The core LLM interface
@@ -34,10 +29,7 @@ type Usage struct {
 // Adapters in this package report usage via response Metadata rather than this
 // interface; UsageFromMessage is the primary accessor. UsageReporter is
 // provided for consumers that wrap an LLM and want to expose aggregate usage.
-type UsageReporter interface {
-	// Usage returns the most recent token usage and true if available.
-	Usage() (Usage, bool)
-}
+type UsageReporter = agenkit.UsageReporter
 
 // UsageFromMessage extracts normalized token usage from an adapter response.
 //
@@ -51,55 +43,4 @@ type UsageReporter interface {
 //
 // ok is false when the message is nil or carries no usage metadata. When
 // total_tokens is absent it is derived as prompt+completion.
-func UsageFromMessage(m *agenkit.Message) (Usage, bool) {
-	if m == nil || m.Metadata == nil {
-		return Usage{}, false
-	}
-
-	raw, ok := m.Metadata["usage"].(map[string]interface{})
-	if !ok {
-		return Usage{}, false
-	}
-
-	// pick returns the first present key, coerced to int.
-	pick := func(keys ...string) int {
-		for _, k := range keys {
-			if v, present := raw[k]; present {
-				return toInt(v)
-			}
-		}
-		return 0
-	}
-
-	u := Usage{
-		PromptTokens:        pick("prompt_tokens", "input_tokens"),
-		CompletionTokens:    pick("completion_tokens", "output_tokens"),
-		TotalTokens:         pick("total_tokens"),
-		CacheReadTokens:     pick("cache_read_tokens", "cache_read_input_tokens"),
-		CacheCreationTokens: pick("cache_creation_tokens", "cache_creation_input_tokens", "cache_write_tokens"),
-	}
-
-	if u.TotalTokens == 0 {
-		u.TotalTokens = u.PromptTokens + u.CompletionTokens
-	}
-
-	return u, true
-}
-
-// toInt coerces the numeric types adapters store in usage metadata (int, int32,
-// int64, and the float64 produced by JSON round-trips) to int. Unknown types
-// yield 0.
-func toInt(v interface{}) int {
-	switch n := v.(type) {
-	case int:
-		return n
-	case int32:
-		return int(n)
-	case int64:
-		return int(n)
-	case float64:
-		return int(n)
-	default:
-		return 0
-	}
-}
+var UsageFromMessage = agenkit.UsageFromMessage

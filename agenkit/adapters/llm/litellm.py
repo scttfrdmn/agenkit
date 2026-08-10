@@ -9,7 +9,12 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from agenkit.adapters.llm.base import LLM
-from agenkit.interfaces import Message
+from agenkit.interfaces import (
+    METADATA_KEY_GEN_AI_SYSTEM,
+    METADATA_KEY_REQUEST_MODEL,
+    METADATA_KEY_RESPONSE_MODEL,
+    Message,
+)
 
 try:
     import litellm
@@ -142,9 +147,20 @@ class LiteLLMLLM(LLM):
             **call_kwargs,
         )
 
-        # Build metadata
+        # Build metadata.
+        #
+        # GenAI semconv promotion (#782): LiteLLM routes by a
+        # "<provider>/<model>" prefix (e.g. "bedrock/anthropic.claude-v2",
+        # "ollama/llama2"); the prefix is the actual gen_ai.system, not
+        # "litellm" itself, which is only the proxy. response.model is what
+        # the underlying provider reports back, which may differ from the
+        # requested model — both are recorded, even when equal, per
+        # docs/OTEL_CONVENTION.md.
         metadata: dict[str, Any] = {
             "model": response.model,
+            METADATA_KEY_GEN_AI_SYSTEM: self._provider_prefix(),
+            METADATA_KEY_REQUEST_MODEL: self._model,
+            METADATA_KEY_RESPONSE_MODEL: response.model,
         }
 
         # Add usage if available
@@ -235,6 +251,20 @@ class LiteLLMLLM(LLM):
             litellm_messages.append({"role": role, "content": str(msg.content)})
 
         return litellm_messages
+
+    def _provider_prefix(self) -> str:
+        """
+        Extract the "<provider>/" prefix LiteLLM uses to route requests
+        (e.g. "bedrock" from "bedrock/anthropic.claude-v2"). Falls back to
+        "litellm" for bare model names (e.g. "gpt-4"), where LiteLLM infers
+        the provider from the model name itself rather than an explicit
+        prefix.
+        """
+        if "/" in self._model:
+            prefix, _, _ = self._model.partition("/")
+            if prefix:
+                return prefix
+        return "litellm"
 
     def unwrap(self) -> None:
         """

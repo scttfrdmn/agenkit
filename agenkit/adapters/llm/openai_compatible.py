@@ -98,7 +98,12 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from agenkit.adapters.llm.base import LLM
-from agenkit.interfaces import Message
+from agenkit.interfaces import (
+    METADATA_KEY_GEN_AI_SYSTEM,
+    METADATA_KEY_REQUEST_MODEL,
+    METADATA_KEY_RESPONSE_MODEL,
+    Message,
+)
 
 try:
     from openai import AsyncOpenAI
@@ -263,7 +268,14 @@ class OpenAICompatibleLLM(LLM):
             **kwargs,
         )
 
-        # Convert response to Agenkit Message with provider metadata
+        # Convert response to Agenkit Message with provider metadata.
+        #
+        # GenAI semconv promotion (#782): gen_ai.system uses the configured
+        # provider name (e.g. "vllm", "sglang") rather than a fixed semconv
+        # enum value, since these are self-hosted/local services the semconv
+        # list does not cover — docs/OTEL_CONVENTION.md notes a custom system
+        # should use a custom friendly name.
+        genai_system = self._provider or "openai_compatible"
         return Message(
             role="agent",
             content=response.choices[0].message.content or "",
@@ -275,9 +287,12 @@ class OpenAICompatibleLLM(LLM):
                     "total_tokens": response.usage.total_tokens if response.usage else 0,
                 },
                 "finish_reason": response.choices[0].finish_reason,
-                "provider": self._provider or "openai_compatible",
+                "provider": genai_system,
                 "base_url": self._base_url,
                 "id": response.id,
+                METADATA_KEY_GEN_AI_SYSTEM: genai_system,
+                METADATA_KEY_REQUEST_MODEL: self._model,
+                METADATA_KEY_RESPONSE_MODEL: response.model,
             },
         )
 

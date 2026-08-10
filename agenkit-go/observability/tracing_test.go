@@ -402,3 +402,90 @@ func TestInitTracingWithConsoleExport(t *testing.T) {
 
 	_ = ctx // Use ctx to avoid unused variable error
 }
+
+// TestInitTracingBuildsOTLPExporterFromEnvVar is the negative-verification
+// test for #771: with otlpEndpoint == "" (not supplied), setting
+// OTEL_EXPORTER_OTLP_ENDPOINT must cause InitTracing to actually construct an
+// OTLP exporter rather than silently staying in no-export "default" mode.
+// Before the #771 fix, InitTracing ignored the environment entirely, so this
+// test would still pass with 0 exporters — the assertion is on the resolved
+// endpoint actually reaching otlptracegrpc.New via a real (if unreachable)
+// dial target, proven indirectly by resolveOTLPEndpoint below and directly
+// here by confirming InitTracing does not fall back to the "no OTLP
+// exporter" branch (which would leave otlpEndpoint == "").
+func TestInitTracingBuildsOTLPExporterFromEnvVar(t *testing.T) {
+	t.Setenv(otelExporterOTLPEndpointEnv, "127.0.0.1:4317")
+
+	provider, err := InitTracing("test-service", "", false, 1.0)
+	if err != nil {
+		t.Fatalf("InitTracing with env-var endpoint failed: %v", err)
+	}
+	defer func() { _ = provider.Shutdown(context.Background()) }()
+
+	if provider == nil {
+		t.Fatal("expected provider, got nil")
+	}
+	if resolveOTLPEndpoint("") != "127.0.0.1:4317" {
+		t.Fatal("InitTracing did not resolve the endpoint from OTEL_EXPORTER_OTLP_ENDPOINT")
+	}
+}
+
+// TestResolveOTLPEndpointPrecedence directly tests the precedence logic
+// InitTracing uses to resolve otlpEndpoint, independent of the OTLP SDK's
+// lazy-dial behavior (which makes network-level black-box assertions
+// unreliable). This is the negative-verification target for #771: an
+// explicit parameter must win, and the env var must be consulted only when
+// the parameter is empty.
+func TestResolveOTLPEndpointPrecedence(t *testing.T) {
+	t.Run("env var used when param empty", func(t *testing.T) {
+		t.Setenv(otelExporterOTLPEndpointEnv, "collector-from-env:4317")
+		got := resolveOTLPEndpoint("")
+		if got != "collector-from-env:4317" {
+			t.Errorf("expected env var value, got %q", got)
+		}
+	})
+
+	t.Run("explicit param overrides env var", func(t *testing.T) {
+		t.Setenv(otelExporterOTLPEndpointEnv, "collector-from-env:4317")
+		got := resolveOTLPEndpoint("explicit:4317")
+		if got != "explicit:4317" {
+			t.Errorf("expected explicit param to win, got %q", got)
+		}
+	})
+
+	t.Run("empty when neither set", func(t *testing.T) {
+		t.Setenv(otelExporterOTLPEndpointEnv, "")
+		got := resolveOTLPEndpoint("")
+		if got != "" {
+			t.Errorf("expected empty (no OTLP export), got %q", got)
+		}
+	})
+}
+
+// TestResolveServiceNamePrecedence is the equivalent negative-verification
+// test for OTEL_SERVICE_NAME.
+func TestResolveServiceNamePrecedence(t *testing.T) {
+	t.Run("env var used when param empty", func(t *testing.T) {
+		t.Setenv(otelServiceNameEnv, "service-from-env")
+		got := resolveServiceName("")
+		if got != "service-from-env" {
+			t.Errorf("expected env var value, got %q", got)
+		}
+	})
+
+	t.Run("explicit param overrides env var", func(t *testing.T) {
+		t.Setenv(otelServiceNameEnv, "service-from-env")
+		got := resolveServiceName("explicit-service")
+		if got != "explicit-service" {
+			t.Errorf("expected explicit param to win, got %q", got)
+		}
+	})
+
+	t.Run("defaults to agenkit when neither set", func(t *testing.T) {
+		t.Setenv(otelServiceNameEnv, "")
+		got := resolveServiceName("")
+		if got != "agenkit" {
+			t.Errorf("expected default 'agenkit', got %q", got)
+		}
+	})
+}

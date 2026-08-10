@@ -734,7 +734,7 @@ impl ObservabilityStack {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let obs = ObservabilityStack::init(
         "my-agent-service",
-        std::env::var("OTLP_ENDPOINT").ok().as_deref(),
+        std::env::var("OTEL_EXPORTER_OTLP_ENDPOINT").ok().as_deref(),
     )?;
 
     let base_agent = MyAgent::new();
@@ -778,7 +778,7 @@ spec:
         env:
         - name: RUST_LOG
           value: "info,agenkit=debug"
-        - name: OTLP_ENDPOINT
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
           value: "http://jaeger-collector:4317"
         ports:
         - containerPort: 8080   # Agent HTTP port

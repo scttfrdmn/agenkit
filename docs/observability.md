@@ -498,13 +498,14 @@ kind: ConfigMap
 metadata:
   name: observability-config
 data:
-  # Honoured by the Rust OTLP exporter when init_tracing is called with a None
-  # endpoint (it resolves OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, then this, then the
-  # spec default). Passing an endpoint explicitly overrides it. Note that the
-  # other languages do not read this variable — see docs/OTEL_CONVENTION.md.
+  # Read by init_tracing/InitTracing/initTracing in every language (Python,
+  # Go, TypeScript, Rust, C++) as the default OTLP endpoint whenever the
+  # corresponding parameter is not explicitly supplied. An explicit parameter
+  # always takes precedence over this variable. See
+  # docs/OTEL_CONVENTION.md#collector-endpoint-and-service-name (#771).
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
-  # Read by the OTel SDK's resource detector, unless
-  # init_tracing_with_config passes a service name explicitly.
+  # Read the same way for the service name, except in C++, which has no
+  # service_name parameter yet.
   OTEL_SERVICE_NAME: "agenkit-app"
   RUST_LOG: "info"
 

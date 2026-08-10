@@ -38,8 +38,11 @@ struct ObservabilityConfig {
     static ObservabilityConfig from_environment() {
         ObservabilityConfig config;
 
-        // OTLP endpoint (default to localhost)
-        const char* endpoint_env = std::getenv("OTLP_ENDPOINT");
+        // OTLP endpoint: read the OTel spec-named variable ourselves here
+        // for display purposes (config.otlp_endpoint is logged below), but
+        // pass "" to init_tracing/init_metrics in main() and let them defer
+        // to it directly -- see #771.
+        const char* endpoint_env = std::getenv("OTEL_EXPORTER_OTLP_ENDPOINT");
         config.otlp_endpoint = endpoint_env ? endpoint_env : "http://localhost:4317";
 
         // Log format (default to JSON for production)
@@ -342,7 +345,7 @@ int main() {
 
     std::cout << "\n🔧 Production Deployment:" << std::endl;
     std::cout << "  1. Deploy OpenTelemetry Collector" << std::endl;
-    std::cout << "  2. Set OTLP_ENDPOINT environment variable" << std::endl;
+    std::cout << "  2. Set OTEL_EXPORTER_OTLP_ENDPOINT environment variable" << std::endl;
     std::cout << "  3. Configure LOG_FORMAT=json LOG_LEVEL=info" << std::endl;
     std::cout << "  4. Mount persistent volume for audit logs" << std::endl;
     std::cout << "  5. Set up log rotation and retention policies" << std::endl;

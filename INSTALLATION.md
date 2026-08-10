@@ -384,21 +384,31 @@ export GOOGLE_API_KEY="..."
 ```bash
 # Redis connection (if using RedisMemory)
 export REDIS_URL="redis://localhost:6379"
+
+# OpenTelemetry exporter endpoint
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:4317"
+
+# Service name for tracing
+export OTEL_SERVICE_NAME="my-agenkit-service"
 ```
 
-> **`OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_SERVICE_NAME` are not read by
-> `init_tracing` in Python, Go, TypeScript, or C++.** In those languages the
-> endpoint and service name are parameters — exporting the variables has no
-> effect. Pass them explicitly:
->
-> ```python
-> init_tracing(service_name="my-agenkit-service", otlp_endpoint="http://localhost:4317")
-> ```
->
-> Rust is the exception: its OTLP exporter resolves
-> `OTEL_EXPORTER_OTLP_ENDPOINT` itself when no endpoint is passed, and the SDK
-> reads `OTEL_SERVICE_NAME` unless `init_tracing_with_config` overrides it. See
-> [docs/OTEL_CONVENTION.md](docs/OTEL_CONVENTION.md#collector-endpoint) (#771).
+`init_tracing`/`InitTracing`/`initTracing` in every language (Python, Go,
+TypeScript, Rust, C++) reads these as defaults when the corresponding
+parameter is not explicitly supplied. **An explicit parameter always takes
+precedence over the environment** — this matches the OTel SDK convention, so
+the ordering is the one a caller familiar with any other OTel SDK would
+expect:
+
+```python
+# Explicit values win over the environment above; omit either kwarg to fall
+# back to the corresponding env var.
+init_tracing(service_name="my-agenkit-service", otlp_endpoint="http://localhost:4317")
+```
+
+C++ has no `service_name` parameter at all (a structural gap, not an env var
+gap), so `OTEL_SERVICE_NAME` has no effect there yet. See
+[docs/OTEL_CONVENTION.md](docs/OTEL_CONVENTION.md#collector-endpoint-and-service-name)
+(#771) for the full per-language table.
 
 ---
 

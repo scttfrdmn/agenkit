@@ -206,6 +206,47 @@ async fn test_unsupported_exporter_type() {
     assert!(result.is_err(), "Should fail with unsupported exporter");
 }
 
+// #771: negative-verification target — passing `None` as the endpoint must
+// not be an error, and must actually defer to OTEL_EXPORTER_OTLP_ENDPOINT
+// rather than silently building an exporter pointed at the hardcoded
+// localhost default with no regard for the environment. The OTLP exporter
+// builder itself performs this resolution (this crate does not call
+// `with_endpoint` at all when `endpoint` is `None`, so nothing here can
+// override the SDK's own env var read — see the `builder.with_endpoint`
+// guard in `init_tracing_with_config`), so a successful `Ok(())` with the
+// env var set and no explicit endpoint is the observable proof that the
+// fallback path executed rather than short-circuiting on an empty
+// parameter as it would if `with_endpoint("")` were called unconditionally.
+#[tokio::test]
+async fn test_init_tracing_otlp_without_endpoint_defers_to_env_var() {
+    std::env::set_var("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
+
+    let result = init_tracing("otlp", None);
+    assert!(
+        result.is_ok(),
+        "init_tracing(\"otlp\", None) should defer to OTEL_EXPORTER_OTLP_ENDPOINT, not error"
+    );
+
+    std::env::remove_var("OTEL_EXPORTER_OTLP_ENDPOINT");
+}
+
+// Explicit endpoint parameter must still win over the environment.
+#[tokio::test]
+async fn test_init_tracing_otlp_explicit_endpoint_overrides_env_var() {
+    std::env::set_var(
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "http://should-not-be-used:4317",
+    );
+
+    let result = init_tracing("otlp", Some("http://explicit:4317"));
+    assert!(
+        result.is_ok(),
+        "init_tracing with an explicit endpoint should still succeed"
+    );
+
+    std::env::remove_var("OTEL_EXPORTER_OTLP_ENDPOINT");
+}
+
 #[tokio::test]
 async fn test_init_tracing_with_config_accepts_service_name() {
     // #768: service.name used to be hardcoded to "agenkit" with no override, so

@@ -625,12 +625,15 @@ service:
 
 **Environment Variables:**
 
-> These are read by **your application**, as the C++ snippet below shows —
-> `init_tracing` does not read the environment itself. `OTLP_ENDPOINT` is an
-> agenkit-doc name, not the OTel spec name; prefer the spec's
-> `OTEL_EXPORTER_OTLP_ENDPOINT` for new deployments so the same variable works
-> for sidecars and other SDKs. See
-> [docs/OTEL_CONVENTION.md](../../docs/OTEL_CONVENTION.md#collector-endpoint).
+> `OTEL_EXPORTER_OTLP_ENDPOINT` is read two ways: `init_tracing`'s OTLP
+> exporter resolves it itself (via the OTel C++ SDK's own default-constructor
+> resolution) whenever the `endpoint` argument is empty, so passing `""` opts
+> into the environment. An explicit, non-empty `endpoint` always overrides it.
+> `LOG_FORMAT`/`LOG_LEVEL`/`AUDIT_LOG_PATH`/`AUDIT_BUFFER_SIZE` below are *not*
+> read by any agenkit function — those are read by **your application**, as
+> the C++ snippet shows, and passed in explicitly. See
+> [docs/OTEL_CONVENTION.md](../../docs/OTEL_CONVENTION.md#collector-endpoint-and-service-name)
+> (#771).
 
 ```bash
 export OTEL_EXPORTER_OTLP_ENDPOINT="http://otel-collector:4317"
@@ -642,13 +645,18 @@ export AUDIT_BUFFER_SIZE="100"
 
 **C++ Code:**
 ```cpp
-// Read from environment
+// LOG_FORMAT/LOG_LEVEL are not read by agenkit, so this application reads
+// them itself. init_metrics does not defer to OTEL_EXPORTER_OTLP_ENDPOINT
+// (only init_tracing does, as of #771), so this application still reads it
+// explicitly for the metrics call.
 const char* endpoint = std::getenv("OTEL_EXPORTER_OTLP_ENDPOINT");
 const char* log_format = std::getenv("LOG_FORMAT");
 const char* log_level = std::getenv("LOG_LEVEL");
 
-// Initialize
-init_tracing("otlp", endpoint ? endpoint : "http://localhost:4317");
+// An empty endpoint defers init_tracing to OTEL_EXPORTER_OTLP_ENDPOINT (or
+// the spec default if that is unset too); pass a non-empty string to
+// override it explicitly instead.
+init_tracing("otlp", "");
 init_metrics("otlp", endpoint ? endpoint : "http://localhost:4317");
 configure_logging(log_format ? log_format : "json",
                   log_level ? log_level : "info");

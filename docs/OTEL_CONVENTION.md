@@ -26,7 +26,7 @@ than defining a synonym.
 | [Resource attributes](#resource-attributes) | **Stable in Python/Go/Rust** | C++ sets none — see the caveats |
 | [Agent span attributes](#agent-span-attributes) | **Stable** | Emitted today |
 | [Span status](#span-status) | **Stable in Python/Go/TS/Rust/C++** | Ok / Error set by every implementation. The error *event* is Python/Go/TS only. |
-| [GenAI attributes](#genai-attributes) | **Planned** | Not emitted by any language yet — see [Gaps](#known-gaps) |
+| [GenAI attributes](#genai-attributes) | **Stable in Python/Go** | Promoted by `TracingMiddleware` from adapter-set metadata (#782); TS/Rust/C++/Zig/C#/Java/Scala still Planned — see [Gaps](#known-gaps) |
 | [Tree-node spans](#tree-node-spans) | **Stable in Go; Planned elsewhere** | `StartNode` implemented in Go (#784); Python/TS/Rust still call `tracer.Start` directly |
 
 "Planned" means the key is reserved and specified here so that consumers and
@@ -165,8 +165,8 @@ proportion to how well the verifier is doing its job. Record the verdict in
 
 ## GenAI attributes
 
-**Planned — not emitted by any language today.** Reserved names, so that
-consumers emitting them now will match agenkit when it starts emitting them.
+**Stable in Python and Go (#782). Planned in TS/Rust/C++/Zig/C#/Java/Scala** —
+reserved here so those languages converge on the same names when they land.
 Use the OTel GenAI semconv key verbatim:
 
 | Attribute | Type | Meaning |
@@ -192,6 +192,37 @@ Those last two are deliberately separate keys. Both cost money and latency, but
 they mean opposite things about the system: transport retries indicate an
 unreliable dependency, quality retries indicate a model that is not meeting the
 bar. Summing them into one counter makes neither diagnosable.
+
+### Python/Go: how these get onto a span
+
+`TracingMiddleware` does not call an LLM itself, so it cannot compute these
+attributes from nothing — it promotes them from well-known
+`Message.metadata`/`message.metadata` keys that an `adapter/llm`
+(Go)/`adapters.llm` (Python) response carries, or that any agent's response
+carries by the same convention:
+
+| Metadata key | Promoted to |
+|---|---|
+| `gen_ai_system` | `gen_ai.system` (also sets `gen_ai.operation.name = "chat"`) |
+| `request_model` | `gen_ai.request.model` |
+| `response_model` | `gen_ai.response.model` |
+| `usage` (the pre-existing per-provider map; see [Known gaps](#known-gaps)) | `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`, and (when present) `agenkit.usage.cache_read_tokens`/`agenkit.usage.cache_creation_tokens`, via the typed `Usage`/`UsageFromMessage` from #664 |
+| `cost_micro_units` | `agenkit.cost.micro_units` |
+| `retry_count` | `agenkit.retry.count` |
+| `verify_retries` | `agenkit.verify.retries` |
+
+`gen_ai.system`/`request.model`/`response.model`/`operation.name` are only
+emitted when `gen_ai_system` is present in the metadata — that key is the
+signal the response actually came from an LLM call, so a plain non-LLM
+agent's span does not get a fabricated set of GenAI attributes. Every
+`adapter/llm`/`adapters.llm` provider adapter sets `gen_ai_system` (and
+`request_model`/`response_model`, even when equal — see above) as of #782;
+patterns that pass an adapter's response through unchanged (the common case:
+`ConversationalAgent` and similar) carry these to the middleware with no
+extra wiring. A pattern that constructs its own response Message from
+scratch, or a Verifier caller setting `agenkit.verifier.verdict`, sets
+`gen_ai_system` (or the verdict attribute) itself if it wants the promotion —
+`TracingMiddleware` promotes whatever is present, it does not infer intent.
 
 ## Tree-node spans
 
@@ -348,17 +379,25 @@ all now reconciled onto the two spec names above.
 
 Documented so consumers do not plan around capabilities that do not exist:
 
-1. **No token, cost, or model attribute is emitted on any span, in any
-   language.** Usage data exists only as untyped `Message.metadata["usage"]`,
-   set by some adapters, and is never promoted onto a span. Typed usage is #664;
-   Bedrock cache counts are #665; promotion onto spans is #715.
+1. **Token, cost, and model attributes are emitted in Python and Go only.**
+   #782 promotes them onto spans in those two languages, from the well-known
+   metadata keys documented under [GenAI attributes](#genai-attributes)
+   (typed usage is #664; Bedrock cache counts are #665). TS, Rust, C++, Zig,
+   C#, Java, and Scala still only carry usage as untyped, per-provider
+   `Message.metadata["usage"]`/`message.metadata["usage"]`, never promoted
+   onto a span — tracked as the remainder of #715.
 2. **No tree/DAG span helper in Python/TS/Rust.** `TracingMiddleware` wraps a
    single `Agent.Process` and derives the span name from the agent name; there
    is no "start a span for node N parented to node P" API in those languages.
    Go has `observability.StartNode` (#784) — see
    [Tree-node spans](#tree-node-spans).
-3. **Go's semconv pin is `v1.17.0`** (`agenkit-go/observability/tracing.go`),
-   predating the GenAI conventions.
+3. **Go's semconv pin was `v1.17.0`, predating the GenAI conventions — fixed
+   in #785/#788.** `agenkit-go/observability/tracing.go` now pins
+   `go.opentelemetry.io/otel/semconv/v1.41.0`, which is what made #782's Go
+   side possible without hand-rolling the `gen_ai.*` key strings for every
+   attribute (`gen_ai.system` is a partial exception: v1.41.0 dropped its Go
+   constant in favor of `gen_ai.provider.name`, so that one key is still
+   spelled out literally in `agenkit-go/observability/tracing.go`).
 4. **No Prometheus scrape endpoint in Rust.** `init_metrics("prometheus", ...)`
    returns an error — `opentelemetry-prometheus` was removed over vulnerable
    transitive dependencies. Export OTLP to a collector and let the collector
@@ -367,11 +406,13 @@ Documented so consumers do not plan around capabilities that do not exist:
 ## Cross-references
 
 - #711 — the consumer request this document answers
-- #715 — the remaining implementation work: GenAI attributes on spans, tree-node helper, Go semconv bump
+- #715 — parent tracking issue: GenAI attributes on spans, tree-node helper, Go semconv bump — all landed for Python/Go; TS/Rust/C++/Zig/C#/Java/Scala remain
 - #771 — env vars that no implementation read; fixed in Python/Go/TS/Rust/C++
+- #782 — GenAI semconv attributes promoted onto spans (Python/Go; fixed for those two languages)
+- #783 — the attribute-namespace test that enforces this document (Python/Go)
 - #784 — tree-node span helper; fixed in Go (`StartNode`)
 - #769 — `VerificationResult.passed` could not express `not_assessed` (fixed: `Verdict`)
 - #768 — Rust OTLP export, `service.name`, and span status (fixed)
 - #772 — Rust `init_metrics` installed no exporter (fixed)
-- #664 — typed `Usage` (prerequisite for emitting token attributes)
-- #665 — Bedrock prompt-cache token counts
+- #664 — typed `Usage` (prerequisite for emitting token attributes; fixed)
+- #665 — Bedrock prompt-cache token counts (fixed)

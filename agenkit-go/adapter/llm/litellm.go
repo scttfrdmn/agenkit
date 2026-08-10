@@ -263,7 +263,28 @@ func (l *LiteLLMLLM) Complete(ctx context.Context, messages []*agenkit.Message, 
 	response.Metadata["finish_reason"] = litellmResp.Choices[0].FinishReason
 	response.Metadata["id"] = litellmResp.ID
 
+	// GenAI semconv promotion (#782). LiteLLM routes by a "<provider>/<model>"
+	// prefix (e.g. "bedrock/anthropic.claude-v2", "ollama/llama2"); the prefix
+	// is the actual gen_ai.system, not "litellm" itself, which is only the
+	// proxy. litellmResp.Model is what the underlying provider reports back,
+	// which may differ from the requested model — both are recorded, even when
+	// equal, per docs/OTEL_CONVENTION.md.
+	response.Metadata[agenkit.MetadataKeyGenAISystem] = litellmProviderPrefix(l.model)
+	response.Metadata[agenkit.MetadataKeyRequestModel] = l.model
+	response.Metadata[agenkit.MetadataKeyResponseModel] = litellmResp.Model
+
 	return response, nil
+}
+
+// litellmProviderPrefix extracts the "<provider>/" prefix LiteLLM uses to
+// route requests (e.g. "bedrock" from "bedrock/anthropic.claude-v2"). Falls
+// back to "litellm" for bare model names (e.g. "gpt-4"), where LiteLLM infers
+// the provider from the model name itself rather than an explicit prefix.
+func litellmProviderPrefix(model string) string {
+	if idx := strings.Index(model, "/"); idx > 0 {
+		return model[:idx]
+	}
+	return "litellm"
 }
 
 // Stream generates completion chunks via LiteLLM proxy.

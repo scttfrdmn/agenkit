@@ -254,6 +254,15 @@ func (a *AnthropicLLM) Complete(ctx context.Context, messages []*agenkit.Message
 	response.Metadata["stop_reason"] = anthropicResp.StopReason
 	response.Metadata["id"] = anthropicResp.ID
 
+	// GenAI semconv promotion (#782): gen_ai.system, gen_ai.request.model, and
+	// gen_ai.response.model. anthropicResp.Model is the model the API actually
+	// served, which can differ from the requested alias (e.g. "claude-sonnet-5"
+	// resolving to a dated snapshot) — both are recorded, even when equal, so a
+	// consumer can detect a mismatch instead of assuming the invariant holds.
+	response.Metadata[agenkit.MetadataKeyGenAISystem] = "anthropic"
+	response.Metadata[agenkit.MetadataKeyRequestModel] = a.model
+	response.Metadata[agenkit.MetadataKeyResponseModel] = anthropicResp.Model
+
 	// Store content_blocks for multimodal consumers when multiple blocks present
 	if len(anthropicResp.Content) > 1 {
 		blocks := make([]interface{}, len(anthropicResp.Content))

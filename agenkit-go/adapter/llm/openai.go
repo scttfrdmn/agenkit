@@ -169,6 +169,14 @@ func (o *OpenAILLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 	response.Metadata["finish_reason"] = resp.Choices[0].FinishReason
 	response.Metadata["id"] = resp.ID
 
+	// GenAI semconv promotion (#782). resp.Model is the model OpenAI actually
+	// served, which can differ from the requested alias (e.g. "gpt-4o"
+	// resolving to a dated snapshot) — both request and response model are
+	// recorded, even when equal, per docs/OTEL_CONVENTION.md.
+	response.Metadata[agenkit.MetadataKeyGenAISystem] = "openai"
+	response.Metadata[agenkit.MetadataKeyRequestModel] = o.model
+	response.Metadata[agenkit.MetadataKeyResponseModel] = resp.Model
+
 	// Store content_blocks for multimodal consumers when tool calls are present
 	if len(msg.ToolCalls) > 0 {
 		blocks := make([]interface{}, 0, len(msg.ToolCalls)+1)

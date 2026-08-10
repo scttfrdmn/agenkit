@@ -210,6 +210,14 @@ func (o *OllamaLLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 		response.Metadata["total_duration_ns"] = ollamaResp.TotalDuration
 	}
 
+	// GenAI semconv promotion (#782). Ollama echoes back the model it actually
+	// ran, which can differ from a tag alias (e.g. "llama2" resolving to a
+	// specific quantization/version) — both request and response model are
+	// recorded, even when equal, per docs/OTEL_CONVENTION.md.
+	response.Metadata[agenkit.MetadataKeyGenAISystem] = "ollama"
+	response.Metadata[agenkit.MetadataKeyRequestModel] = o.model
+	response.Metadata[agenkit.MetadataKeyResponseModel] = ollamaResp.Model
+
 	// Add usage information
 	if ollamaResp.PromptEvalCount > 0 || ollamaResp.EvalCount > 0 {
 		response.Metadata["usage"] = map[string]interface{}{

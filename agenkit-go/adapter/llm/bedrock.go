@@ -253,6 +253,16 @@ func (b *BedrockLLM) Complete(ctx context.Context, messages []*agenkit.Message, 
 	response := agenkit.NewMessage("agent", content)
 	response.Metadata["model"] = b.modelID
 
+	// GenAI semconv promotion (#782): gen_ai.system, gen_ai.request.model, and
+	// gen_ai.response.model. The Converse API does not return a resolved model
+	// id distinct from the one requested, so response_model equals
+	// request_model here — both keys are still set, per
+	// docs/OTEL_CONVENTION.md, so a consumer can tell "no divergence reported"
+	// apart from "field missing".
+	response.Metadata[agenkit.MetadataKeyGenAISystem] = "aws.bedrock"
+	response.Metadata[agenkit.MetadataKeyRequestModel] = b.modelID
+	response.Metadata[agenkit.MetadataKeyResponseModel] = b.modelID
+
 	// Add usage if available
 	if output.Usage != nil {
 		usage := map[string]interface{}{

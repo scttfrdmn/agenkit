@@ -233,7 +233,10 @@ async fn test_init_tracing_otlp_without_endpoint_defers_to_env_var() {
 // Explicit endpoint parameter must still win over the environment.
 #[tokio::test]
 async fn test_init_tracing_otlp_explicit_endpoint_overrides_env_var() {
-    std::env::set_var("OTEL_EXPORTER_OTLP_ENDPOINT", "http://should-not-be-used:4317");
+    std::env::set_var(
+        "OTEL_EXPORTER_OTLP_ENDPOINT",
+        "http://should-not-be-used:4317",
+    );
 
     let result = init_tracing("otlp", Some("http://explicit:4317"));
     assert!(

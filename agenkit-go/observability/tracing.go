@@ -253,6 +253,24 @@ func (t *TracingMiddleware) Introspect() *agenkit.IntrospectionResult {
 	return t.agent.Introspect()
 }
 
+// genAIMetadataKeys are the well-known Message.Metadata keys (defined in the
+// core agenkit package) that this middleware promotes onto explicit gen_ai.*/
+// agenkit.* span attributes rather than the generic message.metadata.*
+// promotion below. Excluded from that generic loop so they never appear twice
+// under two different namespaces (message.metadata.gen_ai_system alongside
+// gen_ai.system) — docs/OTEL_CONVENTION.md's attribute-namespace contract
+// (#783) only grandfathers message.metadata.* for metadata that has no more
+// specific home.
+var genAIMetadataKeys = map[string]bool{
+	agenkit.MetadataKeyGenAISystem:    true,
+	agenkit.MetadataKeyRequestModel:   true,
+	agenkit.MetadataKeyResponseModel:  true,
+	"usage":                           true,
+	agenkit.MetadataKeyCostMicroUnits: true,
+	agenkit.MetadataKeyRetryCount:     true,
+	agenkit.MetadataKeyVerifyRetries:  true,
+}
+
 // Process processes a message with distributed tracing.
 func (t *TracingMiddleware) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	// Extract parent context from message metadata
@@ -274,7 +292,7 @@ func (t *TracingMiddleware) Process(ctx context.Context, message *agenkit.Messag
 	// Add metadata attributes
 	if message.Metadata != nil {
 		for key, value := range message.Metadata {
-			if key == "trace_context" {
+			if key == "trace_context" || genAIMetadataKeys[key] {
 				continue
 			}
 
@@ -307,6 +325,13 @@ func (t *TracingMiddleware) Process(ctx context.Context, message *agenkit.Messag
 	// Set success status
 	span.SetStatus(codes.Ok, "")
 
+	// Promote GenAI attributes (#782) from whatever the wrapped agent's
+	// response carries. The common case is an agent (e.g. ConversationalAgent)
+	// that returns an adapter/llm response's Message essentially unchanged, so
+	// the gen_ai_system/request_model/... keys the adapter set are present
+	// here without this middleware knowing anything about adapter/llm.
+	promoteGenAIAttributes(span, response.Metadata)
+
 	// Inject trace context into response
 	if response.Metadata == nil {
 		response.Metadata = make(map[string]interface{})
@@ -314,6 +339,83 @@ func (t *TracingMiddleware) Process(ctx context.Context, message *agenkit.Messag
 	response.Metadata = InjectTraceContext(ctx, response.Metadata)
 
 	return response, nil
+}
+
+// promoteGenAIAttributes sets the GenAI semconv and agenkit.* span attributes
+// from docs/OTEL_CONVENTION.md's GenAI attributes table (#782), reading the
+// well-known Metadata keys an adapter/llm response (or a pattern that passes
+// one through unchanged) carries.
+//
+// gen_ai.system/request.model/response.model/operation.name are only emitted
+// when MetadataKeyGenAISystem is present — that key is the signal this
+// response actually came from an LLM call, so a plain non-LLM agent's span
+// does not get a fabricated set of GenAI attributes. The cost/retry counters
+// are independent concepts and are emitted whenever present, regardless.
+func promoteGenAIAttributes(span trace.Span, metadata map[string]interface{}) {
+	if metadata == nil {
+		return
+	}
+
+	if system, ok := metadata[agenkit.MetadataKeyGenAISystem].(string); ok {
+		// docs/OTEL_CONVENTION.md's GenAI attributes table specifies the
+		// literal key "gen_ai.system". The current semconv package (v1.41.0)
+		// no longer exports a Go constant for it — the upstream spec
+		// deprecated gen_ai.system in favour of gen_ai.provider.name after
+		// this doc's contract was written — so it is spelled out here rather
+		// than via a semconv.GenAI*Key that does not exist at this pin.
+		span.SetAttributes(attribute.String("gen_ai.system", system))
+		// gen_ai.operation.name is fixed at the semconv enum constant "chat":
+		// every adapter/llm provider this promotes from is a chat-completion
+		// call (Complete/Stream), never embeddings or another operation.
+		span.SetAttributes(semconv.GenAIOperationNameChat)
+
+		if reqModel, ok := metadata[agenkit.MetadataKeyRequestModel].(string); ok {
+			span.SetAttributes(semconv.GenAIRequestModel(reqModel))
+		}
+		if respModel, ok := metadata[agenkit.MetadataKeyResponseModel].(string); ok {
+			span.SetAttributes(semconv.GenAIResponseModel(respModel))
+		}
+	}
+
+	if usage, ok := agenkit.UsageFromMessage(&agenkit.Message{Metadata: metadata}); ok {
+		span.SetAttributes(semconv.GenAIUsageInputTokens(usage.PromptTokens))
+		span.SetAttributes(semconv.GenAIUsageOutputTokens(usage.CompletionTokens))
+		if usage.CacheReadTokens > 0 {
+			span.SetAttributes(attribute.Int("agenkit.usage.cache_read_tokens", usage.CacheReadTokens))
+		}
+		if usage.CacheCreationTokens > 0 {
+			span.SetAttributes(attribute.Int("agenkit.usage.cache_creation_tokens", usage.CacheCreationTokens))
+		}
+	}
+
+	if cost, ok := toInt64(metadata[agenkit.MetadataKeyCostMicroUnits]); ok {
+		span.SetAttributes(attribute.Int64("agenkit.cost.micro_units", cost))
+	}
+	if retries, ok := toInt64(metadata[agenkit.MetadataKeyRetryCount]); ok {
+		span.SetAttributes(attribute.Int64("agenkit.retry.count", retries))
+	}
+	if retries, ok := toInt64(metadata[agenkit.MetadataKeyVerifyRetries]); ok {
+		span.SetAttributes(attribute.Int64("agenkit.verify.retries", retries))
+	}
+}
+
+// toInt64 coerces the numeric types a caller might reasonably store in
+// Message.Metadata (int, int32, int64, float64) to int64. ok is false when v
+// is nil or not a recognized numeric type, so an absent key is distinguishable
+// from a genuine zero.
+func toInt64(v interface{}) (int64, bool) {
+	switch n := v.(type) {
+	case int64:
+		return n, true
+	case int:
+		return int64(n), true
+	case int32:
+		return int64(n), true
+	case float64:
+		return int64(n), true
+	default:
+		return 0, false
+	}
 }
 
 // Shutdown gracefully shuts down the tracer provider.

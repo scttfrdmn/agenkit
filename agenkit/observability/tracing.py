@@ -114,6 +114,7 @@ def _promote_genai_attributes(span: Span, metadata: dict[str, Any] | None) -> No
     if isinstance(verify_retries, int) and not isinstance(verify_retries, bool):
         span.set_attribute("agenkit.verify.retries", verify_retries)
 
+
 # OTel spec-named environment variables consulted by init_tracing when the
 # corresponding parameter is not supplied (None). An explicitly passed
 # parameter always takes precedence over the environment — this matches the

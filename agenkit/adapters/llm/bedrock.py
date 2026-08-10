@@ -11,7 +11,12 @@ from functools import partial
 from typing import Any
 
 from agenkit.adapters.llm.base import LLM
-from agenkit.interfaces import Message
+from agenkit.interfaces import (
+    METADATA_KEY_GEN_AI_SYSTEM,
+    METADATA_KEY_REQUEST_MODEL,
+    METADATA_KEY_RESPONSE_MODEL,
+    Message,
+)
 
 try:
     import boto3
@@ -216,9 +221,21 @@ class BedrockLLM(LLM):
             if "text" in block:
                 text_content += block["text"]
 
-        # Build metadata
+        # Build metadata.
+        #
+        # GenAI semconv promotion (#782): the Converse API does not return a
+        # resolved model id distinct from the one requested, so
+        # response_model equals request_model here — both keys are still
+        # set, per docs/OTEL_CONVENTION.md, so a consumer can tell "no
+        # divergence reported" apart from "field missing". Cache-token
+        # extraction (cacheReadInputTokens/cacheWriteInputTokens) is Go-only
+        # for now (#665); this adapter forwards only what the Go adapter's
+        # non-cache fields already cover.
         metadata: dict[str, Any] = {
             "model": self._model_id,
+            METADATA_KEY_GEN_AI_SYSTEM: "aws.bedrock",
+            METADATA_KEY_REQUEST_MODEL: self._model_id,
+            METADATA_KEY_RESPONSE_MODEL: self._model_id,
         }
 
         # Add usage if available

@@ -43,7 +43,12 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from agenkit.adapters.llm.base import LLM
-from agenkit.interfaces import Message
+from agenkit.interfaces import (
+    METADATA_KEY_GEN_AI_SYSTEM,
+    METADATA_KEY_REQUEST_MODEL,
+    METADATA_KEY_RESPONSE_MODEL,
+    Message,
+)
 
 try:
     from openai import AsyncOpenAI
@@ -153,7 +158,12 @@ class OpenAILLM(LLM):
             **kwargs,
         )
 
-        # Convert response to Agenkit Message
+        # Convert response to Agenkit Message.
+        #
+        # GenAI semconv promotion (#782): response.model is the model OpenAI
+        # actually served, which can differ from the requested alias (e.g.
+        # "gpt-4o" resolving to a dated snapshot) — both request and response
+        # model are recorded, even when equal, per docs/OTEL_CONVENTION.md.
         return Message(
             role="agent",
             content=response.choices[0].message.content or "",
@@ -166,6 +176,9 @@ class OpenAILLM(LLM):
                 },
                 "finish_reason": response.choices[0].finish_reason,
                 "id": response.id,
+                METADATA_KEY_GEN_AI_SYSTEM: "openai",
+                METADATA_KEY_REQUEST_MODEL: self._model,
+                METADATA_KEY_RESPONSE_MODEL: response.model,
             },
         )
 

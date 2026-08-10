@@ -15,10 +15,105 @@ from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
-from opentelemetry.trace import SpanKind, Status, StatusCode
+from opentelemetry.trace import Span, SpanKind, Status, StatusCode
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
-from agenkit.interfaces import Agent, Message
+from agenkit.interfaces import (
+    METADATA_KEY_COST_MICRO_UNITS,
+    METADATA_KEY_GEN_AI_SYSTEM,
+    METADATA_KEY_REQUEST_MODEL,
+    METADATA_KEY_RESPONSE_MODEL,
+    METADATA_KEY_RETRY_COUNT,
+    METADATA_KEY_VERIFY_RETRIES,
+    Agent,
+    Message,
+    usage_from_message,
+)
+
+# GenAI semconv attribute keys (#782), spelled out literally rather than
+# imported from opentelemetry.semconv._incubating: that module is a private,
+# unstable API (the leading underscore is deliberate upstream), and the
+# doc's contract in docs/OTEL_CONVENTION.md is pinned to these exact string
+# keys regardless of which private module version happens to define them.
+_GEN_AI_SYSTEM = "gen_ai.system"
+_GEN_AI_OPERATION_NAME = "gen_ai.operation.name"
+_GEN_AI_REQUEST_MODEL = "gen_ai.request.model"
+_GEN_AI_RESPONSE_MODEL = "gen_ai.response.model"
+_GEN_AI_USAGE_INPUT_TOKENS = "gen_ai.usage.input_tokens"
+_GEN_AI_USAGE_OUTPUT_TOKENS = "gen_ai.usage.output_tokens"
+
+# The well-known Message.metadata keys (#782) promoted to explicit gen_ai.*/
+# agenkit.* span attributes rather than the generic message.metadata.*
+# promotion below. Excluded from that generic loop so they never appear twice
+# under two different namespaces (message.metadata.gen_ai_system alongside
+# gen_ai.system) — docs/OTEL_CONVENTION.md's attribute-namespace contract
+# (#783) only grandfathers message.metadata.* for metadata that has no more
+# specific home.
+_GEN_AI_METADATA_KEYS = frozenset(
+    {
+        METADATA_KEY_GEN_AI_SYSTEM,
+        METADATA_KEY_REQUEST_MODEL,
+        METADATA_KEY_RESPONSE_MODEL,
+        "usage",
+        METADATA_KEY_COST_MICRO_UNITS,
+        METADATA_KEY_RETRY_COUNT,
+        METADATA_KEY_VERIFY_RETRIES,
+    }
+)
+
+
+def _promote_genai_attributes(span: Span, metadata: dict[str, Any] | None) -> None:
+    """
+    Set the GenAI semconv and agenkit.* span attributes from
+    docs/OTEL_CONVENTION.md's GenAI attributes table (#782), reading the
+    well-known metadata keys an adapters.llm response (or a pattern that
+    passes one through unchanged) carries.
+
+    gen_ai.system/request.model/response.model/operation.name are only
+    emitted when METADATA_KEY_GEN_AI_SYSTEM is present — that key is the
+    signal this response actually came from an LLM call, so a plain non-LLM
+    agent's span does not get a fabricated set of GenAI attributes. The
+    cost/retry counters are independent concepts and are emitted whenever
+    present, regardless.
+    """
+    if not metadata:
+        return
+
+    system = metadata.get(METADATA_KEY_GEN_AI_SYSTEM)
+    if isinstance(system, str):
+        span.set_attribute(_GEN_AI_SYSTEM, system)
+        # gen_ai.operation.name is fixed at the semconv enum value "chat":
+        # every adapters.llm provider this promotes from is a
+        # chat-completion call (complete/stream), never embeddings or
+        # another operation.
+        span.set_attribute(_GEN_AI_OPERATION_NAME, "chat")
+
+        request_model = metadata.get(METADATA_KEY_REQUEST_MODEL)
+        if isinstance(request_model, str):
+            span.set_attribute(_GEN_AI_REQUEST_MODEL, request_model)
+        response_model = metadata.get(METADATA_KEY_RESPONSE_MODEL)
+        if isinstance(response_model, str):
+            span.set_attribute(_GEN_AI_RESPONSE_MODEL, response_model)
+
+    usage, ok = usage_from_message(Message(role="agent", content="", metadata=metadata))
+    if ok:
+        span.set_attribute(_GEN_AI_USAGE_INPUT_TOKENS, usage.prompt_tokens)
+        span.set_attribute(_GEN_AI_USAGE_OUTPUT_TOKENS, usage.completion_tokens)
+        if usage.cache_read_tokens > 0:
+            span.set_attribute("agenkit.usage.cache_read_tokens", usage.cache_read_tokens)
+        if usage.cache_creation_tokens > 0:
+            span.set_attribute("agenkit.usage.cache_creation_tokens", usage.cache_creation_tokens)
+
+    cost = metadata.get(METADATA_KEY_COST_MICRO_UNITS)
+    if isinstance(cost, int) and not isinstance(cost, bool):
+        span.set_attribute("agenkit.cost.micro_units", cost)
+    retry_count = metadata.get(METADATA_KEY_RETRY_COUNT)
+    if isinstance(retry_count, int) and not isinstance(retry_count, bool):
+        span.set_attribute("agenkit.retry.count", retry_count)
+    verify_retries = metadata.get(METADATA_KEY_VERIFY_RETRIES)
+    if isinstance(verify_retries, int) and not isinstance(verify_retries, bool):
+        span.set_attribute("agenkit.verify.retries", verify_retries)
+
 
 # OTel spec-named environment variables consulted by init_tracing when the
 # corresponding parameter is not supplied (None). An explicitly passed
@@ -224,7 +319,11 @@ class TracingMiddleware:
 
             if message.metadata:
                 for key, value in message.metadata.items():
-                    if key != "trace_context" and isinstance(value, (str, int, float, bool)):
+                    if (
+                        key != "trace_context"
+                        and key not in _GEN_AI_METADATA_KEYS
+                        and isinstance(value, (str, int, float, bool))
+                    ):
                         span.set_attribute(f"message.metadata.{key}", value)
 
             try:
@@ -233,6 +332,15 @@ class TracingMiddleware:
 
                 # Set success status
                 span.set_status(Status(StatusCode.OK))
+
+                # Promote GenAI attributes (#782) from whatever the wrapped
+                # agent's response carries. The common case is an agent (e.g.
+                # ConversationalAgent) that returns an adapters.llm response's
+                # Message essentially unchanged, so the gen_ai_system/
+                # request_model/... keys the adapter set are present here
+                # without this middleware knowing anything about
+                # agenkit.adapters.llm.
+                _promote_genai_attributes(span, response.metadata)
 
                 # Inject trace context into response
                 updated_metadata = inject_trace_context(

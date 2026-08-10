@@ -292,6 +292,132 @@ class Message:
 
 
 @dataclass(frozen=True)
+class Usage:
+    """
+    Normalized, typed view of the token usage an LLM adapter records on a
+    response.
+
+    Mirrors ``agenkit-go/agenkit/usage.go``'s ``Usage`` struct so cost-metering,
+    budgeting, and routing layers can consume a single type instead of
+    re-parsing the per-provider ``metadata["usage"]`` dict (which varies in key
+    names across providers: most use ``prompt_tokens``/``completion_tokens``,
+    the native Anthropic adapter uses ``input_tokens``/``output_tokens``).
+
+    Fields are zero when the provider does not report them. The cache fields
+    are provider-dependent (Anthropic prompt caching, including via Bedrock)
+    and are zero when caching is inactive or unsupported.
+
+    Attributes:
+        prompt_tokens: Input/prompt tokens for this call.
+        completion_tokens: Output/completion tokens for this call.
+        total_tokens: Total tokens; derived as prompt + completion when the
+            provider does not report a total directly.
+        cache_read_tokens: Prompt tokens served from a provider prompt cache,
+            typically billed at a fraction of normal input cost. Zero when
+            unknown or caching is inactive.
+        cache_creation_tokens: Prompt tokens written to a provider prompt
+            cache on this request. Zero when unknown or caching is inactive.
+    """
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cache_read_tokens: int = 0
+    cache_creation_tokens: int = 0
+
+
+# Well-known Message.metadata keys used to plumb GenAI attributes from an LLM
+# adapter response through to TracingMiddleware, which promotes them onto span
+# attributes per docs/OTEL_CONVENTION.md's GenAI attributes table (#782).
+# Mirrors the constants in agenkit-go/agenkit/genai_metadata.go so both
+# languages agree on the exact strings.
+METADATA_KEY_GEN_AI_SYSTEM = "gen_ai_system"
+METADATA_KEY_REQUEST_MODEL = "request_model"
+METADATA_KEY_RESPONSE_MODEL = "response_model"
+METADATA_KEY_COST_MICRO_UNITS = "cost_micro_units"
+METADATA_KEY_RETRY_COUNT = "retry_count"
+METADATA_KEY_VERIFY_RETRIES = "verify_retries"
+
+
+def _to_int(value: Any) -> int:
+    """Coerce a usage-metadata numeric value (int, float, or numeric str) to int."""
+    if isinstance(value, bool):
+        # bool is an int subclass; usage counts are never booleans, and letting
+        # True/False through as 1/0 would silently misreport a type error
+        # upstream as a plausible-looking token count.
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return 0
+
+
+def usage_from_message(message: "Message | None") -> tuple[Usage, bool]:
+    """
+    Extract normalized token usage from an adapter response.
+
+    Reads the ``metadata["usage"]`` dict populated by the adapters in
+    ``agenkit.adapters.llm``, normalizing the two naming conventions in use
+    today:
+
+    - ``prompt_tokens``/``completion_tokens`` (OpenAI, Bedrock, Gemini, Ollama,
+      LiteLLM, ...)
+    - ``input_tokens``/``output_tokens`` (Anthropic native)
+
+    Mirrors ``agenkit-go/agenkit/usage.go``'s ``UsageFromMessage``.
+
+    Args:
+        message: The response message to read usage from. ``None`` is
+            accepted and returns ``(Usage(), False)``.
+
+    Returns:
+        A ``(Usage, ok)`` tuple. ``ok`` is ``False`` when ``message`` is
+        ``None`` or carries no usage metadata. When ``total_tokens`` is absent
+        it is derived as ``prompt_tokens + completion_tokens``.
+
+    Example:
+        >>> usage, ok = usage_from_message(response)
+        >>> if ok:
+        ...     print(usage.prompt_tokens, usage.completion_tokens)
+    """
+    if message is None or not message.metadata:
+        return Usage(), False
+
+    raw = message.metadata.get("usage")
+    if not isinstance(raw, dict):
+        return Usage(), False
+
+    def pick(*keys: str) -> int:
+        for key in keys:
+            if key in raw:
+                return _to_int(raw[key])
+        return 0
+
+    prompt_tokens = pick("prompt_tokens", "input_tokens")
+    completion_tokens = pick("completion_tokens", "output_tokens")
+    total_tokens = pick("total_tokens")
+    cache_read_tokens = pick("cache_read_tokens", "cache_read_input_tokens")
+    cache_creation_tokens = pick(
+        "cache_creation_tokens", "cache_creation_input_tokens", "cache_write_tokens"
+    )
+
+    if total_tokens == 0:
+        total_tokens = prompt_tokens + completion_tokens
+
+    return (
+        Usage(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            cache_read_tokens=cache_read_tokens,
+            cache_creation_tokens=cache_creation_tokens,
+        ),
+        True,
+    )
+
+
+@dataclass(frozen=True)
 class ToolResult:
     """
     Universal tool execution result.

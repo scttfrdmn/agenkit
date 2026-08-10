@@ -9,7 +9,12 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from agenkit.adapters.llm.base import LLM
-from agenkit.interfaces import Message
+from agenkit.interfaces import (
+    METADATA_KEY_GEN_AI_SYSTEM,
+    METADATA_KEY_REQUEST_MODEL,
+    METADATA_KEY_RESPONSE_MODEL,
+    Message,
+)
 
 try:
     from ollama import AsyncClient
@@ -139,9 +144,19 @@ class OllamaLLM(LLM):
             options=options,
         )
 
-        # Build metadata
+        # Build metadata.
+        #
+        # GenAI semconv promotion (#782): Ollama echoes back the model it
+        # actually ran, which can differ from a tag alias (e.g. "llama2"
+        # resolving to a specific quantization/version) — both request and
+        # response model are recorded, even when equal, per
+        # docs/OTEL_CONVENTION.md.
+        response_model = response.get("model", self._model)
         metadata: dict[str, Any] = {
-            "model": response.get("model", self._model),
+            "model": response_model,
+            METADATA_KEY_GEN_AI_SYSTEM: "ollama",
+            METADATA_KEY_REQUEST_MODEL: self._model,
+            METADATA_KEY_RESPONSE_MODEL: response_model,
         }
 
         # Add performance metrics if available
@@ -151,6 +166,18 @@ class OllamaLLM(LLM):
             metadata["total_duration"] = response["total_duration"]
         if "load_duration" in response:
             metadata["load_duration"] = response["load_duration"]
+
+        # Add typed usage (matches agenkit-go/adapter/llm/ollama.go, and gives
+        # usage_from_message something to normalize for Ollama responses,
+        # which this adapter did not previously expose as a "usage" dict).
+        prompt_eval_count = response.get("prompt_eval_count", 0)
+        eval_count = response.get("eval_count", 0)
+        if prompt_eval_count or eval_count:
+            metadata["usage"] = {
+                "prompt_tokens": prompt_eval_count,
+                "completion_tokens": eval_count,
+                "total_tokens": prompt_eval_count + eval_count,
+            }
 
         # Extract message content
         message_content = response.get("message", {})

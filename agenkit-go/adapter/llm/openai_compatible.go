@@ -224,12 +224,23 @@ func (o *OpenAICompatibleLLM) Complete(ctx context.Context, messages []*agenkit.
 	response.Metadata["id"] = resp.ID
 
 	// Add provider metadata for debugging and monitoring
+	genAISystem := "openai_compatible"
 	if o.provider != "" {
 		response.Metadata["provider"] = o.provider
+		genAISystem = o.provider
 	} else {
 		response.Metadata["provider"] = "openai_compatible"
 	}
 	response.Metadata["base_url"] = o.baseURL
+
+	// GenAI semconv promotion (#782). gen_ai.system uses the configured
+	// provider name (e.g. "vllm", "sglang") rather than a fixed semconv enum
+	// value, since these are self-hosted/local services the semconv list does
+	// not cover — see docs/OTEL_CONVENTION.md's note that a custom system
+	// should use a custom friendly name.
+	response.Metadata[agenkit.MetadataKeyGenAISystem] = genAISystem
+	response.Metadata[agenkit.MetadataKeyRequestModel] = o.model
+	response.Metadata[agenkit.MetadataKeyResponseModel] = resp.Model
 
 	return response, nil
 }

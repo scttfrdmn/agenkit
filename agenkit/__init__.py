@@ -16,6 +16,8 @@ from agenkit.interfaces import (
     Message,
     Tool,
     ToolResult,
+    Usage,
+    usage_from_message,
 )
 from agenkit.patterns import Task
 
@@ -49,4 +51,7 @@ __all__ = [
     "Task",
     "Tool",
     "ToolResult",
+    # Typed LLM token usage
+    "Usage",
+    "usage_from_message",
 ]

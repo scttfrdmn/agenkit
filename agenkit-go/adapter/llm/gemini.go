@@ -153,6 +153,14 @@ func (g *GeminiLLM) Complete(ctx context.Context, messages []*agenkit.Message, o
 	response := agenkit.NewMessage("agent", content)
 	response.Metadata["model"] = g.model
 
+	// GenAI semconv promotion (#782). The genai SDK's GenerateContentResponse
+	// does not return a resolved model id distinct from the one requested, so
+	// response_model equals request_model — both keys are still set per
+	// docs/OTEL_CONVENTION.md.
+	response.Metadata[agenkit.MetadataKeyGenAISystem] = "gcp.gemini"
+	response.Metadata[agenkit.MetadataKeyRequestModel] = g.model
+	response.Metadata[agenkit.MetadataKeyResponseModel] = g.model
+
 	// Add usage metadata if available
 	if resp.UsageMetadata != nil {
 		response.Metadata["usage"] = map[string]interface{}{

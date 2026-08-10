@@ -9,7 +9,12 @@ from collections.abc import AsyncIterator
 from typing import Any
 
 from agenkit.adapters.llm.base import LLM
-from agenkit.interfaces import Message
+from agenkit.interfaces import (
+    METADATA_KEY_GEN_AI_SYSTEM,
+    METADATA_KEY_REQUEST_MODEL,
+    METADATA_KEY_RESPONSE_MODEL,
+    Message,
+)
 
 try:
     from google import genai
@@ -121,9 +126,17 @@ class GeminiLLM(LLM):
             config=config,
         )
 
-        # Build metadata
+        # Build metadata.
+        #
+        # GenAI semconv promotion (#782): the genai SDK's response does not
+        # return a resolved model id distinct from the one requested, so
+        # response_model equals request_model — both keys are still set per
+        # docs/OTEL_CONVENTION.md.
         metadata: dict[str, Any] = {
             "model": self._model,
+            METADATA_KEY_GEN_AI_SYSTEM: "gcp.gemini",
+            METADATA_KEY_REQUEST_MODEL: self._model,
+            METADATA_KEY_RESPONSE_MODEL: self._model,
         }
 
         # Add usage if available

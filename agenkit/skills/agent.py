@@ -7,7 +7,7 @@ from __future__ import annotations
 import dataclasses
 from typing import TYPE_CHECKING, Any
 
-from agenkit.interfaces import Agent, IntrospectionResult, Message
+from agenkit.interfaces import Agent, Message
 
 if TYPE_CHECKING:
     from agenkit.skills.loader import SkillRegistry
@@ -53,9 +53,6 @@ class SkillEnabledAgent(Agent):
         if "skill_injection" not in base:
             base.append("skill_injection")
         return base
-
-    def introspect(self) -> IntrospectionResult:
-        return self._agent.introspect()
 
     async def process(self, message: Message) -> Message:
         """

@@ -38,7 +38,7 @@ from agenkit.protocols.mcp.types import (
 
 logger = logging.getLogger(__name__)
 
-_CLIENT_INFO = {"name": "agenkit", "version": "0.91.0"}
+_CLIENT_INFO = {"name": "agenkit", "version": "0.92.0"}
 _INIT_PARAMS = {
     "protocolVersion": PROTOCOL_VERSION,
     "capabilities": {},

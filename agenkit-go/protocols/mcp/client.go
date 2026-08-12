@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 )
 
-const mcpClientVersion = "0.91.0"
+const mcpClientVersion = "0.92.0"
 
 // mcpInitParams returns the serialised params for the MCP initialize request.
 func mcpInitParams() (json.RawMessage, error) {

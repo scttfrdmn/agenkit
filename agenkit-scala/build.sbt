@@ -5,7 +5,7 @@ lazy val root = project
   .settings(
     name         := "agenkit-scala",
     organization := "io.agenkit",
-    version      := "0.91.0",
+    version      := "0.92.0",
     scalaVersion := scala3Version,
     libraryDependencies ++= Seq(
       "org.slf4j"         %  "slf4j-api"          % "2.0.9",

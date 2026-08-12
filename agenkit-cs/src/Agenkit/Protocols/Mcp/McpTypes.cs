@@ -25,7 +25,7 @@ public static class McpConstants
     /// </para>
     /// </summary>
     public const string ProtocolVersion = "2025-11-25";
-    internal const string ClientVersion = "0.91.0";
+    internal const string ClientVersion = "0.92.0";
 }
 
 // Wire types

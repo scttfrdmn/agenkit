@@ -5,34 +5,57 @@ pattern:
   version: "1.0.0"
   aliases: ["agent-tools", "delegated-agents"]
 
+# Constructor parameters below match the real Python AgentTool.__init__
+# (agenkit/patterns/agents_as_tools.py), corrected by #924's audit. There is
+# no single class in the reference implementation that takes an
+# "orchestrator"/"specialist_agents" pair as the spec previously claimed --
+# the "orchestrator" in this pattern is just any ordinary Agent (typically
+# ReActAgent) that receives one or more AgentTool instances as regular
+# tools. AgentTool itself wraps exactly one specialist agent per instance;
+# an "orchestrator" with N specialists is built by constructing N AgentTool
+# instances and registering them with that orchestrator's tool registry.
 interface:
   constructor:
     parameters:
-      - name: "orchestrator"
+      - name: "agent"
         type: "Agent"
         required: true
-        description: "Main agent that decides which specialist to use"
-
-      - name: "specialist_agents"
-        type: "Map<string, Agent>"
-        required: true
-        description: "Dictionary of specialist agents wrapped as tools"
+        description: "The specialist agent to wrap as a tool"
 
       - name: "name"
         type: "string"
+        required: true
+        description: "Tool name for identification and routing"
+
+      - name: "description"
+        type: "string"
+        required: true
+        description: "Description for the LLM to understand when to use this tool"
+
+      - name: "input_key"
+        type: "string"
         required: false
-        default: "agents-as-tools"
+        default: "query"
+        description: "Parameter name for input"
+
+      - name: "output_format"
+        type: "string"
+        required: false
+        default: "str"
+        description: "How to format agent output ('str', 'dict', or 'message')"
+
+      - name: "include_metadata"
+        type: "boolean"
+        required: false
+        default: false
+        description: "Whether to include agent metadata in output"
 
   methods:
-    process:
-      input: "Message"
-      output: "Message"
+    execute:
+      input: "Map<string, any>"
+      output: "any"
       async: true
-      description: "Orchestrator processes message, delegates to specialists as needed"
-
-    get_available_agents:
-      output: "string[]"
-      description: "Get list of available specialist agent names"
+      description: "Execute the wrapped agent; params[input_key] becomes the agent's message content"
 
 behavior:
   state:

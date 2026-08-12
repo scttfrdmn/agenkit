@@ -5,30 +5,38 @@ pattern:
   version: "1.0.0"
   aliases: ["plan-execute", "hierarchical-planning"]
 
+# Constructor parameters below match the real Python PlanningConfig fields
+# (agenkit/patterns/planning.py), corrected by #924's audit. The spec
+# previously declared "llm" (real field: "planner"), a "tools" list that
+# doesn't exist as a constructor field (steps are executed via
+# `StepExecutor`, not a raw tool list passed to the config), and a "name"
+# parameter -- PlanningAgent.name is a hardcoded property
+# ("PlanningAgent"), not configurable.
 interface:
   constructor:
     parameters:
-      - name: "llm"
+      - name: "planner"
         type: "Agent"
         required: true
-        description: "Language model for planning"
-
-      - name: "tools"
-        type: "Tool[]"
-        required: false
-        default: []
-        description: "Tools available during execution"
+        description: "Agent that creates plans (typically an LLM-based agent)"
 
       - name: "max_steps"
         type: "number"
         required: false
         default: 10
-        description: "Maximum steps in plan"
+        description: "Maximum steps in a plan"
 
-      - name: "name"
+      - name: "allow_replanning"
+        type: "boolean"
+        required: false
+        default: false
+        description: "Whether to replan on step failures"
+
+      - name: "system_prompt"
         type: "string"
         required: false
-        default: "planning"
+        default: null
+        description: "Optional system prompt for planning"
 
   methods:
     process:
@@ -207,13 +215,13 @@ composition:
 examples:
   - language: "Python"
     code: |
-      from agenkit.patterns import PlanningAgent
+      from agenkit.patterns import PlanningAgent, PlanningConfig
 
-      planner = PlanningAgent(
-          llm=my_llm,
-          tools=[search_tool, file_tool],
+      config = PlanningConfig(
+          planner=my_llm,
           max_steps=10
       )
+      planner = PlanningAgent(config)
 
       result = await planner.process(task)
 

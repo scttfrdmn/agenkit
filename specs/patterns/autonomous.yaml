@@ -5,26 +5,31 @@ pattern:
   version: "1.0.0"
   aliases: ["self-directed", "goal-oriented"]
 
+# Constructor parameters below match the real Python AutonomousConfig
+# fields (agenkit/patterns/autonomous.py), corrected by #924's audit. The
+# spec previously declared "llm"/"tools"/"goal_check_interval", none of
+# which exist -- AutonomousConfig takes "objective" (a string, not an
+# Agent), "max_iterations", and an optional "stop_condition" callable.
+# AutonomousAgent has no "tools" or "llm" parameter at all in the Python
+# reference implementation.
 interface:
   constructor:
     parameters:
-      - name: "llm"
-        type: "Agent"
+      - name: "objective"
+        type: "string"
         required: true
-
-      - name: "tools"
-        type: "Tool[]"
-        required: true
+        description: "High-level objective the agent should pursue"
 
       - name: "max_iterations"
         type: "number"
         required: false
-        default: 20
+        default: 10
 
-      - name: "goal_check_interval"
-        type: "number"
+      - name: "stop_condition"
+        type: "function"
         required: false
-        default: 5
+        default: null
+        description: "Optional callable that returns true when the agent should stop"
 
 behavior:
   execution:

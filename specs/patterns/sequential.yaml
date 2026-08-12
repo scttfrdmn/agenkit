@@ -5,6 +5,13 @@ pattern:
   version: "1.0.0"
   aliases: []
 
+# The "name" constructor parameter below was corrected by #924's audit:
+# Python's SequentialAgent (agenkit/patterns/sequential.py) takes only
+# "agents" -- name is a hardcoded property ("SequentialAgent"), not
+# configurable. (A different, older composition-namespace SequentialAgent
+# in agenkit/composition/sequential.py does take a "name" positional
+# parameter; that class is a separate, non-canonical implementation not
+# exported from agenkit.patterns and is out of scope for this spec.)
 interface:
   constructor:
     parameters:
@@ -17,22 +24,12 @@ interface:
           - "Must have at least 1 agent"
           - "Agents execute in array order"
 
-      - name: "name"
-        type: "string"
-        required: false
-        default: "sequential"
-        description: "Name identifier for this agent"
-
   methods:
     process:
       input: "Message"
       output: "Message"
       async: true
       description: "Process message through all agents sequentially"
-
-    get_agents:
-      output: "Agent[]"
-      description: "Get list of agents in pipeline"
 
 behavior:
   state:
@@ -191,28 +188,21 @@ examples:
     code: |
       from agenkit.patterns import SequentialAgent
 
-      pipeline = SequentialAgent(
-          agents=[validator, processor, formatter],
-          name="data-pipeline"
-      )
+      pipeline = SequentialAgent(agents=[validator, processor, formatter])
 
       result = await pipeline.process(message)
 
   - language: "Go"
     code: |
-      pipeline := patterns.NewSequentialAgent(
-          []core.Agent{validator, processor, formatter},
-          "data-pipeline",
+      pipeline, err := patterns.NewSequentialAgent(
+          []agenkit.Agent{validator, processor, formatter},
       )
 
       result, err := pipeline.Process(ctx, message)
 
   - language: "TypeScript"
     code: |
-      const pipeline = new SequentialAgent({
-          agents: [validator, processor, formatter],
-          name: 'data-pipeline'
-      });
+      const pipeline = new SequentialAgent([validator, processor, formatter]);
 
       const result = await pipeline.process(message);
 

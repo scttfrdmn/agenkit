@@ -5,34 +5,31 @@ pattern:
   version: "1.0.0"
   aliases: []
 
+# Constructor parameters below match the real Python ParallelAgent.__init__
+# (agenkit/patterns/parallel.py), corrected by #924's audit. The spec
+# previously declared "aggregation" as a string enum ("concat"/"vote"/
+# "first"/"custom") plus a "name" parameter, neither of which exist --
+# the real constructor takes "aggregator" as a required callable
+# (`list[Message] -> Message`); string-named strategies aren't a
+# constructor option, though `DefaultAggregators` supplies ready-made
+# callables (`.first`, `.concatenate`, `.majority_vote`) matching this
+# spec's former "first"/"concat"/"vote" behaviors. "name" is a hardcoded
+# property ("ParallelAgent"), not configurable.
 interface:
   constructor:
     parameters:
       - name: "agents"
         type: "Agent[]"
         required: true
-        default: null
         description: "List of agents to execute in parallel"
         constraints:
           - "Must have at least 1 agent"
           - "All agents receive same input"
 
-      - name: "aggregation"
-        type: "string | function"
-        required: false
-        default: "concat"
-        description: "How to combine agent outputs"
-        options:
-          - "concat": "Concatenate all outputs with newlines"
-          - "vote": "Majority vote (for classification)"
-          - "first": "Return first successful result"
-          - "custom": "User-provided aggregation function"
-
-      - name: "name"
-        type: "string"
-        required: false
-        default: "parallel"
-        description: "Name identifier for this agent"
+      - name: "aggregator"
+        type: "function"
+        required: true
+        description: "Function combining `list[Message]` results into a single `Message`; see DefaultAggregators for ready-made strategies (first, concatenate, majority_vote)"
 
   methods:
     process:
@@ -40,10 +37,6 @@ interface:
       output: "Message"
       async: true
       description: "Process message through all agents concurrently, then aggregate"
-
-    get_agents:
-      output: "Agent[]"
-      description: "Get list of agents"
 
 behavior:
   state:
@@ -240,33 +233,30 @@ composition:
 examples:
   - language: "Python"
     code: |
-      from agenkit.patterns import ParallelAgent
+      from agenkit.patterns import ParallelAgent, default_aggregators
 
       parallel = ParallelAgent(
           agents=[sentiment, entities, topics],
-          aggregation="concat",
-          name="multi-analyzer"
+          aggregator=default_aggregators.concatenate
       )
 
       result = await parallel.process(message)
 
   - language: "Go"
     code: |
-      parallel := patterns.NewParallelAgent(
-          []core.Agent{sentiment, entities, topics},
-          patterns.ConcatAggregation,
-          "multi-analyzer",
+      parallel, err := patterns.NewParallelAgent(
+          []agenkit.Agent{sentiment, entities, topics},
+          patterns.DefaultAggregators.Concatenate,
       )
 
       result, err := parallel.Process(ctx, message)
 
   - language: "TypeScript"
     code: |
-      const parallel = new ParallelAgent({
-          agents: [sentiment, entities, topics],
-          aggregation: 'concat',
-          name: 'multi-analyzer'
-      });
+      const parallel = new ParallelAgent(
+          [sentiment, entities, topics],
+          (messages) => messages[0]
+      );
 
       const result = await parallel.process(message);
 

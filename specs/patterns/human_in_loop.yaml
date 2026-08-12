@@ -5,26 +5,36 @@ pattern:
   version: "1.0.0"
   aliases: ["human-approval", "interactive-agent"]
 
+# Constructor parameters below match the real Python HumanInLoopConfig
+# fields (agenkit/patterns/human_in_loop.py), corrected by #924's audit.
+# The spec previously declared "approval_callback" (real field:
+# "approval_func") and "require_approval_for" with an enum of scopes, which
+# does not exist -- the real implementation gates on a numeric confidence
+# threshold read from response metadata, not a set of action-type scopes.
 interface:
   constructor:
     parameters:
       - name: "agent"
         type: "Agent"
         required: true
+        description: "Agent to wrap with human approval"
 
-      - name: "approval_callback"
+      - name: "approval_func"
         type: "function"
         required: true
-        description: "Function to request human approval"
+        description: "Called (sync or async) when human approval is needed; receives an ApprovalRequest and returns an ApprovalResponse"
 
-      - name: "require_approval_for"
-        type: "string[]"
+      - name: "approval_threshold"
+        type: "number"
         required: false
-        default: ["all"]
-        options:
-          - "all"
-          - "tool_calls"
-          - "final_answer"
+        default: 0.8
+        description: "Responses with confidence below this threshold require approval (0.0-1.0)"
+
+      - name: "confidence_key"
+        type: "string"
+        required: false
+        default: "confidence"
+        description: "Metadata key used to read the agent's confidence value"
 
 behavior:
   execution:

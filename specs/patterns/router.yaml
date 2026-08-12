@@ -5,56 +5,53 @@ pattern:
   version: "1.0.0"
   aliases: ["message-router", "dispatcher"]
 
+# Constructor parameters below match the real Python RouterConfig fields
+# (agenkit/patterns/router.py), corrected by #924's audit. The spec
+# previously called the routing table "routes" (real field: "agents"),
+# the fallback "default_agent" (real field: "default_key" -- a string key
+# into the agents map, not an Agent instance), and declared a
+# "routing_strategy" enum ("keyword"/"llm"/"metadata"/"custom") that
+# doesn't exist as a constructor option -- routing decisions are made by
+# a required "classifier" object (any agent implementing a `classify()`
+# method; `SimpleClassifier` and `LLMClassifier` are the two ready-made
+# implementations, corresponding to this spec's former "keyword" and
+# "llm" strategy names). "name" is not a constructor parameter
+# (RouterAgent.name is a hardcoded property).
 interface:
   constructor:
     parameters:
-      - name: "routes"
+      - name: "classifier"
+        type: "Agent"
+        required: true
+        description: "Determines which agent to route to (implements a classify() method); see SimpleClassifier/LLMClassifier for ready-made implementations"
+
+      - name: "agents"
         type: "Map<string, Agent>"
         required: true
-        description: "Mapping of route patterns to specialist agents"
+        description: "Maps categories returned by the classifier to specialist agents"
 
-      - name: "default_agent"
-        type: "Agent"
-        required: false
-        default: null
-        description: "Fallback agent if no route matches"
-
-      - name: "routing_strategy"
-        type: "string | function"
-        required: false
-        default: "keyword"
-        description: "How to determine routing"
-        options:
-          - "keyword": "Match keywords in message"
-          - "llm": "Use LLM to classify"
-          - "metadata": "Route based on message metadata"
-          - "custom": "User-provided routing function"
-
-      - name: "name"
+      - name: "default_key"
         type: "string"
         required: false
-        default: "router"
+        default: null
+        description: "Key into agents to use when classification doesn't match any category"
 
   methods:
     process:
       input: "Message"
       output: "Message"
       async: true
-      description: "Route message to appropriate specialist"
-
-    get_routes:
-      output: "Map<string, Agent>"
-      description: "Get routing table"
+      description: "Classify the message via the classifier, then route to the matching (or default) specialist"
 
 behavior:
   state:
-    - name: "routes"
+    - name: "agents"
       type: "Map<string, Agent>"
       description: "Routing table"
 
-    - name: "routing_strategy"
-      type: "function"
-      description: "Function that determines which route to take"
+    - name: "classifier"
+      type: "Agent"
+      description: "Determines which route to take"
 
   execution:
     - step: 1
@@ -89,30 +86,30 @@ behavior:
     - "Routing is deterministic for same input"
 
 error_handling:
-  - condition: "No route matches and no default agent"
-    error_type: "RoutingError"
-    behavior: "Raise error with available routes"
+  - condition: "No route matches and no default_key configured"
+    error_type: "RuntimeError"
+    behavior: "Raise error listing available categories"
 
   - condition: "Specialist agent fails"
-    error_type: "AgentError"
-    behavior: "Propagate error with routing context"
+    error_type: "RuntimeError"
+    behavior: "Propagate error with routing context (category, agent name)"
 
-  - condition: "Routing strategy fails"
-    error_type: "RoutingError"
-    behavior: "Fall back to default agent if available"
+  - condition: "Classifier raises an exception"
+    error_type: "RuntimeError"
+    behavior: "Propagate wrapped error immediately (no fallback to default_key)"
 
 test_cases:
   - name: "Keyword-based routing"
-    description: "Route based on message keywords"
+    description: "Route based on message keywords, using SimpleClassifier"
     input:
       message:
         role: "user"
         content: "What's the weather today?"
       config:
-        routes:
+        agents:
           "weather": "WeatherAgent"
           "stocks": "StockAgent"
-        routing_strategy: "keyword"
+        classifier: "SimpleClassifier"
     expected_behavior:
       routed_to: "WeatherAgent"
     assertions:
@@ -126,28 +123,28 @@ test_cases:
         role: "user"
         content: "Tell me a joke"
       config:
-        routes: {"weather": "WeatherAgent"}
-        default_agent: "GeneralAgent"
+        agents: {"weather": "WeatherAgent", "general": "GeneralAgent"}
+        default_key: "general"
     expected_behavior:
       routed_to: "GeneralAgent"
     assertions:
       - "No keyword matched"
       - "Default agent used"
 
-  - name: "Metadata-based routing"
-    description: "Route based on message metadata"
+  - name: "LLM-based routing"
+    description: "Route based on LLM classification of message metadata/content"
     input:
       message:
         role: "user"
         content: "Process this"
         metadata: {"category": "technical"}
       config:
-        routes: {"technical": "TechnicalAgent", "sales": "SalesAgent"}
-        routing_strategy: "metadata"
+        agents: {"technical": "TechnicalAgent", "sales": "SalesAgent"}
+        classifier: "LLMClassifier"
     expected_behavior:
       routed_to: "TechnicalAgent"
     assertions:
-      - "Metadata category matched"
+      - "Classifier determined 'technical' category"
       - "Correct specialist invoked"
 
 performance:

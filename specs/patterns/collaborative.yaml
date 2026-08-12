@@ -5,17 +5,38 @@ pattern:
   version: "1.0.0"
   aliases: ["cooperative-agents", "team-agents"]
 
+# Constructor parameters below match the real Python CollaborativeConfig
+# fields (agenkit/patterns/collaborative.py), corrected by #924's audit.
+# The spec previously declared a "collaboration_strategy" string enum
+# defaulting to "shared-workspace", which does not exist -- the real
+# config instead takes a required "merge_func" callable (combines
+# per-round responses) and an optional "consensus_func" callable (detects
+# agreement), plus "max_rounds" (missing from the spec entirely). There
+# is no string-strategy-name mechanism in the reference implementation.
 interface:
   constructor:
     parameters:
       - name: "agents"
         type: "Agent[]"
         required: true
+        description: "Agents participating in collaboration (at least 2 required)"
 
-      - name: "collaboration_strategy"
-        type: "string"
+      - name: "merge_func"
+        type: "function"
+        required: true
+        description: "Combines per-round responses into a single result"
+
+      - name: "max_rounds"
+        type: "number"
         required: false
-        default: "shared-workspace"
+        default: 3
+        description: "Limits the number of collaboration rounds"
+
+      - name: "consensus_func"
+        type: "function"
+        required: false
+        default: null
+        description: "Optional function that detects agreement across agent responses"
 
 behavior:
   execution:

@@ -5,13 +5,21 @@ pattern:
   version: "1.0.0"
   aliases: ["reasoning-acting", "thought-action"]
 
+# Constructor parameters below match the real Python ReActConfig fields
+# (agenkit/patterns/react.py) as of #924's audit -- the spec previously
+# declared "llm"/"max_iterations"/"name", none of which exist on
+# ReActConfig or ReActAgent.__init__ (the actual fields are "agent" and
+# "max_steps"; "name" is a hardcoded property, not a constructor
+# parameter; and there is no "llm" parameter anywhere). Per #924's design
+# decision, the spec is corrected to match the reference implementation
+# rather than the other way around.
 interface:
   constructor:
     parameters:
-      - name: "llm"
+      - name: "agent"
         type: "Agent"
         required: true
-        description: "Language model for reasoning"
+        description: "Agent used for reasoning (e.g., LLM-based agent)"
 
       - name: "tools"
         type: "Tool[]"
@@ -19,23 +27,25 @@ interface:
         description: "Tools available for the agent to use"
         constraints:
           - "Each tool must have name, description, and callable function"
+          - "Must be non-empty"
 
-      - name: "max_iterations"
+      - name: "max_steps"
         type: "number"
         required: false
         default: 10
         description: "Maximum thought-action-observation cycles"
 
+      - name: "system_prompt"
+        type: "string"
+        required: false
+        default: null
+        description: "Optional custom system prompt to guide behavior"
+
       - name: "verbose"
         type: "boolean"
         required: false
         default: false
-        description: "Whether to log reasoning steps"
-
-      - name: "name"
-        type: "string"
-        required: false
-        default: "react"
+        description: "Whether to include thought process in response"
 
   methods:
     process:
@@ -228,18 +238,19 @@ composition:
 examples:
   - language: "Python"
     code: |
-      from agenkit.patterns import ReActAgent
+      from agenkit.patterns import ReActAgent, ReActConfig
       from agenkit import Tool
 
-      react = ReActAgent(
-          llm=my_llm,
+      config = ReActConfig(
+          agent=my_llm,
           tools=[
               Tool(name="search", func=search_web),
               Tool(name="calculator", func=calculate)
           ],
-          max_iterations=10,
+          max_steps=10,
           verbose=True
       )
+      react = ReActAgent(config)
 
       result = await react.process(question)
 

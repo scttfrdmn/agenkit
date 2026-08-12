@@ -5,52 +5,68 @@ pattern:
   version: "1.0.0"
   aliases: ["single-task", "focused-agent"]
 
+# Constructor parameters below match the real Python Task.__init__
+# (agenkit/patterns/task.py), corrected by #924's audit. The spec
+# previously described a single-purpose LLM-configured agent
+# ("llm"/"system_prompt"/"name"), but Python's Task class is a lifecycle
+# wrapper around an *existing* Agent (any agent, not necessarily an
+# LLM), not a system-prompt-driven agent constructor -- it takes "agent",
+# and optional "timeout"/"retries" for one-shot execution, and exposes
+# execute()/cleanup() rather than a bare process(). Description/category
+# in the `pattern:` block above still apply; only the interface was wrong.
 interface:
   constructor:
     parameters:
-      - name: "llm"
+      - name: "agent"
         type: "Agent"
         required: true
-        description: "Language model to use"
+        description: "The agent to execute"
 
-      - name: "system_prompt"
-        type: "string"
-        required: true
-        description: "System prompt defining agent's task and behavior"
-
-      - name: "name"
-        type: "string"
+      - name: "timeout"
+        type: "number"
         required: false
-        default: "task"
+        default: null
+        description: "Optional timeout in seconds for task execution"
+
+      - name: "retries"
+        type: "number"
+        required: false
+        default: 0
+        description: "Number of retry attempts on failure"
 
   methods:
-    process:
-      input: "Message"
+    execute:
+      input: "Message[]"
       output: "Message"
       async: true
-      description: "Execute the task on input message"
+      description: "Execute the task once; raises if called more than once per Task instance"
+
+    cleanup:
+      output: "void"
+      async: true
+      description: "Release resources after execution"
 
 behavior:
   state:
-    - name: "system_prompt"
-      type: "string"
-      description: "Task definition and instructions"
+    - name: "completed"
+      type: "boolean"
+      description: "Whether execute() has already been called once"
 
   execution:
     - step: 1
-      action: "Receive input message"
-      preconditions: []
+      action: "Receive input messages via execute()"
+      preconditions: ["Task not yet completed"]
       postconditions: ["Input stored"]
 
     - step: 2
-      action: "Apply system prompt to LLM"
+      action: "Delegate to the wrapped agent, applying timeout if configured"
       preconditions: ["Input exists"]
-      postconditions: ["LLM configured with task instructions"]
+      postconditions: ["Agent invoked with configured timeout/retries"]
 
     - step: 3
-      action: "Process input with LLM"
-      preconditions: ["LLM configured"]
-      postconditions: ["Result generated"]
+      action: "Mark task as completed"
+      preconditions: ["Agent call finished (success or error)"]
+      postconditions: ["completed = true", "Result stored"]
 
     - step: 4
       action: "Return result"
@@ -58,30 +74,32 @@ behavior:
       postconditions: ["Result returned"]
 
   invariants:
-    - "Stateless - no conversation history"
-    - "Each process() call is independent"
-    - "System prompt never changes"
-    - "No memory between calls"
-    - "Single LLM call per process()"
+    - "execute() can be called at most once per Task instance"
+    - "No memory between separate Task instances"
+    - "Wrapped agent is never reused after cleanup()"
 
 error_handling:
-  - condition: "LLM fails"
+  - condition: "Wrapped agent fails"
     error_type: "AgentError"
     behavior: "Propagate error immediately"
 
-  - condition: "Empty or invalid system prompt"
-    error_type: "ValueError"
-    behavior: "Raise error at construction"
+  - condition: "execute() called more than once"
+    error_type: "RuntimeError"
+    behavior: "Raise error; create a new Task for another execution"
+
+  - condition: "Execution exceeds configured timeout"
+    error_type: "TimeoutError"
+    behavior: "Raise timeout error"
 
 test_cases:
   - name: "Summarization task"
-    description: "Agent summarizes text"
+    description: "Wrapped agent summarizes text"
     input:
       message:
         role: "user"
         content: "Long article text..."
       config:
-        system_prompt: "You are a summarizer. Create concise summaries."
+        agent: "SummarizerAgent"
     expected_output:
       message:
         role: "assistant"
@@ -90,55 +108,46 @@ test_cases:
       - "Output is shorter than input"
       - "Output captures main points"
 
-  - name: "Stateless execution"
-    description: "No memory between calls"
+  - name: "One-shot execution"
+    description: "Second execute() call on the same Task instance raises"
     test_sequence:
-      - input: "My name is Alice"
+      - action: "task.execute(messages)"
         output: "Hello!"
-      - input: "What's my name?"
-        output: "I don't have that information."
+      - action: "task.execute(messages)"
+        expected_error: "RuntimeError"
     assertions:
-      - "Second call has no memory of first"
-      - "Each call is independent"
+      - "Second execute() call raises RuntimeError"
+      - "Task instance cannot be reused"
 
-  - name: "Classification task"
-    description: "Agent classifies input"
+  - name: "Timeout handling"
+    description: "Execution exceeding the configured timeout raises"
     input:
-      message:
-        role: "user"
-        content: "This product is amazing!"
       config:
-        system_prompt: "Classify sentiment as positive/negative/neutral."
-    expected_output:
-      message:
-        role: "assistant"
-        content: "positive"
+        agent: "SlowAgent"
+        timeout: 0.01
+    expected_error:
+      type: "TimeoutError"
     assertions:
-      - "Output is classification label"
+      - "TimeoutError raised when agent exceeds timeout"
 
 performance:
-  latency: "Single LLM call"
-  throughput: "High - stateless, parallelizable"
-  memory: "O(1) - no state"
-  cost: "Single LLM cost per call"
+  latency: "Single wrapped-agent call (plus retries, if configured)"
+  throughput: "High - one-shot, parallelizable across separate Task instances"
+  memory: "O(1) - no state beyond the single result"
+  cost: "Single wrapped-agent cost per execute() call"
 
 composition:
-  can_be_agent: true
+  can_be_agent: false
   can_contain:
-    - "LLM: any Agent"
+    - "Agent: any Agent implementation (wrapped for one-shot execution)"
 
 examples:
   - language: "Python"
     code: |
-      from agenkit.patterns import TaskAgent
+      from agenkit.patterns import Task
 
-      summarizer = TaskAgent(
-          system_prompt="You are a summarizer.",
-          llm=my_llm,
-          name="summarizer"
-      )
-
-      result = await summarizer.process(document)
+      async with Task(summarizer_agent, timeout=30.0, retries=2) as task:
+          result = await task.execute([document_message])
 
 cross_language_equivalence:
   verified: false

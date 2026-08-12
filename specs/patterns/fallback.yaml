@@ -5,21 +5,19 @@ pattern:
   version: "1.0.0"
   aliases: ["failover", "backup-agent"]
 
+# Constructor parameters below match the real Python FallbackAgent.__init__
+# (agenkit/patterns/fallback.py), corrected by #924's audit. The spec
+# previously split the constructor into "primary"/"fallbacks"/
+# "retry_primary" params, but the actual implementation takes a single
+# flat ordered list of agents (the first element being what the spec
+# called "primary") and has no retry-primary concept at all.
 interface:
   constructor:
     parameters:
-      - name: "primary"
-        type: "Agent"
-        required: true
-
-      - name: "fallbacks"
+      - name: "agents"
         type: "Agent[]"
         required: true
-
-      - name: "retry_primary"
-        type: "number"
-        required: false
-        default: 1
+        description: "Agents to try in order (first element is the primary; must be non-empty)"
 
 behavior:
   execution:

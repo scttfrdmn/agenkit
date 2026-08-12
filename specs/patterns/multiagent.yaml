@@ -5,27 +5,32 @@ pattern:
   version: "1.0.0"
   aliases: ["multi-agent-system", "collaborative-agents"]
 
+# Constructor parameters below match the real Python MultiAgentConfig
+# fields (agenkit/patterns/multiagent.py), corrected by #924's audit. The
+# spec previously declared "agents" as an Agent[] with a "coordination"
+# enum including "consensus"/"debate"/"vote" and a "rounds" count -- none
+# of which exist on MultiAgentConfig/MultiAgentOrchestrator. "agents" is
+# actually a name-keyed map, the strategy enum is
+# "sequential"/"parallel"/"delegate", and there is no rounds concept
+# (multi-round consensus/voting lives in the separate ConsensusAgent /
+# ConsensusConfig, not MultiAgentOrchestrator).
 interface:
   constructor:
     parameters:
-      - name: "agents"
-        type: "Agent[]"
-        required: true
-
-      - name: "coordination"
+      - name: "strategy"
         type: "string"
         required: false
-        default: "consensus"
+        default: "sequential"
         options:
-          - "consensus"
-          - "debate"
-          - "vote"
           - "sequential"
+          - "parallel"
+          - "delegate"
 
-      - name: "rounds"
-        type: "number"
+      - name: "agents"
+        type: "Map<string, Agent>"
         required: false
-        default: 3
+        default: {}
+        description: "Named agents to register"
 
 behavior:
   execution:

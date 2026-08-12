@@ -5,27 +5,32 @@ pattern:
   version: "1.0.0"
   aliases: ["hierarchical-memory", "tiered-memory"]
 
+# Constructor parameters below match the real Python MemoryHierarchy
+# fields (agenkit/patterns/memory.py), corrected by #924's audit.
+# MemoryHierarchy is not an Agent and takes no "llm" parameter at all --
+# it composes three memory-tier instances (each independently
+# constructed and configured, e.g. WorkingMemory(max_messages=10),
+# ShortTermMemory(max_messages=100, ttl_seconds=3600),
+# LongTermMemory(min_importance=0.5)), not raw size/interval numbers.
 interface:
   constructor:
     parameters:
-      - name: "llm"
-        type: "Agent"
+      - name: "working_memory"
+        type: "WorkingMemory"
         required: true
+        description: "Working memory instance (current conversation)"
 
-      - name: "short_term_size"
-        type: "number"
+      - name: "short_term_memory"
+        type: "ShortTermMemory"
         required: false
-        default: 10
+        default: null
+        description: "Optional short-term memory instance (recent sessions)"
 
-      - name: "long_term_size"
-        type: "number"
+      - name: "long_term_memory"
+        type: "LongTermMemory"
         required: false
-        default: 100
-
-      - name: "summarization_interval"
-        type: "number"
-        required: false
-        default: 20
+        default: null
+        description: "Optional long-term memory instance (persistent facts)"
 
 behavior:
   state:

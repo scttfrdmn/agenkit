@@ -5,13 +5,23 @@ pattern:
   version: "1.0.0"
   aliases: ["self-reflection", "iterative-improvement"]
 
+# Constructor parameters below match the real Python ReflectionConfig
+# fields (agenkit/patterns/reflection.py), corrected by #924's audit. The
+# spec previously named the generator parameter "agent" (real field:
+# "generator") and called the score-based stop condition
+# "improvement_threshold" (that name actually belongs to a different,
+# separate field in the real config -- the minimum improvement needed to
+# keep iterating; the "stop when score exceeds X" field is
+# "quality_threshold"). The spec also omitted "critique_format" and
+# "verbose", and included a "name" parameter that doesn't exist
+# (ReflectionAgent.name is a hardcoded property).
 interface:
   constructor:
     parameters:
-      - name: "agent"
+      - name: "generator"
         type: "Agent"
         required: true
-        description: "The generator agent that produces content"
+        description: "The generator agent that produces/refines content"
 
       - name: "critic"
         type: "Agent"
@@ -26,7 +36,7 @@ interface:
         constraints:
           - "Must be >= 1"
 
-      - name: "improvement_threshold"
+      - name: "quality_threshold"
         type: "number"
         required: false
         default: 0.9
@@ -34,10 +44,28 @@ interface:
         constraints:
           - "Must be between 0.0 and 1.0"
 
-      - name: "name"
+      - name: "improvement_threshold"
+        type: "number"
+        required: false
+        default: 0.05
+        description: "Minimum score improvement required to keep iterating (0.0-1.0)"
+        constraints:
+          - "Must be between 0.0 and 1.0"
+
+      - name: "critique_format"
         type: "string"
         required: false
-        default: "reflection"
+        default: "structured"
+        description: "Expected format from the critic"
+        options:
+          - "structured"
+          - "free_form"
+
+      - name: "verbose"
+        type: "boolean"
+        required: false
+        default: false
+        description: "Include full reflection history in output"
 
   methods:
     process:
@@ -85,7 +113,7 @@ behavior:
       preconditions: ["Critic feedback received"]
       postconditions: ["Decision made: continue or stop"]
       termination_conditions:
-        - "Score >= improvement_threshold"
+        - "Score >= quality_threshold"
         - "Iteration >= max_iterations"
         - "Score not improving"
 
@@ -141,7 +169,7 @@ test_cases:
         content: "Write 'hello'"
       config:
         max_iterations: 5
-        improvement_threshold: 0.8
+        quality_threshold: 0.8
     expected_output:
       message:
         role: "assistant"
@@ -161,7 +189,7 @@ test_cases:
         content: "Explain databases"
       config:
         max_iterations: 5
-        improvement_threshold: 0.9
+        quality_threshold: 0.9
     expected_output:
       message:
         role: "assistant"
@@ -183,7 +211,7 @@ test_cases:
         content: "Complex task"
       config:
         max_iterations: 2
-        improvement_threshold: 0.99
+        quality_threshold: 0.99
     expected_output:
       message:
         role: "assistant"
@@ -231,25 +259,26 @@ composition:
 examples:
   - language: "Python"
     code: |
-      from agenkit.patterns import ReflectionAgent
+      from agenkit.patterns import ReflectionAgent, ReflectionConfig
 
-      reflector = ReflectionAgent(
-          agent=writer,
+      config = ReflectionConfig(
+          generator=writer,
           critic=reviewer,
           max_iterations=5,
-          improvement_threshold=0.9
+          quality_threshold=0.9
       )
+      reflector = ReflectionAgent(config)
 
       result = await reflector.process(prompt)
 
   - language: "Go"
     code: |
-      reflector := patterns.NewReflectionAgent(
-          writer,
-          critic,
-          5,    // max_iterations
-          0.9,  // improvement_threshold
-      )
+      reflector, err := patterns.NewReflectionAgent(patterns.ReflectionConfig{
+          Generator:        writer,
+          Critic:           critic,
+          MaxIterations:    5,
+          QualityThreshold: 0.9,
+      })
 
       result, err := reflector.Process(ctx, message)
 

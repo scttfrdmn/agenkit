@@ -5,30 +5,49 @@ pattern:
   version: "1.0.0"
   aliases: ["enhanced-react", "reasoning-tools"]
 
+# Constructor parameters below match the real Python
+# ReasoningWithToolsAgent.__init__ (agenkit/patterns/reasoning_with_tools.py),
+# corrected by #924's audit. The spec previously declared a
+# "reasoning_strategy" enum ("chain-of-thought"/"tree-of-thought"/
+# "self-consistency") and "max_iterations" -- neither exists on the real
+# constructor, which has no pluggable strategy concept (reasoning
+# technique selection lives in the separate techniques subsystem, not
+# this pattern) and names its step-count parameter "max_reasoning_steps".
 interface:
   constructor:
     parameters:
       - name: "llm"
         type: "Agent"
         required: true
+        description: "Base LLM agent for reasoning"
 
       - name: "tools"
         type: "Tool[]"
         required: true
+        description: "Tools available while reasoning"
 
-      - name: "reasoning_strategy"
-        type: "string"
-        required: false
-        default: "chain-of-thought"
-        options:
-          - "chain-of-thought"
-          - "tree-of-thought"
-          - "self-consistency"
-
-      - name: "max_iterations"
+      - name: "max_reasoning_steps"
         type: "number"
         required: false
-        default: 10
+        default: 20
+
+      - name: "tool_use_prompt"
+        type: "string"
+        required: false
+        default: null
+        description: "Custom prompt for tool usage"
+
+      - name: "enable_trace"
+        type: "boolean"
+        required: false
+        default: true
+        description: "Whether to generate a reasoning trace"
+
+      - name: "confidence_threshold"
+        type: "number"
+        required: false
+        default: 0.8
+        description: "Confidence threshold for accepting an answer"
 
 behavior:
   execution:

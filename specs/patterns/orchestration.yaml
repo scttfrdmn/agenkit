@@ -5,18 +5,36 @@ pattern:
   version: "1.0.0"
   aliases: ["workflow-orchestration", "agent-coordinator"]
 
+# The Python reference implementation (agenkit/patterns/orchestration.py's
+# OrchestrationConfig) is largely consistent with the parameters below,
+# except for a missing "error_strategy" field -- added by #924's audit.
+# Note: this module is marked deprecated as of Python v0.43.0 in favor of
+# importing SequentialAgent/ParallelAgent/RouterAgent directly from
+# agenkit.patterns; OrchestrationAgent itself (the class actually
+# matching this spec's workflow/agents/error_strategy shape) remains, but
+# the deprecation is a real, separate fact worth flagging here.
 interface:
   constructor:
     parameters:
+      - name: "workflow"
+        type: "WorkflowDefinition[]"
+        required: true
+        description: "List of workflow stages defining execution flow, routing, and aggregation"
+
       - name: "agents"
         type: "Map<string, Agent>"
         required: true
         description: "Named agents to orchestrate"
 
-      - name: "workflow"
-        type: "WorkflowDefinition"
-        required: true
-        description: "Defines execution flow, routing, and aggregation"
+      - name: "error_strategy"
+        type: "string"
+        required: false
+        default: "fail"
+        description: "How to handle stage errors"
+        options:
+          - "fail"
+          - "continue"
+          - "retry"
 
 behavior:
   execution:

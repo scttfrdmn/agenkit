@@ -5,19 +5,26 @@ pattern:
   version: "1.0.0"
   aliases: ["chatbot", "dialogue-agent"]
 
+# Constructor parameters below match the real Python
+# ConversationalAgentConfig fields (agenkit/patterns/conversational.py),
+# corrected by #924's audit. The spec previously declared "llm" (the real
+# field is "llm_client", an LLMClient protocol, not a full Agent) and a
+# "name" parameter that does not exist -- ConversationalAgent.name is a
+# hardcoded property ("ConversationalAgent"), not configurable. The
+# default system_prompt is None (no system prompt), not a literal string.
 interface:
   constructor:
     parameters:
-      - name: "llm"
-        type: "Agent"
+      - name: "llm_client"
+        type: "LLMClient"
         required: true
-        description: "Language model for responses"
+        description: "LLM client that implements the chat interface"
 
       - name: "system_prompt"
         type: "string"
         required: false
-        default: "You are a helpful assistant."
-        description: "System prompt defining agent personality"
+        default: null
+        description: "Optional system prompt defining agent personality"
 
       - name: "max_history"
         type: "number"
@@ -25,10 +32,11 @@ interface:
         default: 10
         description: "Maximum messages to keep in history"
 
-      - name: "name"
-        type: "string"
+      - name: "include_system"
+        type: "boolean"
         required: false
-        default: "conversational"
+        default: true
+        description: "Whether to include the system prompt in history"
 
   methods:
     process:
@@ -185,13 +193,14 @@ composition:
 examples:
   - language: "Python"
     code: |
-      from agenkit.patterns import ConversationalAgent
+      from agenkit.patterns import ConversationalAgent, ConversationalAgentConfig
 
-      assistant = ConversationalAgent(
-          llm=my_llm,
+      config = ConversationalAgentConfig(
+          llm_client=my_llm,
           system_prompt="You are a helpful assistant.",
           max_history=10
       )
+      assistant = ConversationalAgent(config)
 
       resp1 = await assistant.process(msg1)
       resp2 = await assistant.process(msg2)  # Has context from msg1

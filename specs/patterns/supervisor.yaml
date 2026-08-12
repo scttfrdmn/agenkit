@@ -5,23 +5,27 @@ pattern:
   version: "1.0.0"
   aliases: ["oversight-agent", "coordinator"]
 
+# Constructor parameters below match the real Python SupervisorConfig
+# fields (agenkit/patterns/supervisor.py), corrected by #924's audit. The
+# spec previously called the coordinator "supervisor" (real field:
+# "planner" -- an object implementing plan()/synthesize(), not a plain
+# Agent) and "workers" (real field: "specialists", a name-keyed map, not
+# a flat list). "require_approval" does not exist anywhere in the real
+# implementation; human-approval gating for a supervised workflow is a
+# separate, composable concern (see human_in_loop.yaml), not a
+# SupervisorAgent constructor option.
 interface:
   constructor:
     parameters:
-      - name: "supervisor"
+      - name: "planner"
         type: "Agent"
         required: true
-        description: "Supervisor agent"
+        description: "Agent responsible for task decomposition and result synthesis (implements plan() and synthesize())"
 
-      - name: "workers"
-        type: "Agent[]"
+      - name: "specialists"
+        type: "Map<string, Agent>"
         required: true
-        description: "Worker agents"
-
-      - name: "require_approval"
-        type: "boolean"
-        required: false
-        default: false
+        description: "Specialist agents keyed by their domain/type"
 
 behavior:
   execution:

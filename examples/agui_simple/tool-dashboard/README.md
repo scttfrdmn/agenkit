@@ -293,11 +293,7 @@ class SearchTool(Tool):
         await asyncio.sleep(random.uniform(0.8, 1.5))
 
         # Return mock results
-        return {
-            "query": query,
-            "results_count": num_results,
-            "results": [...]
-        }
+        return {"query": query, "results_count": num_results, "results": [...]}
 ```
 
 ### Backend: Agent Processing
@@ -315,17 +311,19 @@ async def process(self, message: Message) -> Message:
         result = await tool.execute(**params)
         execution_time = (datetime.utcnow() - start_time).total_seconds()
 
-        results.append({
-            "tool": tool_name,
-            "result": result,
-            "execution_time": execution_time,
-            "status": "success"
-        })
+        results.append(
+            {
+                "tool": tool_name,
+                "result": result,
+                "execution_time": execution_time,
+                "status": "success",
+            }
+        )
 
     return Message(
         role="assistant",
         content=self._format_results(content, results),
-        metadata={"tool_results": results}
+        metadata={"tool_results": results},
     )
 ```
 
@@ -386,7 +384,7 @@ class CustomTool(Tool):
             "properties": {
                 "param1": {"type": "string"},
             },
-            "required": ["param1"]
+            "required": ["param1"],
         }
 
     async def execute(self, param1: str) -> dict:
@@ -502,7 +500,7 @@ class Tool(ABC):
     "params": {"param1": "value"},
     "result": {"data": "..."},  # Or "error": "message"
     "execution_time": 1.234,
-    "status": "success"  # Or "error"
+    "status": "success",  # Or "error"
 }
 ```
 

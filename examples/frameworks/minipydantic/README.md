@@ -66,11 +66,13 @@ cd examples/frameworks/minipydantic
 from minipydantic import TypeSafeAgent, tool
 from pydantic import BaseModel, Field
 
+
 # Define structured output
 class WeatherData(BaseModel):
     location: str
     temperature: float = Field(ge=-100, le=100)  # Validation
     condition: str
+
 
 # Create type-safe tool
 @tool(description="Get weather for a location")
@@ -80,6 +82,7 @@ def get_weather(location: str) -> WeatherData:
         temperature=72.5,
         condition="Sunny",
     )
+
 
 # Create agent and register tool
 agent = TypeSafeAgent(name="WeatherBot")
@@ -194,6 +197,7 @@ The `@tool` decorator automatically generates Pydantic models from type hints:
 def add(a: int, b: int) -> int:
     return a + b
 
+
 # Generates:
 # - AddInput(a: int, b: int)
 # - AddOutput(value: int)
@@ -207,6 +211,7 @@ agent = TypeSafeAgent(name="MyAgent")
 # Inject dependencies
 agent.inject("db", DatabaseConnection())
 agent.inject("cache", CacheService())
+
 
 # Tools can access dependencies
 @agent.tool
@@ -276,6 +281,7 @@ memory = ConversationMemory(max_messages=10)
 
 # Add memory to agent
 agent._memory = memory
+
 
 # Access in tools
 @agent.tool

@@ -40,11 +40,13 @@ patterns/
 ```python
 from agenkit.patterns import SequentialAgent
 
-pipeline = SequentialAgent([
-    ExtractorAgent(),
-    ModeratorAgent(),
-    EnricherAgent(),
-])
+pipeline = SequentialAgent(
+    [
+        ExtractorAgent(),
+        ModeratorAgent(),
+        EnricherAgent(),
+    ]
+)
 ```
 
 **Use cases:**
@@ -149,11 +151,13 @@ agent = HumanInLoopAgent(
 ```python
 from agenkit.patterns import FallbackAgent
 
-fallback = FallbackAgent([
-    PrimaryServiceAgent(),
-    SecondaryServiceAgent(),
-    FallbackServiceAgent(),
-])
+fallback = FallbackAgent(
+    [
+        PrimaryServiceAgent(),
+        SecondaryServiceAgent(),
+        FallbackServiceAgent(),
+    ]
+)
 ```
 
 **Use cases:**
@@ -204,12 +208,14 @@ Templates show structure; refer to Python examples for full implementations.
 extraction = ParallelAgent([TextExtractor(), MetadataExtractor(), StructureExtractor()])
 
 # Stage 2: Sequential processing
-pipeline = SequentialAgent([
-    extraction,
-    NormalizationAgent(),
-    ParallelAgent([SentimentAnalyzer(), TopicModeler(), QualityScorer()]),
-    ReportGenerator(),
-])
+pipeline = SequentialAgent(
+    [
+        extraction,
+        NormalizationAgent(),
+        ParallelAgent([SentimentAnalyzer(), TopicModeler(), QualityScorer()]),
+        ReportGenerator(),
+    ]
+)
 ```
 
 ### Router + Supervisor
@@ -238,16 +244,20 @@ router = RouterAgent(
 from agenkit.adapters.llm import OpenAILLM
 from agenkit.patterns import SequentialAgent
 
+
 class LLMAgent(Agent):
     def __init__(self, name, system_prompt):
         self.llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4o-mini")
         # ... implementation
 
-pipeline = SequentialAgent([
-    LLMAgent("Drafter", "Create a draft..."),
-    LLMAgent("Reviewer", "Review and provide feedback..."),
-    LLMAgent("Polisher", "Create final version..."),
-])
+
+pipeline = SequentialAgent(
+    [
+        LLMAgent("Drafter", "Create a draft..."),
+        LLMAgent("Reviewer", "Review and provide feedback..."),
+        LLMAgent("Polisher", "Create final version..."),
+    ]
+)
 ```
 
 ### With Anthropic/Claude

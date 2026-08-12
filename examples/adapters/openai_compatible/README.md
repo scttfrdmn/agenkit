@@ -23,9 +23,7 @@ from agenkit.interfaces import Message
 
 # Connect to local vLLM server
 llm = OpenAICompatibleLLM(
-    base_url="http://localhost:8000/v1",
-    model="meta-llama/Llama-3.3-8B-Instruct",
-    provider="vllm"
+    base_url="http://localhost:8000/v1", model="meta-llama/Llama-3.3-8B-Instruct", provider="vllm"
 )
 
 # Use like any other LLM
@@ -277,16 +275,12 @@ The same Agenkit code works with all OpenAI-compatible services:
 ```python
 # Works with vLLM
 llm = OpenAICompatibleLLM(
-    base_url="http://localhost:8000/v1",
-    model="meta-llama/Llama-3.3-8B-Instruct",
-    provider="vllm"
+    base_url="http://localhost:8000/v1", model="meta-llama/Llama-3.3-8B-Instruct", provider="vllm"
 )
 
 # Works with llama.cpp (just change URL!)
 llm = OpenAICompatibleLLM(
-    base_url="http://localhost:8080/v1",
-    model="llama-3.3-8b-instruct",
-    provider="llamacpp"
+    base_url="http://localhost:8080/v1", model="llama-3.3-8b-instruct", provider="llamacpp"
 )
 
 # Same usage for both
@@ -300,14 +294,14 @@ Switching from OpenAI to self-hosted is a one-line change:
 ```python
 # Before (OpenAI)
 from agenkit.adapters.llm import OpenAILLM
+
 llm = OpenAILLM(api_key="sk-...", model="gpt-4")
 
 # After (Self-hosted vLLM)
 from agenkit.adapters.llm import OpenAICompatibleLLM
+
 llm = OpenAICompatibleLLM(
-    base_url="http://localhost:8000/v1",
-    model="meta-llama/Llama-3.3-8B-Instruct",
-    provider="vllm"
+    base_url="http://localhost:8000/v1", model="meta-llama/Llama-3.3-8B-Instruct", provider="vllm"
 )
 
 # Rest of code stays the same!
@@ -319,9 +313,9 @@ Responses include provider information for debugging:
 
 ```python
 response = await llm.complete(messages)
-print(response.metadata["provider"])    # "vllm"
-print(response.metadata["base_url"])    # "http://localhost:8000/v1"
-print(response.metadata["model"])       # "meta-llama/Llama-2-7b-chat-hf"
+print(response.metadata["provider"])  # "vllm"
+print(response.metadata["base_url"])  # "http://localhost:8000/v1"
+print(response.metadata["model"])  # "meta-llama/Llama-2-7b-chat-hf"
 ```
 
 ### 4. Consistent Interface

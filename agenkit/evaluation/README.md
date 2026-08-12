@@ -24,15 +24,12 @@ The Agenkit Evaluation Framework provides comprehensive testing and quality meas
 from agenkit.evaluation import Evaluator, AccuracyMetric, BenchmarkSuite
 
 # 1. Create evaluator with metrics
-evaluator = Evaluator(
-    agent=my_agent,
-    metrics=[AccuracyMetric()]
-)
+evaluator = Evaluator(agent=my_agent, metrics=[AccuracyMetric()])
 
 # 2. Define test cases
 test_cases = [
     {"input": "What is 2+2?", "expected": "4"},
-    {"input": "Capital of France?", "expected": "Paris"}
+    {"input": "Capital of France?", "expected": "Paris"},
 ]
 
 # 3. Run evaluation
@@ -51,13 +48,7 @@ Orchestrates evaluation runs, collects metrics, and aggregates results.
 ```python
 from agenkit.evaluation import Evaluator, AccuracyMetric, QualityMetrics
 
-evaluator = Evaluator(
-    agent=my_agent,
-    metrics=[
-        AccuracyMetric(),
-        QualityMetrics()
-    ]
-)
+evaluator = Evaluator(agent=my_agent, metrics=[AccuracyMetric(), QualityMetrics()])
 
 results = await evaluator.evaluate(test_cases)
 
@@ -74,6 +65,7 @@ Base class for all evaluation metrics:
 ```python
 from agenkit.evaluation import Metric
 
+
 class CustomMetric(Metric):
     @property
     def name(self) -> str:
@@ -87,7 +79,7 @@ class CustomMetric(Metric):
         return {
             "mean": sum(measurements) / len(measurements),
             "min": min(measurements),
-            "max": max(measurements)
+            "max": max(measurements),
         }
 ```
 
@@ -103,17 +95,14 @@ from agenkit.evaluation import AccuracyMetric
 metric = AccuracyMetric()
 
 # String matching (case-insensitive by default)
-score = await metric.measure(
-    agent,
-    input_msg,
-    output_msg,
-    context={"expected": "Paris"}
-)
+score = await metric.measure(agent, input_msg, output_msg, context={"expected": "Paris"})
 # Returns 1.0 if correct, 0.0 if incorrect
+
 
 # Custom validator
 def custom_validator(expected, actual):
     return len(actual) > 10
+
 
 metric = AccuracyMetric(validator=custom_validator)
 ```
@@ -127,12 +116,7 @@ from agenkit.evaluation import QualityMetrics
 
 metric = QualityMetrics(
     use_llm_judge=False,  # Rule-based by default
-    weights={
-        "relevance": 0.3,
-        "completeness": 0.3,
-        "coherence": 0.2,
-        "accuracy": 0.2
-    }
+    weights={"relevance": 0.3, "completeness": 0.3, "coherence": 0.2, "accuracy": 0.2},
 )
 
 score = await metric.measure(agent, input_msg, output_msg)
@@ -150,13 +134,7 @@ metric = PrecisionRecallMetric()
 
 # For each classification
 await metric.measure(
-    agent,
-    input_msg,
-    output_msg,
-    context={
-        "true_label": True,
-        "predicted_label": True
-    }
+    agent, input_msg, output_msg, context={"true_label": True, "predicted_label": True}
 )
 
 # Get statistics
@@ -193,20 +171,15 @@ print(f"Max length: {stats['max']:.0f} tokens")
 ```python
 from agenkit.evaluation.context_metrics import CompressionMetrics
 
-metric = CompressionMetrics(
-    test_lengths=[1_000_000, 10_000_000, 25_000_000],
-    needle_count=10
-)
+metric = CompressionMetrics(test_lengths=[1_000_000, 10_000_000, 25_000_000], needle_count=10)
 
 # Test compression at multiple scales
 stats = await metric.evaluate_at_lengths(
-    agent,
-    session_id="test",
-    needle_content=["Fact 1", "Fact 2", ...]
+    agent, session_id="test", needle_content=["Fact 1", "Fact 2", ...]
 )
 
 for length, stat in stats.items():
-    print(f"{length/1e6}M tokens:")
+    print(f"{length / 1e6}M tokens:")
     print(f"  Compression ratio: {stat.compression_ratio}x")
     print(f"  Retrieval accuracy: {stat.retrieval_accuracy:.2%}")
 ```
@@ -241,6 +214,7 @@ test_cases = await suite.generate_all_test_cases()
 ```python
 from agenkit.evaluation.benchmarks import Benchmark, TestCase
 
+
 class CustomBenchmark(Benchmark):
     @property
     def name(self) -> str:
@@ -252,13 +226,10 @@ class CustomBenchmark(Benchmark):
 
     async def generate_test_cases(self) -> List[TestCase]:
         return [
-            TestCase(
-                input="Question 1",
-                expected="Answer 1",
-                tags=["custom"]
-            ),
+            TestCase(input="Question 1", expected="Answer 1", tags=["custom"]),
             # ... more test cases
         ]
+
 
 # Use it
 suite = BenchmarkSuite(benchmarks=[CustomBenchmark()])
@@ -279,10 +250,7 @@ test_cases = await benchmark.generate_test_cases()
 ```python
 from agenkit.evaluation.benchmarks import NeedleInHaystackBenchmark
 
-benchmark = NeedleInHaystackBenchmark(
-    context_length=10_000,
-    needle_count=5
-)
+benchmark = NeedleInHaystackBenchmark(context_length=10_000, needle_count=5)
 test_cases = await benchmark.generate_test_cases()
 # Tests finding 5 facts in 10K token context
 ```
@@ -292,8 +260,7 @@ test_cases = await benchmark.generate_test_cases()
 from agenkit.evaluation.benchmarks import ExtremeScaleBenchmark
 
 benchmark = ExtremeScaleBenchmark(
-    test_lengths=[1_000_000, 10_000_000, 25_000_000],
-    needles_per_length=10
+    test_lengths=[1_000_000, 10_000_000, 25_000_000], needles_per_length=10
 )
 test_cases = await benchmark.generate_test_cases()
 # Tests retrieval at 1M, 10M, 25M tokens
@@ -304,8 +271,7 @@ test_cases = await benchmark.generate_test_cases()
 from agenkit.evaluation.benchmarks import InformationRetentionBenchmark
 
 benchmark = InformationRetentionBenchmark(
-    conversation_length=1000,
-    recall_points=[250, 500, 750, 1000]
+    conversation_length=1000, recall_points=[250, 500, 750, 1000]
 )
 # Tests if agent remembers facts across long conversations
 ```
@@ -325,8 +291,8 @@ detector = RegressionDetector(
     baseline=baseline_result,
     thresholds={
         "accuracy": 0.10,  # 10% degradation threshold
-        "latency": 0.20    # 20% slower threshold
-    }
+        "latency": 0.20,  # 20% slower threshold
+    },
 )
 
 # Later: detect regressions
@@ -394,14 +360,10 @@ from agenkit.evaluation.context_metrics import CompressionMetrics
 
 # 1. Set up extreme-scale metrics
 compression_metric = CompressionMetrics(
-    test_lengths=[1_000_000, 10_000_000, 25_000_000],
-    needle_count=10
+    test_lengths=[1_000_000, 10_000_000, 25_000_000], needle_count=10
 )
 
-evaluator = Evaluator(
-    agent=endless_agent,
-    metrics=[compression_metric]
-)
+evaluator = Evaluator(agent=endless_agent, metrics=[compression_metric])
 
 # 2. Generate extreme-scale test suite
 suite = BenchmarkSuite.extreme_scale()
@@ -412,7 +374,7 @@ results = await evaluator.evaluate(test_cases)
 
 # 4. Analyze compression quality
 for length, stats in results.metadata["compression_stats"].items():
-    print(f"\n{length/1e6}M tokens:")
+    print(f"\n{length / 1e6}M tokens:")
     print(f"  Compression: {stats.compression_ratio}x")
     print(f"  Retrieval: {stats.retrieval_accuracy:.2%}")
 ```
@@ -436,7 +398,7 @@ for length in test_lengths:
 
 # Plot degradation curve
 for length, accuracy in results.items():
-    print(f"{length/1e6}M tokens: {accuracy:.2%}")
+    print(f"{length / 1e6}M tokens: {accuracy:.2%}")
 ```
 
 ## Real-World Scenarios
@@ -501,13 +463,11 @@ from agenkit.evaluation.context_metrics import CompressionMetrics
 
 # Create extreme-scale benchmark
 benchmark = ExtremeScaleBenchmark(
-    test_lengths=[1_000_000, 10_000_000, 25_000_000],
-    needles_per_length=20
+    test_lengths=[1_000_000, 10_000_000, 25_000_000], needles_per_length=20
 )
 
 compression_metric = CompressionMetrics(
-    test_lengths=[1_000_000, 10_000_000, 25_000_000],
-    needle_count=20
+    test_lengths=[1_000_000, 10_000_000, 25_000_000], needle_count=20
 )
 
 # Run evaluation
@@ -519,7 +479,7 @@ results = await evaluator.evaluate(test_cases)
 for length, stats in results.metadata["compression_stats"].items():
     assert stats.compression_ratio >= 100, "Compression too low"
     assert stats.retrieval_accuracy >= 0.95, "Retrieval accuracy too low"
-    print(f"✅ {length/1e6}M tokens: {stats.compression_ratio}x @ {stats.retrieval_accuracy:.2%}")
+    print(f"✅ {length / 1e6}M tokens: {stats.compression_ratio}x @ {stats.retrieval_accuracy:.2%}")
 ```
 
 ## API Reference

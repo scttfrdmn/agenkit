@@ -354,9 +354,9 @@ Then in your Lambda code, retrieve the secret:
 import boto3
 import json
 
-secrets = boto3.client('secretsmanager')
-secret = secrets.get_secret_value(SecretId=os.environ['OPENAI_SECRET_ARN'])
-api_key = json.loads(secret['SecretString'])['api_key']
+secrets = boto3.client("secretsmanager")
+secret = secrets.get_secret_value(SecretId=os.environ["OPENAI_SECRET_ARN"])
+api_key = json.loads(secret["SecretString"])["api_key"]
 ```
 
 ### 2. Enable IAM Authentication

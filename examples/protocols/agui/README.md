@@ -234,10 +234,10 @@ Interrupt event emitted with approval decision in context.
         "approval_status": "approved",  # or "rejected", "approved_with_modifications"
         "confidence": 0.6,
         "approval_threshold": 0.8,
-        "approval_needed": true
+        "approval_needed": true,
     },
     "actions": [],  # Empty - decision already made
-    "timeout_seconds": null
+    "timeout_seconds": null,
 }
 ```
 
@@ -261,18 +261,13 @@ async def my_approval_func(request: ApprovalRequest) -> ApprovalResponse:
         modified_msg = Message(
             role="assistant",
             content=f"{message.content} [MODIFIED]",
-            metadata={**message.metadata, "modified": True}
+            metadata={**message.metadata, "modified": True},
         )
         return ApprovalResponse(
-            approved=True,
-            feedback="Approved with modifications",
-            modified_message=modified_msg
+            approved=True, feedback="Approved with modifications", modified_message=modified_msg
         )
 
-    return ApprovalResponse(
-        approved=approved,
-        feedback="Your feedback here"
-    )
+    return ApprovalResponse(approved=approved, feedback="Your feedback here")
 ```
 
 ### Custom Agent
@@ -292,11 +287,7 @@ class MyAgent(Agent):
         # Calculate confidence (0.0 to 1.0)
         confidence = calculate_confidence()
 
-        return Message(
-            role="assistant",
-            content="Response",
-            metadata={"confidence": confidence}
-        )
+        return Message(role="assistant", content="Response", metadata={"confidence": confidence})
 ```
 
 ### Configure HITL
@@ -318,7 +309,7 @@ hil_agent = HumanInLoopAgent(
 adapter = AGUIHumanInLoopAdapter(
     hil_agent,
     agent_name="MyAgent",
-    emit_interrupts=True  # Set to False to disable Interrupt events
+    emit_interrupts=True,  # Set to False to disable Interrupt events
 )
 
 # Stream events
@@ -384,7 +375,7 @@ Always include confidence in agent responses:
 return Message(
     role="assistant",
     content="Response",
-    metadata={"confidence": 0.85}  # Required for HITL
+    metadata={"confidence": 0.85},  # Required for HITL
 )
 ```
 
@@ -426,13 +417,15 @@ except Exception as e:
 Log all approval decisions for compliance:
 
 ```python
-approval_log.append({
-    "timestamp": datetime.now(),
-    "confidence": confidence,
-    "decision": "approved",
-    "user": user_id,
-    "agent": agent_name,
-})
+approval_log.append(
+    {
+        "timestamp": datetime.now(),
+        "confidence": confidence,
+        "decision": "approved",
+        "user": user_id,
+        "agent": agent_name,
+    }
+)
 ```
 
 ## Testing

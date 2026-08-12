@@ -295,7 +295,9 @@ def _select_agents(self, query: str) -> list[tuple[str, Agent]]:
     if any(word in query for word in ["research", "find", "what"]):
         selected.append(("research", self._agents["research"]))
 
-    if any(word in query for word in ["calculate", "number"]) or any(char.isdigit() for char in query):
+    if any(word in query for word in ["calculate", "number"]) or any(
+        char.isdigit() for char in query
+    ):
         selected.append(("calculator", self._agents["calculator"]))
 
     # ... more selection logic

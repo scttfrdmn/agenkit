@@ -26,7 +26,7 @@ from agenkit.checkpointing import DurableAgent
 durable = DurableAgent(
     agent=my_agent,
     checkpoint_dir="./checkpoints",
-    checkpoint_interval=10  # Checkpoint every 10 steps
+    checkpoint_interval=10,  # Checkpoint every 10 steps
 )
 
 # Use normally (auto-checkpoints in background)
@@ -44,12 +44,12 @@ Immutable snapshot of agent state:
 ```python
 @dataclass
 class Checkpoint:
-    checkpoint_id: str       # Unique ID
-    session_id: str          # Session identifier
-    step: int                # Step number
-    timestamp: datetime      # When created
-    state: dict              # Agent state
-    metadata: dict           # Additional info
+    checkpoint_id: str  # Unique ID
+    session_id: str  # Session identifier
+    step: int  # Step number
+    timestamp: datetime  # When created
+    state: dict  # Agent state
+    metadata: dict  # Additional info
     previous_id: Optional[str]  # Previous checkpoint (for time-travel)
 ```
 
@@ -71,17 +71,11 @@ storage = FileCheckpointStorage(checkpoint_dir="./checkpoints")
 ### 3. CheckpointManager
 High-level checkpoint management:
 ```python
-manager = CheckpointManager(
-    storage=storage,
-    max_checkpoints_per_session=100,
-    auto_prune=True
-)
+manager = CheckpointManager(storage=storage, max_checkpoints_per_session=100, auto_prune=True)
 
 # Create checkpoint
 checkpoint = await manager.create_checkpoint(
-    session_id="session-1",
-    state={"step": 42, "data": "..."},
-    metadata={"agent": "research-agent"}
+    session_id="session-1", state={"step": 42, "data": "..."}, metadata={"agent": "research-agent"}
 )
 
 # Restore state
@@ -101,9 +95,9 @@ Agent wrapper with automatic checkpointing:
 durable = DurableAgent(
     agent=base_agent,
     checkpoint_dir="./checkpoints",
-    checkpoint_interval=10,      # Checkpoint every N steps
-    auto_resume=True,            # Auto-resume on restart
-    max_checkpoints=100          # Keep last N checkpoints
+    checkpoint_interval=10,  # Checkpoint every N steps
+    auto_resume=True,  # Auto-resume on restart
+    max_checkpoints=100,  # Keep last N checkpoints
 )
 
 # Use like normal agent
@@ -124,7 +118,7 @@ stats = await durable.get_session_stats("session-1")
 durable = DurableAgent(
     agent=agent,
     checkpoint_dir="./checkpoints",
-    checkpoint_interval=10  # Every 10 steps
+    checkpoint_interval=10,  # Every 10 steps
 )
 
 # Checkpoints created automatically
@@ -180,7 +174,7 @@ for cp in checkpoints:
 durable = DurableAgent(
     agent=agent,
     checkpoint_dir="./checkpoints",
-    max_checkpoints=10  # Keep only last 10
+    max_checkpoints=10,  # Keep only last 10
 )
 
 # Manual pruning
@@ -209,7 +203,7 @@ agent = DurableAgent(
     agent,
     checkpoint_dir="./research_checkpoints",
     checkpoint_interval=50,  # Every 50 research steps
-    max_checkpoints=100
+    max_checkpoints=100,
 )
 
 # Run for 30 hours
@@ -217,8 +211,7 @@ session_id = "research-2025-11-14"
 for i in range(1000):
     try:
         response = await agent.process(
-            Message(role="user", content=f"Research task {i}"),
-            session_id=session_id
+            Message(role="user", content=f"Research task {i}"), session_id=session_id
         )
     except Exception as e:
         logger.error(f"Crash at step {i}: {e}")
@@ -234,7 +227,7 @@ for i in range(1000):
 agents = {
     "researcher": DurableAgent(researcher, checkpoint_dir="./checkpoints/researcher"),
     "writer": DurableAgent(writer, checkpoint_dir="./checkpoints/writer"),
-    "reviewer": DurableAgent(reviewer, checkpoint_dir="./checkpoints/reviewer")
+    "reviewer": DurableAgent(reviewer, checkpoint_dir="./checkpoints/reviewer"),
 }
 
 session_id = "project-123"
@@ -309,8 +302,7 @@ storage = InMemoryCheckpointStorage()
 class RedisCheckpointStorage(CheckpointStorage):
     async def save(self, checkpoint: Checkpoint) -> None:
         await self.redis.set(
-            f"checkpoint:{checkpoint.session_id}:{checkpoint.step}",
-            checkpoint.to_json()
+            f"checkpoint:{checkpoint.session_id}:{checkpoint.step}", checkpoint.to_json()
         )
 
     async def load(self, session_id: str, step: int) -> Optional[Checkpoint]:
@@ -323,24 +315,19 @@ class RedisCheckpointStorage(CheckpointStorage):
 ### 1. Checkpoint Frequency
 ```python
 # Too frequent: Storage overhead
-checkpoint_interval=1  # Every step (expensive)
+checkpoint_interval = 1  # Every step (expensive)
 
 # Too infrequent: Lost work on crash
-checkpoint_interval=1000  # Every 1000 steps (risky)
+checkpoint_interval = 1000  # Every 1000 steps (risky)
 
 # Balanced
-checkpoint_interval=10-50  # Every 10-50 steps ✅
+checkpoint_interval = 10 - 50  # Every 10-50 steps ✅
 ```
 
 ### 2. State Management
 ```python
 # ✅ Good: Include all necessary state
-state = {
-    "step": 42,
-    "conversation_history": messages,
-    "tool_results": results,
-    "metadata": {...}
-}
+state = {"step": 42, "conversation_history": messages, "tool_results": results, "metadata": {...}}
 
 # ❌ Bad: Missing critical state
 state = {"step": 42}  # Where's the conversation?
@@ -349,13 +336,13 @@ state = {"step": 42}  # Where's the conversation?
 ### 3. Checkpoint Pruning
 ```python
 # ✅ Good: Keep reasonable number
-max_checkpoints=50-100
+max_checkpoints = 50 - 100
 
 # ❌ Bad: Keep everything (storage explosion)
-max_checkpoints=None
+max_checkpoints = None
 
 # ❌ Bad: Keep too few (no recovery options)
-max_checkpoints=1
+max_checkpoints = 1
 ```
 
 ### 4. Error Handling

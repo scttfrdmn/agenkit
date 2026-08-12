@@ -98,6 +98,7 @@ def _make_llm_query_func(self):
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 import nest_asyncio
+
                 nest_asyncio.apply()
         except RuntimeError:
             loop = asyncio.new_event_loop()

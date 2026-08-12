@@ -15,11 +15,7 @@ from agenkit.budget import CostTracker, BudgetLimiter
 # Track costs
 tracker = CostTracker()
 await tracker.record_cost(
-    "session-123",
-    "assistant",
-    "claude-sonnet-4",
-    input_tokens=1000,
-    output_tokens=500
+    "session-123", "assistant", "claude-sonnet-4", input_tokens=1000, output_tokens=500
 )
 
 # Enforce budget
@@ -110,7 +106,7 @@ await tracker.record_cost(
     model="claude-sonnet-4",
     input_tokens=1000,
     output_tokens=500,
-    metadata={"request_id": "req-456"}
+    metadata={"request_id": "req-456"},
 )
 
 # Query costs
@@ -125,10 +121,10 @@ top_sessions = await tracker.get_top_sessions(limit=10)
 ```python
 limiter = BudgetLimiter(
     tracker=tracker,
-    session_budget=10.00,   # $10 per session
-    agent_budget=50.00,     # $50 per agent
-    global_budget=100.00,   # $100 total
-    action="error"          # or "warning"
+    session_budget=10.00,  # $10 per session
+    agent_budget=50.00,  # $50 per agent
+    global_budget=100.00,  # $100 total
+    action="error",  # or "warning"
 )
 
 wrapped_agent = limiter(agent)
@@ -144,9 +140,9 @@ optimizer = ModelOptimizer(
     llm_clients={
         "claude-haiku-3": haiku_client,
         "claude-sonnet-4": sonnet_client,
-        "claude-opus-4": opus_client
+        "claude-opus-4": opus_client,
     },
-    complexity_detector=HeuristicComplexityDetector()
+    complexity_detector=HeuristicComplexityDetector(),
 )
 
 response = await optimizer.complete(messages)
@@ -195,8 +191,5 @@ python examples/budget/cost_tracking_demo.py
 Found pricing outdated? Submit a PR with updated rates!
 
 ```python
-ModelPricing.PRICING["new-model"] = {
-    "input": 1.50,
-    "output": 5.00
-}
+ModelPricing.PRICING["new-model"] = {"input": 1.50, "output": 5.00}
 ```

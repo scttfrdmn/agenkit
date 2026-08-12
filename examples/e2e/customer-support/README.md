@@ -162,6 +162,7 @@ Use the system in your own code:
 import asyncio
 from main import CustomerSupportSystem
 
+
 async def main():
     # Initialize system
     system = CustomerSupportSystem()
@@ -169,7 +170,7 @@ async def main():
     # Process a ticket
     result = await system.handle_ticket(
         "How do I reset my password?",
-        verbose=True  # Show detailed steps
+        verbose=True,  # Show detailed steps
     )
 
     # Access results
@@ -178,6 +179,7 @@ async def main():
     print(f"Escalated: {result['escalated']}")
     print(f"Confidence: {result['confidence']}")
     print(f"Sources: {result['sources']}")
+
 
 asyncio.run(main())
 ```
@@ -259,15 +261,13 @@ Add documents to the knowledge base:
 from knowledge_base import VectorStore, Document
 
 store = VectorStore()
-store.add_document(Document(
-    id="kb011",
-    content="How to enable dark mode: Go to Settings > Appearance > Theme",
-    metadata={
-        "category": "features",
-        "priority": "low",
-        "topic": "ui"
-    }
-))
+store.add_document(
+    Document(
+        id="kb011",
+        content="How to enable dark mode: Go to Settings > Appearance > Theme",
+        metadata={"category": "features", "priority": "low", "topic": "ui"},
+    )
+)
 ```
 
 ### Agent Parameters
@@ -339,7 +339,7 @@ from knowledge_base import Document
 new_doc = Document(
     id="kb_custom_001",
     content="Your new support content here",
-    metadata={"category": "custom", "priority": "medium"}
+    metadata={"category": "custom", "priority": "medium"},
 )
 
 system.knowledge_base.add_document(new_doc)
@@ -352,13 +352,14 @@ Replace mock implementations in `qa_agent.py`:
 ```python
 import openai
 
+
 async def _formulate_answer(self, query, context_parts, confidence):
     response = await openai.ChatCompletion.acreate(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a helpful support agent."},
-            {"role": "user", "content": f"Context: {context_parts[0]}\\n\\nQuestion: {query}"}
-        ]
+            {"role": "user", "content": f"Context: {context_parts[0]}\\n\\nQuestion: {query}"},
+        ],
     )
     return response.choices[0].message.content
 ```

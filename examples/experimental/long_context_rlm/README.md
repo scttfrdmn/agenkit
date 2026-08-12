@@ -106,7 +106,7 @@ rlm = RecursiveREPLAgent(
     sub_agent=sub_agent,
     max_iterations=20,
     session_budget=5.00,  # Stop if exceeds $5
-    cost_tracker=tracker
+    cost_tracker=tracker,
 )
 
 # Process long context (will raise BudgetExceededError if over limit)

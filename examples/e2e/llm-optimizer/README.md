@@ -144,7 +144,7 @@ MODELS["custom-model"] = LLMModel(
     max_tokens=8192,
     quality_score=8.0,
     latency_ms=1000,
-    provider="custom"
+    provider="custom",
 )
 ```
 
@@ -159,7 +159,7 @@ class CustomRouter(LLMRouter):
                 primary_model="gpt-4",
                 fallback_models=["claude-2"],
                 reasoning="Urgent request",
-                estimated_cost=0.03
+                estimated_cost=0.03,
             )
         return super().route(prompt, context)
 ```

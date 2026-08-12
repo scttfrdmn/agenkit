@@ -400,7 +400,7 @@ repo.create_status(
     sha=pr.head.sha,
     state="success" if consensus >= 0.7 else "failure",
     context="agenkit/code-review",
-    description=f"Consensus: {consensus:.0%}"
+    description=f"Consensus: {consensus:.0%}",
 )
 ```
 

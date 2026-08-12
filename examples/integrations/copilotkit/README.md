@@ -131,9 +131,9 @@ The `ResearchAssistantAgent` includes three tools:
 class ResearchAssistantAgent(Agent):
     def __init__(self):
         self._tools = {
-            "web_search": SearchTool(),       # Web search capability
-            "calculator": CalculatorTool(),   # Math calculations
-            "get_weather": WeatherTool(),     # Weather information
+            "web_search": SearchTool(),  # Web search capability
+            "calculator": CalculatorTool(),  # Math calculations
+            "get_weather": WeatherTool(),  # Weather information
         }
 
     async def process(self, message: Message) -> Message:
@@ -163,6 +163,7 @@ async def lifespan(app: FastAPI):
     transport = SSETransport(adapter)
 
     yield
+
 
 @app.post("/agui")
 async def agui_endpoint(request: Request):

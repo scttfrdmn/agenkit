@@ -5,7 +5,7 @@ Tests for ReAct (Reasoning + Acting) Agent pattern.
 import pytest
 
 from agenkit import Message
-from agenkit.patterns import ReActAgent, ReActStep, ToolResult
+from agenkit.patterns import ReActAgent, ReActConfig, ReActStep, ToolResult
 
 # ============================================================================
 # Mock Tools
@@ -427,3 +427,101 @@ def test_react_step_dataclass():
     assert step.observation == "Test observation"
     assert step.step_number == 1
     assert step.timestamp is not None
+
+
+# ============================================================================
+# ErrorTracker integration tests (#653)
+# ============================================================================
+
+
+@pytest.mark.asyncio
+async def test_react_agent_error_tracking_disabled_by_default():
+    """When enable_error_tracking is absent (default), no tracker is populated
+    on the result metadata and record_step is never called (behavior
+    unchanged from before #653)."""
+    tools = [MockCalculator(), FailingTool()]
+
+    mock_agent = MockReActAgent(
+        responses=[
+            "Thought: Use calculator\nAction: calculator\nAction Input: 2+2",
+            "Thought: Use failing tool\nAction: failing\nAction Input: test",
+            "Thought: Done\nAction: Final Answer\nAction Input: Complete",
+        ]
+    )
+
+    agent = ReActAgent(ReActConfig(agent=mock_agent, tools=tools, max_steps=5))
+
+    result = await agent.process(Message(role="user", content="Test"))
+
+    assert "error_tracker" not in result.metadata
+    # Tracker exists on the agent (cheap to leave wired in) but is disabled,
+    # so no steps were ever recorded.
+    assert agent.error_tracker.enabled is False
+    assert agent.error_tracker.total_steps == 0
+    assert agent.error_tracker.per_step_error_rate() == 0.0
+
+
+@pytest.mark.asyncio
+async def test_react_agent_error_tracking_enabled_mixed_outcomes():
+    """When enable_error_tracking=True, a multi-step run with a mix of
+    successes and failures produces a tracker whose per_step_error_rate()
+    matches manual expectation for that specific step sequence."""
+    tools = [MockCalculator(), MockSearch(), FailingTool()]
+
+    # Sequence: success (calculator), failure (failing), success (search),
+    # then final answer. 3 recorded steps, 1 failure -> p_a = 1/3.
+    mock_agent = MockReActAgent(
+        responses=[
+            "Thought: Use calculator\nAction: calculator\nAction Input: 2+2",
+            "Thought: Use failing tool\nAction: failing\nAction Input: test",
+            "Thought: Use search\nAction: search\nAction Input: query",
+            "Thought: Done\nAction: Final Answer\nAction Input: Complete",
+        ]
+    )
+
+    agent = ReActAgent(
+        ReActConfig(agent=mock_agent, tools=tools, max_steps=10, enable_error_tracking=True)
+    )
+
+    result = await agent.process(Message(role="user", content="Test"))
+
+    tracker = result.metadata["error_tracker"]
+    assert tracker is agent.error_tracker
+    assert tracker.total_steps == 3
+    assert tracker.failed_steps == 1
+    assert tracker.per_step_error_rate() == pytest.approx(1 / 3)
+
+
+@pytest.mark.asyncio
+async def test_react_agent_error_tracking_resets_between_runs():
+    """error_tracker is reset at the start of each process() call, mirroring
+    self.steps reset-on-new-task behavior."""
+    tools = [FailingTool()]
+
+    mock_agent = MockReActAgent(
+        responses=[
+            "Thought: Use failing tool\nAction: failing\nAction Input: test",
+            "Thought: Done\nAction: Final Answer\nAction Input: Complete",
+        ]
+    )
+
+    agent = ReActAgent(
+        ReActConfig(agent=mock_agent, tools=tools, max_steps=5, enable_error_tracking=True)
+    )
+
+    await agent.process(Message(role="user", content="First run"))
+    assert agent.error_tracker.total_steps == 1
+    assert agent.error_tracker.failed_steps == 1
+
+    # Second run with a fresh mock agent that always succeeds.
+    mock_agent_2 = MockReActAgent(
+        responses=[
+            "Thought: Done\nAction: Final Answer\nAction Input: Complete",
+        ]
+    )
+    agent.agent = mock_agent_2
+    await agent.process(Message(role="user", content="Second run"))
+
+    # No tool steps this time (immediate final answer), so tracker is empty
+    # again rather than carrying over the previous run's failure.
+    assert agent.error_tracker.total_steps == 0

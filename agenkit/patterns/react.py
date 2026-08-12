@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Any, Protocol
 
 from agenkit import Agent, Message
+from agenkit.evaluation import ErrorTracker
 
 
 class Tool(Protocol):
@@ -95,6 +96,10 @@ class ReActConfig:
         max_steps: Maximum reasoning steps before stopping (default: 10)
         system_prompt: Optional custom system prompt to guide behavior
         verbose: Whether to include thought process in response (default: False)
+        enable_error_tracking: When ``True``, record each step's success/failure
+            via an :class:`~agenkit.evaluation.ErrorTracker` and expose it on the
+            result message's metadata under ``"error_tracker"`` (default: ``False``,
+            opt-in; see #653).
 
     Example:
         >>> from agenkit.patterns import ReActAgent, ReActConfig
@@ -112,6 +117,7 @@ class ReActConfig:
     max_steps: int = 10
     system_prompt: str | None = None
     verbose: bool = False
+    enable_error_tracking: bool = False
 
     def __post_init__(self):
         """Validate configuration."""
@@ -181,6 +187,7 @@ class ReActAgent(Agent):
         max_steps: int = 10,
         system_prompt: str | None = None,
         verbose: bool = False,
+        enable_error_tracking: bool = False,
     ):
         """
         Initialize ReActAgent.
@@ -192,6 +199,7 @@ class ReActAgent(Agent):
             max_steps: (Deprecated) Maximum reasoning steps
             system_prompt: (Deprecated) Optional system prompt
             verbose: (Deprecated) Whether to include thought process
+            enable_error_tracking: (Deprecated) Use config.enable_error_tracking instead
 
         Examples:
             >>> # Recommended: config-based (matches all other languages)
@@ -228,6 +236,7 @@ class ReActAgent(Agent):
             self.max_steps = config.max_steps
             self.system_prompt = config.system_prompt or self._default_system_prompt()
             self.verbose = config.verbose
+            self.enable_error_tracking = config.enable_error_tracking
         elif agent is not None and tools is not None:
             # Old direct-parameter API (deprecated)
             warnings.warn(
@@ -243,6 +252,7 @@ class ReActAgent(Agent):
             self.max_steps = max_steps
             self.system_prompt = system_prompt or self._default_system_prompt()
             self.verbose = verbose
+            self.enable_error_tracking = enable_error_tracking
         else:
             raise ValueError(
                 "Either 'config' or both 'agent' and 'tools' must be provided. "
@@ -250,6 +260,7 @@ class ReActAgent(Agent):
             )
 
         self.steps: list[ReActStep] = []
+        self.error_tracker = ErrorTracker(enabled=self.enable_error_tracking)
 
     @property
     def name(self) -> str:
@@ -334,6 +345,7 @@ Begin!"""
             Message containing the final answer (and optionally the thought process)
         """
         self.steps = []  # Reset steps for new task
+        self.error_tracker.reset()  # Reset tracker for new task (no-op when disabled)
 
         # Build initial prompt with system message
         Message(role="system", content=self.system_prompt)
@@ -350,7 +362,11 @@ Begin!"""
             step = self._parse_response(response.content, iteration)
 
             if step.action.lower() == "final answer":
-                # Agent has finished reasoning
+                # Agent has finished reasoning. The final-answer step is not
+                # appended to self.steps (it isn't a tool execution), so it is
+                # likewise not recorded in the error tracker -- per-step error
+                # rate reflects tool-execution outcomes only, consistent with
+                # `tool_calls_made`/`steps` metadata below.
                 return self._format_final_response(step.action_input)
 
             # Execute the action (tool)
@@ -358,8 +374,10 @@ Begin!"""
 
             if tool_result.success:
                 step.observation = str(tool_result.result)
+                self.error_tracker.record_step(True, name=step.action)
             else:
                 step.observation = f"Error: {tool_result.error}"
+                self.error_tracker.record_step(False, name=step.action, error=tool_result.error)
 
             self.steps.append(step)
 
@@ -368,9 +386,13 @@ Begin!"""
             current_message = Message(role="user", content=observation_msg)
 
         # Max steps reached
+        metadata: dict[str, Any] = {}
+        if self.enable_error_tracking:
+            metadata["error_tracker"] = self.error_tracker
         return Message(
             role="assistant",
             content="I couldn't complete the task within the maximum number of steps. Please try rephrasing your question or breaking it into smaller parts.",
+            metadata=metadata,
         )
 
     def _parse_response(self, response: str, step_number: int) -> ReActStep:
@@ -456,6 +478,9 @@ Begin!"""
             ],
             "tools_used": unique_tools,
         }
+
+        if self.enable_error_tracking:
+            metadata["error_tracker"] = self.error_tracker
 
         return Message(role="assistant", content=content, metadata=metadata)
 

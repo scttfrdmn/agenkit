@@ -38,6 +38,7 @@ import (
 	"time"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/evaluation"
 )
 
 // StepStatus represents the status of a plan step.
@@ -213,6 +214,10 @@ type PlanningAgentConfig struct {
 	AllowReplanning bool
 	// SystemPrompt is an optional system prompt
 	SystemPrompt string
+	// EnableErrorTracking opts into recording each executed step's
+	// success/failure via evaluation.ErrorTracker, exposed on the result
+	// message's Metadata["error_tracker"] (default: false, opt-in; see #653).
+	EnableErrorTracking bool
 }
 
 // PlanningAgent creates and executes plans for complex tasks.
@@ -238,13 +243,18 @@ type PlanningAgentConfig struct {
 //	    Content: "Organize a team event",
 //	})
 type PlanningAgent struct {
-	name            string
-	llm             any
-	executor        StepExecutor
-	maxSteps        int
-	allowReplanning bool
-	systemPrompt    string
-	currentPlan     *Plan
+	name                string
+	llm                 any
+	executor            StepExecutor
+	maxSteps            int
+	allowReplanning     bool
+	systemPrompt        string
+	currentPlan         *Plan
+	enableErrorTracking bool
+	// ErrorTracker records each executed step's success/failure when
+	// EnableErrorTracking is set on the config. The zero value is a disabled
+	// tracker (RecordStep is a no-op), so it is always safe to read.
+	ErrorTracker *evaluation.ErrorTracker
 }
 
 // NewPlanningAgent creates a new planning agent.
@@ -263,11 +273,13 @@ func NewPlanningAgent(llmClient any, stepExecutor StepExecutor, config *Planning
 	}
 
 	agent := &PlanningAgent{
-		name:            "PlanningAgent",
-		llm:             llmClient,
-		executor:        stepExecutor,
-		maxSteps:        config.MaxSteps,
-		allowReplanning: config.AllowReplanning,
+		name:                "PlanningAgent",
+		llm:                 llmClient,
+		executor:            stepExecutor,
+		maxSteps:            config.MaxSteps,
+		allowReplanning:     config.AllowReplanning,
+		enableErrorTracking: config.EnableErrorTracking,
+		ErrorTracker:        &evaluation.ErrorTracker{Enabled: config.EnableErrorTracking},
 	}
 
 	if config.SystemPrompt != "" {
@@ -345,6 +357,8 @@ func (p *PlanningAgent) Introspect() *agenkit.IntrospectionResult {
 
 // Process processes a task by creating and executing a plan.
 func (p *PlanningAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
+	p.ErrorTracker.Reset() // Reset for new task (no-op when disabled)
+
 	// Create plan
 	plan, err := p.createPlan(ctx, message.ContentString())
 	if err != nil {
@@ -366,9 +380,15 @@ func (p *PlanningAgent) Process(ctx context.Context, message *agenkit.Message) (
 		}
 	}
 
+	var metadata map[string]interface{}
+	if p.enableErrorTracking {
+		metadata = map[string]interface{}{"error_tracker": p.ErrorTracker}
+	}
+
 	return &agenkit.Message{
-		Role:    "assistant",
-		Content: fmt.Sprintf("Task completed.\n\nGoal: %s\n\nSteps completed: %d/%d\n\nResult: %s", plan.Goal, completed, len(plan.Steps), result),
+		Role:     "assistant",
+		Content:  fmt.Sprintf("Task completed.\n\nGoal: %s\n\nSteps completed: %d/%d\n\nResult: %s", plan.Goal, completed, len(plan.Steps), result),
+		Metadata: metadata,
 	}, nil
 }
 
@@ -475,10 +495,15 @@ func (p *PlanningAgent) executePlan(ctx context.Context, plan *Plan) (string, er
 					if err != nil {
 						plan.Steps[i].Error = err.Error()
 						plan.Steps[i].Status = StepStatusFailed
+						p.ErrorTracker.RecordStep(false,
+							evaluation.WithStepName(step.Description),
+							evaluation.WithStepError(err.Error()),
+						)
 						results = append(results, fmt.Sprintf("Step %d: %s ✗ (%s)", step.StepNumber+1, step.Description, err.Error()))
 					} else {
 						plan.Steps[i].Result = result
 						plan.Steps[i].Status = StepStatusCompleted
+						p.ErrorTracker.RecordStep(true, evaluation.WithStepName(step.Description))
 
 						// Add result to context for future steps
 						context[fmt.Sprintf("step_%d_result", step.StepNumber)] = result

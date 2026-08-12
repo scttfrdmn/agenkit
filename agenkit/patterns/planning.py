@@ -24,6 +24,7 @@ from enum import Enum
 from typing import Any, Protocol
 
 from agenkit import Agent, Message
+from agenkit.evaluation import ErrorTracker
 
 
 class StepStatus(Enum):
@@ -148,6 +149,10 @@ class PlanningConfig:
         max_steps: Maximum steps in a plan (default: 10)
         allow_replanning: Whether to replan on failures (default: False)
         system_prompt: Optional system prompt for planning
+        enable_error_tracking: When ``True``, record each executed step's
+            success/failure via an :class:`~agenkit.evaluation.ErrorTracker` and
+            expose it on the result message's metadata under ``"error_tracker"``
+            (default: ``False``, opt-in; see #653).
 
     Example:
         >>> from agenkit.patterns import PlanningAgent, PlanningConfig
@@ -163,6 +168,7 @@ class PlanningConfig:
     max_steps: int = 10
     allow_replanning: bool = False
     system_prompt: str | None = None
+    enable_error_tracking: bool = False
 
     def __post_init__(self):
         """Validate configuration."""
@@ -229,6 +235,7 @@ class PlanningAgent(Agent):
         max_steps: int = 10,
         allow_replanning: bool = False,
         system_prompt: str | None = None,
+        enable_error_tracking: bool = False,
     ):
         """
         Initialize PlanningAgent.
@@ -239,6 +246,7 @@ class PlanningAgent(Agent):
             max_steps: (Deprecated) Maximum steps in a plan
             allow_replanning: (Deprecated) Whether to replan on failures
             system_prompt: (Deprecated) Optional system prompt
+            enable_error_tracking: (Deprecated) Use config.enable_error_tracking instead
 
         Examples:
             >>> # Recommended: config-based (matches all other languages)
@@ -272,6 +280,7 @@ class PlanningAgent(Agent):
             self.max_steps = config.max_steps
             self.allow_replanning = config.allow_replanning
             self.system_prompt = config.system_prompt or self._default_system_prompt()
+            self.enable_error_tracking = config.enable_error_tracking
         elif planner is not None:
             # Old direct-parameter API (deprecated)
             warnings.warn(
@@ -286,6 +295,7 @@ class PlanningAgent(Agent):
             self.max_steps = max_steps
             self.allow_replanning = allow_replanning
             self.system_prompt = system_prompt or self._default_system_prompt()
+            self.enable_error_tracking = enable_error_tracking
         else:
             raise ValueError(
                 "Either 'config' or 'planner' must be provided. "
@@ -294,6 +304,7 @@ class PlanningAgent(Agent):
 
         self.current_plan: Plan | None = None
         self.executor = DefaultStepExecutor()
+        self.error_tracker = ErrorTracker(enabled=self.enable_error_tracking)
 
     @property
     def name(self) -> str:
@@ -332,6 +343,8 @@ Guidelines:
         Returns:
             Message with the final result
         """
+        self.error_tracker.reset()  # Reset tracker for new task (no-op when disabled)
+
         # Create plan
         plan = await self._create_plan(message.content)
         self.current_plan = plan
@@ -339,9 +352,14 @@ Guidelines:
         # Execute plan
         result = await self._execute_plan(plan)
 
+        metadata: dict[str, Any] = {}
+        if self.enable_error_tracking:
+            metadata["error_tracker"] = self.error_tracker
+
         return Message(
             role="assistant",
             content=f"Task completed.\n\nGoal: {plan.goal}\n\nSteps completed: {len([s for s in plan.steps if s.status == StepStatus.COMPLETED])}/{len(plan.steps)}\n\nResult: {result}",
+            metadata=metadata,
         )
 
     async def _create_plan(self, task: str) -> Plan:
@@ -456,6 +474,7 @@ Guidelines:
                     result = await self.executor.execute(step, context)
                     step.result = result
                     step.status = StepStatus.COMPLETED
+                    self.error_tracker.record_step(True, name=step.description)
 
                     # Add result to context for future steps
                     context[f"step_{step.step_number}_result"] = result
@@ -464,6 +483,7 @@ Guidelines:
                 except Exception as e:
                     step.error = str(e)
                     step.status = StepStatus.FAILED
+                    self.error_tracker.record_step(False, name=step.description, error=str(e))
                     results.append(f"Step {step.step_number + 1}: {step.description} ✗ ({e})")
 
         # Generate summary

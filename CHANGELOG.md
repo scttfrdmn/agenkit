@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.92.0] - 2026-08-12
+
+Two milestones: v0.88.0 (Observability, closing #715) and the first tranche
+of v0.92.0 (Spec Conformance Rung 2 & Cross-Language Parity).
+
+### Added
+
+- **GenAI semconv attributes on agent spans, Python and Go** (#664, #665,
+  #782, #783). `TracingMiddleware` now promotes `gen_ai.system`,
+  `gen_ai.request.model`, `gen_ai.response.model` (always both, even when
+  equal — lets a consumer detect a mismatch instead of assuming the
+  invariant holds), token usage, cache counts, cost (int, never float), and
+  retry counts (transport and quality retries kept as separate keys, never
+  summed) onto the `agent.{name}.process` span. A new attribute-namespace
+  test asserts every emitted key is `gen_ai.*`/`agenkit.*`/grandfathered and
+  documented in `docs/OTEL_CONVENTION.md` — parsed straight from the doc,
+  not a second hand-maintained list. TS/Rust/C++/Zig/C#/Java/Scala remain
+  Planned.
+- **Go tree-node span helper** (#784). `observability.StartNode` — live,
+  not buffered: starts the span when the node starts, so durations are
+  measured rather than fabricated or absent. Python/TS/Rust still call
+  `tracer.Start` directly.
+- **`enable_error_tracking` on ReAct/Planning agents, Python and Go**
+  (#653, partial). Opt-in flag auto-records each step's success/failure via
+  `ErrorTracker` and exposes the populated tracker on the result. TS/Rust/
+  C++/Zig deferred.
+- **Rung-2 spec-conformance checker** (#924), report-only. Compares each
+  language's real constructor against `specs/patterns/*.yaml`'s declared
+  parameters, with snake_case/camelCase/PascalCase normalization. Audited
+  and fixed drift in all 18 spec files against the Python reference in the
+  process — not just the one case (`react.yaml`'s `llm` → `agent`)
+  originally found, but real structural drift in `memory_hierarchy.yaml`
+  and `parallel.yaml` too.
+- Typed `Usage`/`usage_from_message`, ported to Python for the first time,
+  relocated in Go from `adapter/llm` to the core `agenkit` package so
+  `TracingMiddleware` can read it without pulling in the AWS SDK (#664).
+- 38 more `Agent` subclasses registered in the conformance suite's
+  behavioral-conformance layer, including `ToolAgent` (unblocked by #762's
+  `Tool.execute()` convergence) (#923, tranche 1).
+- `error_tracker_behavior.json` wired into all 6 cross-language harnesses
+  (#652).
+
+### Fixed
+
+- **The cross-language equivalence runner was never invoked** (#763). Its
+  committed report was 6.5 months stale, claiming 21/21 passing. Worse:
+  `discover_harnesses()` pointed at stale, unbuilt mock harness sources
+  that never called their own language's real core — the actual
+  core-calling harnesses live elsewhere and are what CI's compile-gate
+  checks. Repointed discovery at the real harnesses, deleted the dead mock
+  sources and their orphaned build targets. The honest baseline with
+  correct discovery: 0/21 patterns at full equivalence — a real, previously
+  hidden gap, not a regression. Fixed two concrete bugs found en route
+  (Go/TS reading the wrong metadata key; a validation crash). Wired a new
+  `make test-equivalence` target (deliberately not part of `make test` —
+  needs 5 toolchains) and a scheduled/manual-only CI workflow, marked
+  informational since the suite isn't green yet. `discover_harnesses()` now
+  raises loudly on a missing binary instead of silently shrinking the
+  fleet.
+- OTEL env vars (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`) now
+  honored as defaults in all 5 languages that lacked them; explicit
+  parameters still win (#771).
+- **A cascading Go dependency-bump bug, caught twice.** Bumping
+  `agenkit-go`'s dependencies breaks up to 6 sibling Go modules that
+  reference it via a local `replace` directive, since Dependabot only
+  watches `/agenkit-go`'s directory. Fixed the immediate 17-update bump
+  (#963) plus a second, platform-specific instance of the same root cause:
+  one transitive dependency (`prometheus/procfs`) is Linux-only via a
+  `//go:build` tag, invisible to any build on a macOS machine regardless of
+  cache freshness — only caught by actually cross-compiling for Linux.
+  `dependabot.yml` still doesn't watch the 6 dependent directories, so this
+  will recur on the next bump; tracked as follow-up, not fixed here.
+- `ruff` bumped to 0.16.2; `.pre-commit-config.yaml`'s separate pin was
+  stale at 0.14.4 — the exact three-ruffs-disagreement class #793's guard
+  exists to catch, caught immediately (#964).
+- Rust/TS Bedrock adapters no longer force `temperature`/`top_p` defaults
+  that Claude Sonnet 5+ rejects outright (#947).
+- MCP/AG-UI/A2A now negotiate protocol version instead of advertising one
+  nobody reads (#781, #733); MCP bumped to spec revision 2025-11-25.
+- `Tool.execute()` converged on one calling convention; ReAct's
+  final-answer parser now accepts both historical formats across 6
+  languages (#762, #765).
+- `Message.metadata=None` no longer raises `FrozenInstanceError` — normalized
+  once in `__post_init__` instead of guarded at 13 call sites (#919).
+- `CallOptions.seed`/`.stop` wired through to the 4 adapters that declared
+  but never read them; unsupported combinations now warn instead of
+  silently dropping (#818).
+- C++ `Agent::introspect()` implemented — the only language with zero
+  introspection support despite its own docs claiming otherwise (#850).
+- MCP adopted as stateless by design, deliberately rather than by accident:
+  fixed a Python client bug that coupled transport construction to
+  `initialize()`, added regression-lock tests in 4 languages proving
+  `tools/call` succeeds with no handshake (#837).
+- **PyPI publishing automated** — `pip install agenkit` had 404'd since the
+  project's inception. Also fixed a packaging bug found while wiring this
+  up: the sdist had no scoping config and silently bundled the entire
+  9-language monorepo (20MB → 380K, scoped) (#22).
+- A spec-vs-code interaction caught immediately by the new rung-2 checker:
+  merging #959 (added `enable_error_tracking`) and #961 (audited specs just
+  before that parameter existed) back-to-back left `react.yaml`/
+  `planning.yaml` briefly stale. Fixed same-day (#965).
+
 ## [v0.91.0] - 2026-08-09
 
 Contract-bug cluster identified by the v0.90.0 deep reviews, fixed as six

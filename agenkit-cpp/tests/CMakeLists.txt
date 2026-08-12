@@ -72,6 +72,11 @@ add_executable(test_cross_language_rate_limiter_behavior cross_language_rate_lim
 target_link_libraries(test_cross_language_rate_limiter_behavior agenkit gtest_main)
 add_test(NAME cross_language_rate_limiter_behavior_tests COMMAND test_cross_language_rate_limiter_behavior)
 
+# Cross-language error tracker behavior tests
+add_executable(test_cross_language_error_tracker_behavior cross_language_error_tracker_behavior_test.cpp)
+target_link_libraries(test_cross_language_error_tracker_behavior agenkit gtest_main)
+add_test(NAME cross_language_error_tracker_behavior_tests COMMAND test_cross_language_error_tracker_behavior)
+
 # Agent tests
 add_executable(test_agent test_agent.cpp)
 target_link_libraries(test_agent agenkit gtest_main)

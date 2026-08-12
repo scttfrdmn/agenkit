@@ -7,6 +7,7 @@ Manages communication with language-specific test harnesses via JSON protocol.
 import json
 import subprocess
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -330,76 +331,120 @@ class HarnessManager:
         return results
 
 
-def discover_harnesses(root_dir: Path) -> list[HarnessConfig]:
+class HarnessDiscoveryError(RuntimeError):
+    """Raised when an expected harness is missing or unsupported.
+
+    Distinct from a plain RuntimeError so callers (and tests) can catch this
+    specifically rather than any execution failure that happens to bubble up
+    through the same call.
     """
-    Auto-discover language harnesses in the repository.
+
+
+# Languages with ANY cross-language harness code, mapped to a function that
+# computes their discovery path. This is the sole source of truth for "which
+# languages can this runner test" -- see LANGUAGES_WITHOUT_HARNESS below for
+# the languages that are known to the toolkit but have no harness at all yet.
+#
+# These paths point at tests/cross_language/harness_<lang>/, the harnesses
+# that actually call each language's real agenkit core (verified: harness_go
+# imports agenkit-go/patterns, harness_rust links agenkit-rust, etc. -- see
+# each harness's own source). Every other language ALSO carries a stale,
+# unbuilt mock harness checked in at agenkit-<lang>/tests/cross_language_harness.*
+# (e.g. agenkit-go/tests/cross_language_harness.go) that string-matches
+# hardcoded inputs and never touches its own core. discover_harnesses() used
+# to point here, at the mocks, before #763 -- a 6-language "passing" run was
+# really 1 real harness (python) plus 5 mocks agreeing with each other about
+# what a hardcoded string should look like. The mock sources are dead code
+# kept only as a historical trap; do not repoint discovery at them again.
+_HARNESS_PATHS: dict[str, Callable[[Path], Path]] = {
+    "python": lambda root: root / "tests" / "cross_language" / "harness_python.py",
+    "go": lambda root: root / "tests" / "cross_language" / "harness_go" / "harness_go",
+    "typescript": lambda root: root
+    / "tests"
+    / "cross_language"
+    / "harness_ts"
+    / "dist"
+    / "index.js",
+    "rust": lambda root: root
+    / "tests"
+    / "cross_language"
+    / "harness_rust"
+    / "target"
+    / "release"
+    / "harness_rust",
+    "cpp": lambda root: root / "tests" / "cross_language" / "harness_cpp" / "build" / "harness_cpp",
+    "zig": lambda root: root / "tests" / "cross_language" / "harness_zig" / "harness_zig",
+}
+
+# Languages the toolkit ships (per CLAUDE.md's canonical 9-language list) that
+# have no cross-language harness at all yet. Building them is tracked
+# separately (#754 item 2) and is explicitly out of scope for the harness
+# runner itself -- but a user asking for one of these languages should get a
+# clear, specific error rather than argparse's generic "invalid choice",
+# which is what happened before #763 (the --languages flag hardcoded a
+# 6-language choices list that didn't even know these names existed).
+LANGUAGES_WITHOUT_HARNESS = ("csharp", "java", "scala")
+
+# Every language name this runner will accept on --languages, whether or not
+# a harness exists for it yet. Used by run_equivalence_tests.py so the CLI
+# never hardcodes its own separate 6-language list (the third instance of
+# that exact bug pattern per #763, after expected_languages and
+# MIN_FEATURE_COUNTS, both fixed in #757).
+ALL_KNOWN_LANGUAGES = tuple(_HARNESS_PATHS.keys()) + LANGUAGES_WITHOUT_HARNESS
+
+
+def discover_harnesses(
+    root_dir: Path, expected_languages: list[str] | None = None
+) -> list[HarnessConfig]:
+    """
+    Discover language harnesses in the repository.
+
+    Unlike a plain existence-check chain, this treats `expected_languages` as
+    a hard requirement: any language in that list without a built harness (or
+    with no harness code at all) raises rather than being silently dropped.
+    Before #763, `--health-check-only` could report "3 of 6 harnesses found"
+    and still exit 0 -- the same absent-means-pass shape fixed for the parity
+    report in #757, applied here.
 
     Args:
         root_dir: Root directory of the repository
+        expected_languages: Languages that MUST have a working harness. If
+            None, defaults to every language with harness code
+            (`_HARNESS_PATHS`) -- i.e. discovery requires the full fleet
+            unless the caller explicitly asks for a subset.
 
     Returns:
-        List of discovered harness configurations
+        List of discovered harness configurations, one per expected language.
+
+    Raises:
+        HarnessDiscoveryError: an expected language has no harness code at
+            all (e.g. csharp/java/scala -- see LANGUAGES_WITHOUT_HARNESS), or
+            has harness code but no built binary at the expected path.
     """
+    if expected_languages is None:
+        expected_languages = list(_HARNESS_PATHS.keys())
+
+    unsupported = [lang for lang in expected_languages if lang not in _HARNESS_PATHS]
+    if unsupported:
+        raise HarnessDiscoveryError(
+            f"No cross-language harness exists yet for: {', '.join(unsupported)}. "
+            "Building these is tracked separately (#754 item 2), not by this runner."
+        )
+
     harnesses = []
+    missing = []
+    for lang in expected_languages:
+        path = _HARNESS_PATHS[lang](root_dir)
+        if path.exists():
+            harnesses.append(HarnessConfig(language=lang, executable_path=path))
+        else:
+            missing.append((lang, path))
 
-    # Python harness
-    python_harness = root_dir / "tests" / "cross_language" / "harness_python.py"
-    if python_harness.exists():
-        harnesses.append(
-            HarnessConfig(
-                language="python",
-                executable_path=python_harness,
-            )
-        )
-
-    # Go harness
-    go_harness = root_dir / "agenkit-go" / "tests" / "cross_language_harness"
-    if go_harness.exists():
-        harnesses.append(
-            HarnessConfig(
-                language="go",
-                executable_path=go_harness,
-            )
-        )
-
-    # TypeScript harness (via node)
-    ts_harness = root_dir / "agenkit-ts" / "tests" / "cross_language_harness.js"
-    if ts_harness.exists():
-        harnesses.append(
-            HarnessConfig(
-                language="typescript",
-                executable_path=ts_harness,
-            )
-        )
-
-    # Rust harness
-    rust_harness = root_dir / "agenkit-rust" / "target" / "release" / "cross_language_harness"
-    if rust_harness.exists():
-        harnesses.append(
-            HarnessConfig(
-                language="rust",
-                executable_path=rust_harness,
-            )
-        )
-
-    # C++ harness
-    cpp_harness = root_dir / "agenkit-cpp" / "build" / "cross_language_harness"
-    if cpp_harness.exists():
-        harnesses.append(
-            HarnessConfig(
-                language="cpp",
-                executable_path=cpp_harness,
-            )
-        )
-
-    # Zig harness
-    zig_harness = root_dir / "agenkit-zig" / "zig-out" / "bin" / "cross_language_harness"
-    if zig_harness.exists():
-        harnesses.append(
-            HarnessConfig(
-                language="zig",
-                executable_path=zig_harness,
-            )
+    if missing:
+        details = "; ".join(f"{lang} (expected at {path})" for lang, path in missing)
+        raise HarnessDiscoveryError(
+            f"Harness binary missing for: {details}. Build it first -- see "
+            "tests/cross_language/README.md and each harness_<lang>/README.md."
         )
 
     return harnesses

@@ -1,4 +1,4 @@
-.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins check-release-gate check-docs-facts check-spec-conformance
+.PHONY: help test test-quick test-lint security clean coverage check-artifacts check-version sync-version check-tool-pins check-release-gate check-docs-facts check-spec-conformance build-harnesses test-equivalence
 
 # Default target
 .DEFAULT_GOAL := help
@@ -37,6 +37,12 @@ check-docs-facts: ## Fail if generated docs/parity/*.md or README.md blocks are 
 
 check-spec-conformance: ## Fail if spec-conformance.json is stale vs. a fresh regenerate (#909)
 	@uv run python scripts/parity/spec_conformance.py --check
+
+build-harnesses: ## Build all 5 non-Python cross-language equivalence-test harness binaries (#763)
+	@./scripts/build-cross-language-harnesses.sh
+
+test-equivalence: build-harnesses ## Run the cross-language behavioral-equivalence suite (#763; NOT part of `make test` -- needs 5 toolchains + several minutes)
+	@cd tests/cross_language && uv run python run_equivalence_tests.py
 
 sync-version: ## Rewrite every version declaration from the root VERSION file
 	@python3 scripts/version.py sync

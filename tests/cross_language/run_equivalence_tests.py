@@ -2,16 +2,25 @@
 """
 Cross-language equivalence test runner.
 
-Executes pattern specifications across all 6 languages and validates
-behavioral equivalence.
+Executes pattern specifications across the language harnesses that exist
+(see harness_manager.ALL_KNOWN_LANGUAGES) and validates behavioral
+equivalence.
 """
 
 import argparse
 import json
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
-from harness_manager import HarnessConfig, HarnessManager, TestRequest, discover_harnesses
+from harness_manager import (
+    ALL_KNOWN_LANGUAGES,
+    HarnessConfig,
+    HarnessDiscoveryError,
+    HarnessManager,
+    TestRequest,
+    discover_harnesses,
+)
 from result_comparator import ResultComparator
 from spec_loader import PatternSpec, SpecificationLoader
 
@@ -204,6 +213,13 @@ class EquivalenceTestRunner:
 
         report = {
             "summary": {
+                # A committed report with no timestamp is how the previous
+                # one sat for 6.5 months (dated 2026-01-14, claiming 21/21)
+                # without anything flagging it as stale (#763). This alone
+                # doesn't regenerate it, but a reader -- or a future
+                # staleness check like the one #902 added for the parity
+                # docs -- can now tell.
+                "generated_at": datetime.now(UTC).isoformat(),
                 "total_patterns": total_patterns,
                 "passed_patterns": passed_patterns,
                 "total_scenarios": total_scenarios,
@@ -272,8 +288,16 @@ def main():
     parser.add_argument(
         "--languages",
         nargs="+",
-        choices=["python", "go", "typescript", "rust", "cpp", "zig"],
-        help="Languages to test (default: all available)",
+        # All 9 languages the toolkit ships, not just the 6 with a harness --
+        # this was the third hardcoded 6-language list found in this area
+        # (#763), after expected_languages and MIN_FEATURE_COUNTS in the
+        # parity report (both fixed in #757). Requesting csharp/java/scala is
+        # accepted by the CLI and fails with a specific "no harness exists"
+        # message from discover_harnesses(), not argparse's generic "invalid
+        # choice" -- building those three harnesses is separate work (#754
+        # item 2), out of scope here.
+        choices=list(ALL_KNOWN_LANGUAGES),
+        help="Languages to test (default: every language with a built harness)",
     )
     parser.add_argument(
         "--specs-dir",
@@ -295,20 +319,20 @@ def main():
 
     args = parser.parse_args()
 
-    # Discover harnesses
+    # Discover harnesses. `expected_languages` defaults to every language
+    # with harness code when --languages is omitted, so a missing binary is
+    # a hard failure rather than a silently shrunk fleet -- before #763,
+    # discover_harnesses() was a chain of `if path.exists()` that dropped
+    # absent languages with no signal, and --health-check-only could report
+    # "3 of 6 harnesses found" and still exit 0.
     root_dir = Path(__file__).parent.parent.parent
-    harness_configs = discover_harnesses(root_dir)
-
-    if not harness_configs:
-        print("ERROR: No harnesses found!", file=sys.stderr)
-        print("Please build the harnesses first.", file=sys.stderr)
+    try:
+        harness_configs = discover_harnesses(root_dir, expected_languages=args.languages)
+    except HarnessDiscoveryError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Found {len(harness_configs)} harnesses")
-
-    # Filter to requested languages
-    if args.languages:
-        harness_configs = [h for h in harness_configs if h.language in args.languages]
 
     # Create runner
     runner = EquivalenceTestRunner(

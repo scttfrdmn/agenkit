@@ -450,9 +450,14 @@ async function executeTest(payload: Record<string, unknown>): Promise<Record<str
     const toolCalls: string[] = [];
     const subAgents: string[] = [];
 
-    // ReAct pattern - extract tool calls and calculate turns
-    if (metadata.react_steps) {
-      const reactSteps = metadata.react_steps as Array<Record<string, unknown>>;
+    // ReAct pattern - extract tool calls and calculate turns.
+    // The real core (agenkit-ts/src/patterns/react.ts) puts its step history
+    // under metadata.reasoning (see ReActAgent.formatFinalAnswer), NOT
+    // "react_steps" -- that key belongs to the Python mock harness's own ad
+    // hoc metadata shape. This harness calls the real TS core, so it must
+    // read the real core's key.
+    if (metadata.reasoning) {
+      const reactSteps = metadata.reasoning as Array<Record<string, unknown>>;
       const uniqueTools = new Set<string>();
       for (const step of reactSteps) {
         const action = step.action as string;

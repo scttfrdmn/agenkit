@@ -398,14 +398,6 @@ target_link_libraries(test_mcp agenkit GTest::gtest_main)
 target_include_directories(test_mcp PRIVATE ${CMAKE_SOURCE_DIR}/include)
 add_test(NAME mcp_tests COMMAND test_mcp)
 
-# Cross-language test harness (standalone executable, not a gtest)
-add_executable(cross_language_harness cross_language_harness.cpp)
-target_link_libraries(cross_language_harness nlohmann_json::nlohmann_json)
-# Copy to build directory for easy access
-add_custom_command(TARGET cross_language_harness POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:cross_language_harness> ${CMAKE_BINARY_DIR}/cross_language_harness
-)
-
 # Observability tests (optional, requires OpenTelemetry)
 if(AGENKIT_WITH_OBSERVABILITY)
     add_executable(test_observability_tracing observability/test_tracing.cpp)

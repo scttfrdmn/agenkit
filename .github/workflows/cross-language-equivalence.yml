@@ -1,0 +1,118 @@
+name: Cross-Language Equivalence
+
+# tests/cross_language/run_equivalence_tests.py drives 21 patterns x 101
+# scenarios across every language harness and is the only thing in the repo
+# that verifies real behavioral equivalence between cores, rather than "does
+# it compile" (test.yml's harness-gate) or "does each language have tests"
+# (parity-validation.yml's feature/spec counts). Before #763, nothing ran it
+# at all: not CI, not `make test`, not test-local.sh. Its committed report
+# sat for 6.5 months claiming 21/21 passing while the actual state (checked
+# while fixing #763) was well below that.
+#
+# Deliberately schedule/workflow_dispatch only, NOT push/pull_request:
+#   - It needs five language toolchains built from source (Go, Node, Rust, a
+#     C++ compiler + CMake, Zig) on top of Python -- see
+#     scripts/build-cross-language-harnesses.sh -- which is materially more
+#     expensive than test.yml's harness-gate compile-only check.
+#   - The suite does not pass cleanly yet (multiple harness-quality gaps
+#     found while wiring this up in #763: mock LLMs that don't track
+#     conversation state, metadata key mismatches, unimplemented patterns).
+#     Gating every PR on a suite that is known-red teaches "ignore this
+#     check," which is worse than not running it. This job is a visibility
+#     tool for fixing those gaps incrementally, not a merge gate, until it's
+#     green -- reflecting the issue's own guidance to wire this in "as a
+#     nightly/schedule job... rather than per-PR."
+#
+# Runs on GitHub-hosted runners even on schedule: no secrets are touched, so
+# there is no fork-safety reason to prefer self-hosted, and self-hosted push
+# routing is suspended anyway (#892, #374 -- see CLAUDE.md).
+on:
+  schedule:
+    - cron: "13 7 * * 3" # Wednesdays 07:13 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  equivalence:
+    name: Run equivalence suite (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Python 3.13 + dependencies
+        run: |
+          uv python install 3.13
+          uv sync --extra dev --python 3.13
+
+      - name: Set up Go 1.25
+        uses: actions/setup-go@v7
+        with:
+          go-version: '1.25.12'
+          cache: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Zig
+        uses: mlugg/setup-zig@v2
+        with:
+          # Matches agenkit-zig's build.zig.zon .minimum_zig_version
+          version: 0.16.0
+
+      - name: Install C++ build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake nlohmann-json3-dev
+
+      - name: Build all harnesses
+        run: ./scripts/build-cross-language-harnesses.sh
+
+      # Never blocking (continue-on-error): see the top-of-file rationale.
+      # The step's own exit code is still recorded in the job summary below
+      # so a green run is visible without having to open the log.
+      - name: Run equivalence suite
+        id: run_suite
+        continue-on-error: true
+        working-directory: tests/cross_language
+        run: uv run python run_equivalence_tests.py
+
+      - name: Upload equivalence report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: equivalence-report
+          path: tests/cross_language/equivalence_report.json
+          retention-days: 30
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### Cross-Language Equivalence"
+            echo ""
+            if [ "${{ steps.run_suite.outcome }}" = "success" ]; then
+              echo "All patterns passed -- see the uploaded \`equivalence-report\` artifact."
+            else
+              echo "Suite exited non-zero (outcome: ${{ steps.run_suite.outcome }})."
+              echo "This job is informational, not a merge gate (see workflow header)."
+              echo "Download the \`equivalence-report\` artifact or re-run"
+              echo "\`make test-equivalence\` locally for the per-scenario breakdown."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

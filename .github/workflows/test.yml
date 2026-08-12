@@ -515,8 +515,15 @@ jobs:
   # change breaks them silently. That has already happened twice: #662 (a Go
   # API change, masked by a prebuilt binary) and #686 (harness_rust's committed
   # Cargo.lock stale at otel 0.22 for ~50 releases). Compile-only is the right
-  # depth here — the harnesses are driven by the Python cross-language suite,
-  # which runs locally via `make test`; CI just needs to prove they still build.
+  # depth here — the actual equivalence suite that drives these harnesses
+  # (tests/cross_language/run_equivalence_tests.py) is NOT run by `make test`
+  # or any other per-PR gate; that claim was false when originally written
+  # here and stayed uncorrected for the runner's entire life (#763) — its
+  # tracked report sat 6.5 months stale claiming 21/21 passing while nothing
+  # ran it. It now runs on a schedule via cross-language-equivalence.yml
+  # (informational, not a merge gate — see that workflow's own header for
+  # why) and locally via `make test-equivalence`. This gate just needs to
+  # prove the harnesses still build.
   #
   # Blocking, unlike the lang-smoke test steps: a harness either compiles or it
   # doesn't, so there is no flakiness to absorb.

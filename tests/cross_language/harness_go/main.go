@@ -312,14 +312,17 @@ func executeTest(payload map[string]interface{}) map[string]interface{} {
 	subAgents := []string{}
 
 	if outputMessage.Metadata != nil {
-		// ReAct pattern
-		if reactSteps, ok := outputMessage.Metadata["react_steps"].([]interface{}); ok {
+		// ReAct pattern. The real core (agenkit-go/patterns/react.go) puts
+		// its step history under Metadata["reasoning"], as []ReActStep with
+		// an exported (capitalized) Action field -- NOT "react_steps"/
+		// "action", which is what the Python mock harness's own ad hoc
+		// metadata shape uses. This harness calls the real Go core, so it
+		// must read the real core's key, not the mock's.
+		if reactSteps, ok := outputMessage.Metadata["reasoning"].([]patterns.ReActStep); ok {
 			toolCallsMap := make(map[string]bool)
 			for _, step := range reactSteps {
-				stepMap := step.(map[string]interface{})
-				action := stepMap["action"].(string)
-				if strings.ToLower(action) != "final answer" {
-					toolCallsMap[action] = true
+				if strings.ToLower(step.Action) != "final answer" {
+					toolCallsMap[step.Action] = true
 				}
 			}
 			for tool := range toolCallsMap {

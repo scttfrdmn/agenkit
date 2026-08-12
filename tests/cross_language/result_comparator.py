@@ -65,10 +65,18 @@ class ResultComparator:
         errors = []
         warnings = []
 
+        # `output.get("output", {})` is not enough: a not_implemented/error
+        # response has an explicit `"output": None` key (see harness_manager's
+        # TestResult), so .get's default never fires and the chained .get()
+        # crashed with AttributeError on 'NoneType' -- a validation bug, not a
+        # harness one, that turned "pattern not implemented" into an unhandled
+        # exception instead of a normal (and informative) validation failure.
+        result = output.get("output") or {}
+
         # Validate message content
         if expected.message:
             message_errors = self._validate_message(
-                output.get("output", {}).get("message", {}),
+                result.get("message") or {},
                 expected.message,
             )
             errors.extend(message_errors)
@@ -76,7 +84,7 @@ class ResultComparator:
         # Validate behavior
         if expected.behavior:
             behavior_errors = self._validate_behavior(
-                output.get("output", {}).get("behavior", {}),
+                result.get("behavior") or {},
                 expected.behavior,
             )
             errors.extend(behavior_errors)
@@ -87,7 +95,7 @@ class ResultComparator:
                 errors.append("Expected error but got success")
             # For error scenarios, validate metadata from error details
             elif expected.metadata:
-                error_metadata = output.get("error", {}).get("details", {})
+                error_metadata = (output.get("error") or {}).get("details") or {}
                 metadata_errors = self._validate_metadata(
                     error_metadata,
                     expected.metadata,
@@ -96,7 +104,7 @@ class ResultComparator:
         # For success scenarios, validate metadata from message
         elif expected.metadata:
             metadata_errors = self._validate_metadata(
-                output.get("output", {}).get("message", {}).get("metadata", {}),
+                (result.get("message") or {}).get("metadata") or {},
                 expected.metadata,
             )
             errors.extend(metadata_errors)

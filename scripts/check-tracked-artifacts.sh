@@ -25,10 +25,12 @@
 
 set -euo pipefail
 
-# 4 MB. The largest legitimate tracked file today is
-# tests/cross_language/equivalence_report.json at 0.90 MB, so this leaves real
-# headroom for generated reports and lockfiles while still catching the class of
-# thing that caused #660 (the smallest offender there was 3.0 MB).
+# 4 MB. The largest legitimate tracked file today is uv.lock at ~0.55 MB, so
+# this leaves real headroom for generated reports and lockfiles while still
+# catching the class of thing that caused #660 (the smallest offender there
+# was 3.0 MB). tests/cross_language/equivalence_report.json was the previous
+# largest (0.90 MB) until #763 gitignored it -- a committed result nothing
+# regenerated stayed "accurate" for 6.5 months.
 MAX_MB="${MAX_TRACKED_FILE_MB:-4}"
 max_bytes=$((MAX_MB * 1024 * 1024))
 

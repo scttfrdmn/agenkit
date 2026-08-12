@@ -162,11 +162,7 @@ from orchestration import ReviewOrchestrator
 orchestrator = ReviewOrchestrator(verbose=True)
 
 # Create submission
-submission = CodeSubmission(
-    content=code_string,
-    file_path="example.py",
-    language="python"
-)
+submission = CodeSubmission(content=code_string, file_path="example.py", language="python")
 
 # Execute review
 report = await orchestrator.review_code(submission)
@@ -180,6 +176,7 @@ print(report)
 ```python
 from agenkit import Agent, Message
 from agents.review_types import ReviewResult, CodeIssue, CodeSubmission
+
 
 class DocumentationAgent(Agent):
     @property
@@ -198,7 +195,7 @@ class DocumentationAgent(Agent):
             issues=issues,
             summary=f"Found {len(issues)} documentation issues",
             overall_score=calculate_score(issues),
-            passed=len(issues) == 0
+            passed=len(issues) == 0,
         )
 
         return Message(role="assistant", content=result.summary, metadata={"review_result": result})
@@ -211,16 +208,19 @@ Replace pattern-based checks with real tools:
 ```python
 # pylint integration
 import pylint.lint
+
 run = pylint.lint.Run([filepath], do_exit=False)
 
 # bandit for security
 import bandit
-b_mgr = bandit.core.BanditManager(bandit.core.config.BanditConfig(), 'file')
+
+b_mgr = bandit.core.BanditManager(bandit.core.config.BanditConfig(), "file")
 b_mgr.discover_files([filepath])
 b_mgr.run_tests()
 
 # mypy for type checking
 import mypy.api
+
 result = mypy.api.run([filepath])
 ```
 

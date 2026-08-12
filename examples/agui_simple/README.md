@@ -225,6 +225,7 @@ agent = None
 adapter = None
 formatter = WebSocketMessageFormat()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global agent, adapter  # noqa: PLW0603
@@ -232,20 +233,24 @@ async def lifespan(app: FastAPI):
     adapter = AGUIAdapter(agent, agent_name="MyAgent", chunk_size=20)
     yield
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket):
     await websocket.accept()
     # Send initial metadata
     await websocket.send_text(
-        formatter.format_event({
-            "event_type": "metadata",
-            "data": {
-                "agent_name": "MyAgent",
-                "capabilities": agent.capabilities,
-            },
-        })
+        formatter.format_event(
+            {
+                "event_type": "metadata",
+                "data": {
+                    "agent_name": "MyAgent",
+                    "capabilities": agent.capabilities,
+                },
+            }
+        )
     )
     # Handle messages
     while True:
@@ -648,6 +653,7 @@ async def _analyze_sentiment(self, content: str) -> str:
         return "positive"
     return "neutral"
 
+
 # Use in process() method
 sentiment = await self._analyze_sentiment(content)
 if sentiment == "negative":
@@ -694,19 +700,18 @@ Replace mock data with real API calls:
 def _get_weather_mock(self, location: str) -> dict:
     return {"temp": 72, "condition": "sunny"}
 
+
 # After: Real weather API
 async def _get_weather_real(self, location: str) -> dict:
     import aiohttp
+
     async with aiohttp.ClientSession() as session:
         async with session.get(
             f"https://api.openweathermap.org/data/2.5/weather",
-            params={"q": location, "appid": os.getenv("WEATHER_API_KEY")}
+            params={"q": location, "appid": os.getenv("WEATHER_API_KEY")},
         ) as response:
             data = await response.json()
-            return {
-                "temp": data["main"]["temp"],
-                "condition": data["weather"][0]["description"]
-            }
+            return {"temp": data["main"]["temp"], "condition": data["weather"][0]["description"]}
 ```
 
 ### Adding Authentication
@@ -720,6 +725,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 security = HTTPBearer()
 
+
 async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """Verify JWT token."""
     token = credentials.credentials
@@ -727,6 +733,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
     if not is_valid_token(token):
         raise HTTPException(status_code=401, detail="Invalid token")
     return token
+
 
 @app.websocket("/ws")
 async def ws(websocket: WebSocket, token: str = Depends(verify_token)):
@@ -746,6 +753,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+
 # Use in agent
 async def save_ticket(self, ticket: SupportTicket):
     async with AsyncSessionLocal() as session:
@@ -761,9 +769,11 @@ import redis.asyncio as redis
 
 redis_client = redis.from_url("redis://localhost:6379")
 
+
 # Cache agent responses
 async def get_cached_response(self, query: str) -> str | None:
     return await redis_client.get(f"response:{query}")
+
 
 async def cache_response(self, query: str, response: str):
     await redis_client.setex(f"response:{query}", 3600, response)  # 1 hour TTL
@@ -777,11 +787,13 @@ from celery import Celery
 
 celery_app = Celery("tasks", broker="redis://localhost:6379/0")
 
+
 @celery_app.task
 def process_heavy_task(data: dict):
     """Long-running task executed in background."""
     # Your processing logic here
     return result
+
 
 # Trigger from agent
 async def process(self, message: Message):
@@ -1024,14 +1036,18 @@ async def process(self, message: Message):
 import logging
 import json
 
+
 class JSONFormatter(logging.Formatter):
     def format(self, record):
-        return json.dumps({
-            "timestamp": record.created,
-            "level": record.levelname,
-            "message": record.getMessage(),
-            "module": record.module,
-        })
+        return json.dumps(
+            {
+                "timestamp": record.created,
+                "level": record.levelname,
+                "message": record.getMessage(),
+                "module": record.module,
+            }
+        )
+
 
 handler = logging.StreamHandler()
 handler.setFormatter(JSONFormatter())
@@ -1072,6 +1088,7 @@ Load in app:
 ```python
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     environment: str = "development"
     debug: bool = False
@@ -1081,6 +1098,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+
 
 settings = Settings()
 ```

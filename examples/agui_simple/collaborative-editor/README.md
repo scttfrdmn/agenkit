@@ -239,11 +239,9 @@ def _suggest_improvements(self, document: str, selection: str) -> dict:
 
     # Your custom checks here
     if "custom_pattern" in document:
-        suggestions.append({
-            "type": "custom",
-            "severity": "warning",
-            "message": "Your custom suggestion"
-        })
+        suggestions.append(
+            {"type": "custom", "severity": "warning", "message": "Your custom suggestion"}
+        )
 
     return {"suggestions": suggestions}
 ```
@@ -366,7 +364,7 @@ class DocumentManager:
             edit_record = {
                 "timestamp": datetime.utcnow().isoformat(),
                 "client_id": client_id,
-                "content_length": len(content)
+                "content_length": len(content),
             }
 
             self.edit_history[document_id].append(edit_record)
@@ -377,11 +375,7 @@ class DocumentManager:
 ```python
 async def broadcast_document_update(document_id: str, content: str, exclude_client: str):
     """Send update to all clients except the originator."""
-    update_message = {
-        "type": "document_update",
-        "document_id": document_id,
-        "content": content
-    }
+    update_message = {"type": "document_update", "document_id": document_id, "content": content}
 
     for client_id, websocket in active_connections.items():
         if client_documents.get(client_id) == document_id and client_id != exclude_client:
@@ -406,8 +400,8 @@ async def process(self, message: Message) -> Message:
         metadata={
             "command": command,
             "suggestions": result.get("suggestions", []),
-            "improved_content": result.get("improved_content")
-        }
+            "improved_content": result.get("improved_content"),
+        },
     )
 ```
 
@@ -467,12 +461,10 @@ def _parse_command(self, content: str) -> str:
         return "custom_action"
     # ... existing commands
 
+
 def _custom_action(self, document: str) -> dict:
     # Your custom AI logic
-    return {
-        "improved_content": "...",
-        "custom_data": {...}
-    }
+    return {"improved_content": "...", "custom_data": {...}}
 ```
 
 2. **Add toolbar button** in `frontend/index.html`:

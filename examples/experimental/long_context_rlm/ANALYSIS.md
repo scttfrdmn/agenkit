@@ -164,6 +164,7 @@ async def process_chunks():
     tasks = [llm_query(chunk) for chunk in chunks]
     return await asyncio.gather(*tasks)
 
+
 results = await process_chunks()
 # ```
 ```
@@ -206,7 +207,7 @@ from agenkit.infrastructure.budgeting import BudgetLimiter
 rlm = RecursiveREPLAgent(
     agent=agent,
     max_iterations=20,
-    budget_limiter=BudgetLimiter(max_cost=5.00)  # Stop at $5
+    budget_limiter=BudgetLimiter(max_cost=5.00),  # Stop at $5
 )
 ```
 
@@ -221,6 +222,7 @@ rlm = RecursiveREPLAgent(
 **Improvement**:
 ```python
 from agenkit.prompts import PromptTemplate
+
 
 class RLMPromptBuilder:
     """Build model-specific RLM prompts."""
@@ -275,11 +277,13 @@ traced_rlm = TracingMiddleware(rlm, span_name="rlm-iteration")
 ```python
 from agenkit.patterns import FallbackAgent
 
-rlm_pipeline = FallbackAgent([
-    RecursiveREPLAgent(agent=gpt5, budget=5.00),      # Try RLM first
-    SummarizationAgent(agent=gpt5_mini, budget=0.50),  # Fall back to summarization
-    RAGAgent(agent=gpt5_mini, retriever=bm25),         # Finally try RAG
-])
+rlm_pipeline = FallbackAgent(
+    [
+        RecursiveREPLAgent(agent=gpt5, budget=5.00),  # Try RLM first
+        SummarizationAgent(agent=gpt5_mini, budget=0.50),  # Fall back to summarization
+        RAGAgent(agent=gpt5_mini, retriever=bm25),  # Finally try RAG
+    ]
+)
 ```
 
 **Benefit**: Robustness for production systems.

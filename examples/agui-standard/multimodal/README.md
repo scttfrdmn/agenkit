@@ -238,10 +238,7 @@ message = Message(role="user", content=content.to_list())
 ### Text Content Part
 
 ```python
-{
-    "type": "text",
-    "text": "Hello, world!"
-}
+{"type": "text", "text": "Hello, world!"}
 ```
 
 ### Image URL Content Part
@@ -251,8 +248,8 @@ message = Message(role="user", content=content.to_list())
     "type": "image_url",
     "image_url": {
         "url": "https://example.com/image.jpg",
-        "detail": "auto"  # "auto", "low", or "high"
-    }
+        "detail": "auto",  # "auto", "low", or "high"
+    },
 }
 ```
 
@@ -262,7 +259,7 @@ message = Message(role="user", content=content.to_list())
 {
     "type": "image_base64",
     "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAUA...",
-    "mime_type": "image/png"
+    "mime_type": "image/png",
 }
 ```
 
@@ -273,7 +270,7 @@ message = Message(role="user", content=content.to_list())
     "type": "file_url",
     "file_url": "https://example.com/document.pdf",
     "filename": "report.pdf",  # Optional
-    "mime_type": "application/pdf"  # Optional
+    "mime_type": "application/pdf",  # Optional
 }
 ```
 
@@ -284,7 +281,7 @@ message = Message(role="user", content=content.to_list())
     "type": "file_base64",
     "file_base64": "JVBERi0xLjQKJeLjz9MKMy...",
     "filename": "document.pdf",
-    "mime_type": "application/pdf"
+    "mime_type": "application/pdf",
 }
 ```
 
@@ -294,7 +291,7 @@ message = Message(role="user", content=content.to_list())
 {
     "type": "audio_url",
     "audio_url": "https://example.com/audio.mp3",
-    "duration": 120.5  # Seconds, optional
+    "duration": 120.5,  # Seconds, optional
 }
 ```
 
@@ -305,7 +302,7 @@ message = Message(role="user", content=content.to_list())
     "type": "audio_base64",
     "audio_base64": "UklGRiQAAABXQVZFZm10...",
     "mime_type": "audio/wav",
-    "duration": 2.0  # Seconds, optional
+    "duration": 2.0,  # Seconds, optional
 }
 ```
 
@@ -599,7 +596,7 @@ content.add_image("step3.png")
 content.add_file_url(
     "https://example.com/report.pdf",
     filename="Q4_2025_Financial_Report.pdf",
-    mime_type="application/pdf"
+    mime_type="application/pdf",
 )
 
 # Acceptable: Minimal metadata (auto-detected)

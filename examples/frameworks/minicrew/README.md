@@ -38,12 +38,8 @@ from minicrew import CrewMember, Task, Crew, ProcessType
 
 llm = OpenAILLM()
 
-researcher = CrewMember(
-    agent=llm, role="Researcher", goal="...", backstory="..."
-)
-writer = CrewMember(
-    agent=llm, role="Writer", goal="...", backstory="..."
-)
+researcher = CrewMember(agent=llm, role="Researcher", goal="...", backstory="...")
+writer = CrewMember(agent=llm, role="Writer", goal="...", backstory="...")
 
 tasks = [
     Task(description="Research...", assigned_to="Researcher"),
@@ -69,7 +65,7 @@ researcher = CrewMember(
     agent=openai_agent,
     role="Researcher",
     goal="Gather accurate information and validate sources",
-    backstory="You are an experienced researcher with a keen eye for detail"
+    backstory="You are an experienced researcher with a keen eye for detail",
 )
 ```
 
@@ -100,7 +96,7 @@ A task is:
 crew = Crew(
     members=[researcher, writer, editor],
     tasks=[research, write, edit],
-    process=ProcessType.SEQUENTIAL
+    process=ProcessType.SEQUENTIAL,
 )
 ```
 
@@ -114,7 +110,7 @@ crew = Crew(
     members=[researcher, writer],
     tasks=[research, write],
     process=ProcessType.HIERARCHICAL,
-    manager=manager_agent
+    manager=manager_agent,
 )
 ```
 
@@ -127,7 +123,7 @@ Manager reviews and approves each task output.
 crew = Crew(
     members=[researcher1, researcher2, researcher3],
     tasks=[task_a, task_b, task_c],
-    process=ProcessType.PARALLEL
+    process=ProcessType.PARALLEL,
 )
 ```
 
@@ -175,7 +171,7 @@ crew = Crew(
     members=[researcher, writer],
     tasks=[research, write],
     process=ProcessType.HIERARCHICAL,
-    manager=manager
+    manager=manager,
 )
 
 result = await crew.execute()
@@ -231,7 +227,7 @@ data_analyst = CrewMember(
     agent=llm,
     role="Data Analyst",
     goal="Extract insights from data",
-    backstory="Expert in statistical analysis with 10 years experience"
+    backstory="Expert in statistical analysis with 10 years experience",
 )
 ```
 
@@ -245,7 +241,7 @@ task_b = Task(description="Analyze", assigned_to="Analyst")
 task_c = Task(
     description="Synthesize",
     assigned_to="Writer",
-    dependencies=[task_a.description, task_b.description]
+    dependencies=[task_a.description, task_b.description],
 )
 ```
 
@@ -302,10 +298,12 @@ These patterns are used in production systems. They're not toys.
 ```python
 # CrewAI
 from crewai import Agent
+
 agent = Agent(role="Researcher", goal="...", backstory="...")
 
 # MiniCrew
 from minicrew import CrewMember
+
 member = CrewMember(agent=llm, role="Researcher", goal="...", backstory="...")
 ```
 

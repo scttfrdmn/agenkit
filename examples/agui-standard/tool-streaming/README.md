@@ -70,6 +70,7 @@ Tools can report progress during execution:
 ```python
 from agenkit.protocols.agui import ProgressReporter
 
+
 class MyTool(Tool):
     async def execute(self, progress_reporter: ProgressReporter = None, **kwargs):
         for i in range(10):
@@ -78,8 +79,8 @@ class MyTool(Tool):
             if progress_reporter:
                 progress_reporter.report(
                     progress=(i + 1) / 10,
-                    status=f"Processing step {i+1}/10",
-                    metadata={"current_step": i + 1}
+                    status=f"Processing step {i + 1}/10",
+                    metadata={"current_step": i + 1},
                 )
 ```
 
@@ -259,7 +260,7 @@ class LongRunningTool(Tool):
             if progress_reporter:
                 progress_reporter.report(
                     progress=(i + 1) / total_steps,
-                    status=f"Step {i+1}/{total_steps}",
+                    status=f"Step {i + 1}/{total_steps}",
                 )
 ```
 
@@ -292,8 +293,9 @@ async def execute(self, progress_reporter: ProgressReporter = None, **kwargs):
         await process(item)
         if progress_reporter:
             progress = 0.2 + (0.6 * (i + 1) / len(items))
-            progress_reporter.report(progress, f"Processing {i+1}/{len(items)}",
-                                    {"phase": "process"})
+            progress_reporter.report(
+                progress, f"Processing {i + 1}/{len(items)}", {"phase": "process"}
+            )
 
     # Phase 3: Finalization (80-100%)
     if progress_reporter:
@@ -471,6 +473,7 @@ for i in range(100):
 import pytest
 from agenkit.protocols.agui import ToolCallTracker, ProgressReporter
 
+
 @pytest.mark.asyncio
 async def test_argument_streaming():
     """Test large argument streaming."""
@@ -494,6 +497,7 @@ async def test_argument_streaming():
     # Verify reconstruction
     full_args = "".join(e.delta for e in arg_events)
     assert json.loads(full_args) == large_args
+
 
 @pytest.mark.asyncio
 async def test_progress_reporting():
@@ -577,7 +581,7 @@ reporter.report(
         "chunk": 3,
         "items_processed": 750,
         "errors": 0,
-    }
+    },
 )
 
 # Bad: No metadata

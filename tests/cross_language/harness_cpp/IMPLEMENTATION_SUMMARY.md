@@ -215,10 +215,12 @@ Add discovery for the new harness in `harness_manager.py`:
 # New harness location
 cpp_harness_new = root_dir / "tests" / "cross_language" / "harness_cpp" / "harness_cpp"
 if cpp_harness_new.exists():
-    harnesses.append(HarnessConfig(
-        language="cpp_patterns",  # Different name
-        executable_path=cpp_harness_new,
-    ))
+    harnesses.append(
+        HarnessConfig(
+            language="cpp_patterns",  # Different name
+            executable_path=cpp_harness_new,
+        )
+    )
 ```
 
 **Impact**: Can compare mock-based vs pattern-based implementations side-by-side.

@@ -230,6 +230,7 @@ import asyncio
 from main import ResearchAssistant
 from agents import ResearchConfig
 
+
 async def main():
     # Initialize assistant
     assistant = ResearchAssistant(
@@ -242,9 +243,7 @@ async def main():
     )
 
     # Execute research task
-    result = await assistant.research(
-        "What are the latest developments in quantum computing?"
-    )
+    result = await assistant.research("What are the latest developments in quantum computing?")
 
     # Access results
     print(f"Answer: {result.answer}")
@@ -259,6 +258,7 @@ async def main():
     status = assistant.get_status()
     print(f"Memory entries: {status['memory_summary']['total_memories']}")
     print(f"Tools used: {status['tool_stats']['total_executions']}")
+
 
 asyncio.run(main())
 ```
@@ -278,12 +278,12 @@ The autonomous agent that plans and executes research tasks.
 **Configuration:**
 ```python
 config = ResearchConfig(
-    max_iterations=10,      # Max autonomous steps
-    max_budget=1.0,         # Max cost in dollars
-    max_tool_failures=3,    # Max consecutive tool failures
-    enable_planning=True,   # Create plans before executing
-    enable_reflection=True, # Reflect after each step
-    verbose=True           # Print detailed logs
+    max_iterations=10,  # Max autonomous steps
+    max_budget=1.0,  # Max cost in dollars
+    max_tool_failures=3,  # Max consecutive tool failures
+    enable_planning=True,  # Create plans before executing
+    enable_reflection=True,  # Reflect after each step
+    verbose=True,  # Print detailed logs
 )
 ```
 
@@ -391,10 +391,12 @@ print(f"Total cost: ${stats['total_cost']:.4f}")
 ```python
 from tools import Tool, ToolResult
 
+
 async def my_tool_function(param1: str, param2: int) -> ToolResult:
     # Your tool logic
     result = f"Processed {param1} with {param2}"
     return ToolResult(success=True, output=result)
+
 
 custom_tool = Tool(
     name="my_tool",
@@ -403,13 +405,13 @@ custom_tool = Tool(
         "type": "object",
         "properties": {
             "param1": {"type": "string", "description": "First parameter"},
-            "param2": {"type": "integer", "description": "Second parameter"}
+            "param2": {"type": "integer", "description": "Second parameter"},
         },
-        "required": ["param1"]
+        "required": ["param1"],
     },
     function=my_tool_function,
     cost=0.001,
-    category="custom"
+    category="custom",
 )
 
 registry.register_tool(custom_tool)
@@ -433,12 +435,12 @@ High-level wrapper that orchestrates all components.
 from agents import ResearchConfig
 
 config = ResearchConfig(
-    max_iterations=10,      # Stop after N steps
-    max_budget=1.0,         # Stop when cost exceeds budget
-    max_tool_failures=3,    # Stop after N consecutive tool failures
-    enable_planning=True,   # Whether to create plans
-    enable_reflection=True, # Whether to reflect on progress
-    verbose=True           # Print detailed logs
+    max_iterations=10,  # Stop after N steps
+    max_budget=1.0,  # Stop when cost exceeds budget
+    max_tool_failures=3,  # Stop after N consecutive tool failures
+    enable_planning=True,  # Whether to create plans
+    enable_reflection=True,  # Whether to reflect on progress
+    verbose=True,  # Print detailed logs
 )
 ```
 
@@ -448,8 +450,8 @@ config = ResearchConfig(
 from memory import MemoryStore
 
 memory = MemoryStore(
-    short_term_limit=100,                   # Max short-term memories
-    long_term_consolidation_threshold=0.7   # Importance threshold for promotion
+    short_term_limit=100,  # Max short-term memories
+    long_term_consolidation_threshold=0.7,  # Importance threshold for promotion
 )
 ```
 
@@ -463,7 +465,7 @@ tool = Tool(
     description="...",
     parameters={...},
     function=my_function,
-    cost=0.01  # $0.01 per call
+    cost=0.01,  # $0.01 per call
 )
 ```
 
@@ -514,23 +516,23 @@ tool = Tool(
 ```python
 from tools import Tool, ToolResult
 
+
 async def weather_tool(location: str) -> ToolResult:
     # Call weather API
     weather_data = await get_weather(location)
     return ToolResult(success=True, output=weather_data)
+
 
 weather = Tool(
     name="weather",
     description="Get current weather for a location",
     parameters={
         "type": "object",
-        "properties": {
-            "location": {"type": "string", "description": "City name"}
-        },
-        "required": ["location"]
+        "properties": {"location": {"type": "string", "description": "City name"}},
+        "required": ["location"],
     },
     function=weather_tool,
-    cost=0.001
+    cost=0.001,
 )
 
 assistant.tools.register_tool(weather)
@@ -543,13 +545,14 @@ Replace planning and reasoning with LLM calls:
 ```python
 import openai
 
+
 async def _create_plan_with_llm(self, task: str) -> List[str]:
     response = await openai.ChatCompletion.acreate(
         model="gpt-4",
         messages=[
             {"role": "system", "content": "You are a research planning assistant."},
-            {"role": "user", "content": f"Create a step-by-step plan to answer: {task}"}
-        ]
+            {"role": "user", "content": f"Create a step-by-step plan to answer: {task}"},
+        ],
     )
     plan_text = response.choices[0].message.content
     return plan_text.split("\\n")
@@ -564,19 +567,15 @@ from openai import OpenAI
 
 client = OpenAI()
 
+
 def embed_text(text: str):
-    response = client.embeddings.create(
-        input=text,
-        model="text-embedding-ada-002"
-    )
+    response = client.embeddings.create(input=text, model="text-embedding-ada-002")
     return response.data[0].embedding
+
 
 def search_by_embedding(query_embedding, memories):
     # Cosine similarity search
-    similarities = [
-        cosine_similarity(query_embedding, mem.embedding)
-        for mem in memories
-    ]
+    similarities = [cosine_similarity(query_embedding, mem.embedding) for mem in memories]
     return sorted(zip(memories, similarities), key=lambda x: x[1], reverse=True)
 ```
 

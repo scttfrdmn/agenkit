@@ -195,7 +195,7 @@ cards = copilot.get_active_tools()
     "status": "executing",
     "progress": 0.6,
     "args": {"query": "AI agents"},
-    "result": None
+    "result": None,
 }
 ```
 
@@ -230,6 +230,7 @@ from minicopilotkit import StateHook, CopilotAgent
 
 counter_hook = StateHook("counter", initial_value=0)
 
+
 class CounterAgent(Agent):
     def __init__(self, counter_hook):
         self.counter_hook = counter_hook
@@ -239,6 +240,7 @@ class CounterAgent(Agent):
             current = self.counter_hook.get()
             self.counter_hook.update(current + 1)
         return Message(role="assistant", content="Incremented!")
+
 
 copilot = CopilotAgent(agent, hooks=[counter_hook])
 ```
@@ -285,9 +287,7 @@ class CopilotAgent:
 
         # Create AG-UI adapter
         self.adapter = AGUIAdapter(
-            base_agent,
-            state_manager=self.state_manager,
-            emit_state_snapshots=True
+            base_agent, state_manager=self.state_manager, emit_state_snapshots=True
         )
 ```
 
@@ -337,7 +337,7 @@ class ToolCard:
     tool_name: str
     tool_call_id: str
     status: str = "pending"  # pending, executing, completed, failed
-    progress: float = 0.0    # 0.0 to 1.0
+    progress: float = 0.0  # 0.0 to 1.0
     args: Optional[dict] = None
     result: Optional[Any] = None
 
@@ -349,7 +349,7 @@ class ToolCard:
             "status": self.status,
             "progress": self.progress,
             "args": self.args,
-            "result": self.result
+            "result": self.result,
         }
 ```
 
@@ -473,6 +473,7 @@ class ThemeHook(StateHook):
         else:
             raise ValueError(f"Invalid theme: {theme}")
 
+
 # Use in agent
 theme_hook = ThemeHook("theme", initial_value="light")
 copilot = CopilotAgent(agent, hooks=[theme_hook])
@@ -490,10 +491,7 @@ class DatabaseToolCard(ToolCard):
 
     def to_dict(self):
         data = super().to_dict()
-        data.update({
-            "query": self.query,
-            "rows_affected": self.rows_affected
-        })
+        data.update({"query": self.query, "rows_affected": self.rows_affected})
         return data
 ```
 

@@ -308,12 +308,9 @@ class ProcessingTask(Enum):
     THUMBNAIL = "thumbnail"
     CUSTOM_FILTER = "custom_filter"  # New task
 
+
 # Use in jobs
-job = ImageJob(
-    job_id="test",
-    image_path="/images/test.jpg",
-    tasks=[ProcessingTask.CUSTOM_FILTER]
-)
+job = ImageJob(job_id="test", image_path="/images/test.jpg", tasks=[ProcessingTask.CUSTOM_FILTER])
 ```
 
 ### Add Python Worker (for ML tasks)
@@ -324,6 +321,7 @@ class MLAnalysisWorker(Agent):
         # Use Python ML libraries (PyTorch, TensorFlow, etc.)
         result = self.ml_model.predict(image)
         return Message(role="agent", content="analyzed", metadata=result)
+
 
 # Register with orchestrator
 orchestrator.add_python_worker(MLAnalysisWorker())
@@ -360,16 +358,16 @@ View traces in Jaeger UI to see:
 Track key metrics:
 ```python
 # Python orchestrator metrics
-- jobs_processed_total
-- jobs_processing_duration_seconds
-- worker_requests_total
-- worker_request_duration_seconds
+-jobs_processed_total
+-jobs_processing_duration_seconds
+-worker_requests_total
+-worker_request_duration_seconds
 
 # Go worker metrics
-- tasks_processed_total
-- tasks_processing_duration_seconds
-- memory_usage_bytes
-- goroutines_count
+-tasks_processed_total
+-tasks_processing_duration_seconds
+-memory_usage_bytes
+-goroutines_count
 ```
 
 ## Best Practices

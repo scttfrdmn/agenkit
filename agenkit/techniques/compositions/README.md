@@ -50,11 +50,11 @@ Both are valuable! Compositions are perfect for prototyping and simple use cases
 ```python
 HumanInLoopAgent(
     agent=base_agent,
-    approval_fn=custom_approval,      # Configurable
-    confidence_threshold=0.7,          # When to ask
-    timeout=60,                        # Response timeout
-    max_retries=3,                     # Retry on failure
-    audit_trail=True                   # Track all approvals
+    approval_fn=custom_approval,  # Configurable
+    confidence_threshold=0.7,  # When to ask
+    timeout=60,  # Response timeout
+    max_retries=3,  # Retry on failure
+    audit_trail=True,  # Track all approvals
 )
 ```
 
@@ -73,7 +73,7 @@ HumanInLoopAgent(
 class SimpleApprovalTool(Tool):
     async def execute(self, action: str) -> dict:
         response = input(f"Approve {action}? (y/n): ")
-        return {"approved": response == 'y'}
+        return {"approved": response == "y"}
 ```
 
 **Both are valuable!** Use the composition for quick prototypes, the pattern for production.
@@ -98,7 +98,7 @@ ReflectionAgent(
     max_iterations=5,
     quality_threshold=0.8,
     improvement_threshold=0.05,
-    critique_format="structured"
+    critique_format="structured",
 )
 ```
 
@@ -268,15 +268,9 @@ if result["approved"]:
 from agenkit.techniques.compositions import SimpleRAG
 
 # Basic RAG in 15 lines
-rag = SimpleRAG(
-    retriever=vector_store,
-    answerer=llm_agent
-)
+rag = SimpleRAG(retriever=vector_store, answerer=llm_agent)
 
-answer = await rag.process(Message(
-    role="user",
-    content="What is quantum computing?"
-))
+answer = await rag.process(Message(role="user", content="What is quantum computing?"))
 ```
 
 ### RAG with Citations
@@ -285,10 +279,7 @@ answer = await rag.process(Message(
 from agenkit.techniques.compositions import CitedRAG
 
 # High-fidelity RAG with source tracking
-rag = CitedRAG(
-    retriever=vector_store,
-    answerer=llm_agent
-)
+rag = CitedRAG(retriever=vector_store, answerer=llm_agent)
 
 answer = await rag.process(Message(content="Medical question"))
 
@@ -303,11 +294,7 @@ citations = answer.metadata["citations"]  # [1], [2], etc.
 from agenkit.techniques.compositions import ContextOptimizer
 
 # Reduce tokens for cost optimization
-optimizer = ContextOptimizer(
-    agent=base_agent,
-    summarizer=summary_agent,
-    max_tokens=4000
-)
+optimizer = ContextOptimizer(agent=base_agent, summarizer=summary_agent, max_tokens=4000)
 
 answer = await optimizer.process(long_context_message)
 print(f"Saved {answer.metadata['compression_ratio']}x tokens")

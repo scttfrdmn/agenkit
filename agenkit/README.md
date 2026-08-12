@@ -35,6 +35,7 @@ pip install agenkit[all]
 ```python
 from agenkit import Agent, Message
 
+
 class EchoAgent(Agent):
     @property
     def name(self) -> str:
@@ -45,13 +46,11 @@ class EchoAgent(Agent):
         return ["echo", "simple"]
 
     async def process(self, message: Message) -> Message:
-        return Message(
-            role="assistant",
-            content=f"Echo: {message.content}"
-        )
+        return Message(role="assistant", content=f"Echo: {message.content}")
 
     def introspect(self) -> IntrospectionResult:
         return default_introspection_result(self)
+
 
 # Use it
 agent = EchoAgent()
@@ -63,11 +62,7 @@ print(response.content)  # "Echo: Hello!"
 
 ```python
 from agenkit import Agent, Message
-from agenkit.middleware import (
-    RetryMiddleware,
-    CircuitBreakerMiddleware,
-    TimeoutMiddleware
-)
+from agenkit.middleware import RetryMiddleware, CircuitBreakerMiddleware, TimeoutMiddleware
 
 # Create agent
 agent = MyAgent()
@@ -89,11 +84,7 @@ response = await agent.process(message)
 from agenkit.patterns import SequentialAgent
 
 # Data flows: Agent1 → Agent2 → Agent3
-pipeline = SequentialAgent([
-    DataExtractionAgent(),
-    AnalysisAgent(),
-    ReportGenerationAgent()
-])
+pipeline = SequentialAgent([DataExtractionAgent(), AnalysisAgent(), ReportGenerationAgent()])
 
 result = await pipeline.process(message)
 ```
@@ -104,11 +95,9 @@ result = await pipeline.process(message)
 from agenkit.patterns import ParallelAgent
 
 # Execute multiple agents concurrently
-parallel = ParallelAgent([
-    SentimentAnalysisAgent(),
-    EntityExtractionAgent(),
-    TopicClassificationAgent()
-])
+parallel = ParallelAgent(
+    [SentimentAnalysisAgent(), EntityExtractionAgent(), TopicClassificationAgent()]
+)
 
 result = await parallel.process(message)
 # Results are automatically aggregated
@@ -124,7 +113,7 @@ from agenkit.adapters import AnthropicAdapter
 agent = ConversationalAgent(
     llm=AnthropicAdapter(api_key="..."),
     system_prompt="You are a helpful assistant.",
-    max_history=10
+    max_history=10,
 )
 
 response1 = await agent.process(Message(content="What's the capital of France?"))
@@ -136,6 +125,7 @@ response2 = await agent.process(Message(content="What's its population?"))
 
 ```python
 from agenkit.patterns import ReActAgent, Tool
+
 
 class CalculatorTool(Tool):
     def name(self) -> str:
@@ -149,12 +139,9 @@ class CalculatorTool(Tool):
         result = eval(expr)  # In production, use a safe evaluator
         return ToolResult(success=True, data=result)
 
+
 # ReAct agent with tools
-agent = ReActAgent(
-    llm=my_llm,
-    tools=[CalculatorTool(), WebSearchTool()],
-    max_iterations=5
-)
+agent = ReActAgent(llm=my_llm, tools=[CalculatorTool(), WebSearchTool()], max_iterations=5)
 
 result = await agent.process(Message(content="What is 15% of 200?"))
 ```
@@ -168,9 +155,7 @@ from agenkit.techniques.reasoning import ChainOfThought
 
 # Step-by-step reasoning
 cot = ChainOfThought(
-    llm=my_llm,
-    prompt_template="Let's solve this step by step:\n{query}",
-    max_steps=5
+    llm=my_llm, prompt_template="Let's solve this step by step:\n{query}", max_steps=5
 )
 
 result = await cot.process(Message(content="What is 15 * 24?"))
@@ -189,12 +174,12 @@ tot = TreeOfThought(
     branching_factor=3,
     max_depth=4,
     strategy=SearchStrategy.BEST_FIRST,
-    evaluator=lambda text: quality_score(text)
+    evaluator=lambda text: quality_score(text),
 )
 
 result = await tot.process(message)
 print(result.metadata["reasoning_path"])  # Best path through tree
-print(result.metadata["best_score"])       # 0.95
+print(result.metadata["best_score"])  # 0.95
 ```
 
 #### Self-Consistency
@@ -203,15 +188,11 @@ print(result.metadata["best_score"])       # 0.95
 from agenkit.techniques.reasoning import SelfConsistency
 
 # Generate multiple reasoning paths and vote
-sc = SelfConsistency(
-    agent=my_cot_agent,
-    num_samples=7,
-    voting_strategy="majority"
-)
+sc = SelfConsistency(agent=my_cot_agent, num_samples=7, voting_strategy="majority")
 
 result = await sc.process(message)
 print(result.metadata["consistency_score"])  # 0.85
-print(result.metadata["answer_counts"])      # {"42": 5, "40": 2}
+print(result.metadata["answer_counts"])  # {"42": 5, "40": 2}
 ```
 
 ### Observability
@@ -240,10 +221,7 @@ agent = recorder.wrap(agent)
 
 # Run benchmarks
 runner = BenchmarkRunner()
-results = await runner.run_benchmark(
-    agent=agent,
-    test_cases=my_test_cases
-)
+results = await runner.run_benchmark(agent=agent, test_cases=my_test_cases)
 
 print(f"Success rate: {results.success_rate}")
 print(f"Avg latency: {results.avg_latency_ms}ms")

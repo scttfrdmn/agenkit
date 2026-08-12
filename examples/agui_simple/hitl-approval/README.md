@@ -144,7 +144,7 @@ adapter = AGUIHumanInLoopAdapter(
     trading_agent,
     bidirectional=True,
     approval_threshold=0.8,  # Adjust confidence threshold
-    timeout=300.0,           # Timeout in seconds
+    timeout=300.0,  # Timeout in seconds
 )
 ```
 

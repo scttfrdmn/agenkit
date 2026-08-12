@@ -501,8 +501,8 @@ agenkit_error_class_total{class="rate_limit"}
 ```python
 LoadBalancerConfig(
     health_check_interval_ms=5000,  # More frequent = faster failure detection
-    health_check_timeout_ms=2000,   # Lower = faster marking unhealthy
-    max_retries_per_backend=2,      # Higher = more fault tolerance
+    health_check_timeout_ms=2000,  # Lower = faster marking unhealthy
+    max_retries_per_backend=2,  # Higher = more fault tolerance
 )
 ```
 
@@ -546,9 +546,9 @@ EnhancedRetryConfig(
 **Fast failure detection**:
 ```python
 HealthCheckConfig(
-    liveness_interval_ms=5000,      # Check every 5s
-    liveness_failure_threshold=2,   # Mark dead after 10s
-    readiness_interval_ms=2000,     # Check every 2s
+    liveness_interval_ms=5000,  # Check every 5s
+    liveness_failure_threshold=2,  # Mark dead after 10s
+    readiness_interval_ms=2000,  # Check every 2s
     readiness_failure_threshold=3,  # Remove after 6s
 )
 ```
@@ -556,9 +556,9 @@ HealthCheckConfig(
 **Stable (avoid flapping)**:
 ```python
 HealthCheckConfig(
-    liveness_interval_ms=30000,     # Check every 30s
-    liveness_failure_threshold=5,   # Mark dead after 2.5min
-    readiness_interval_ms=10000,    # Check every 10s
+    liveness_interval_ms=30000,  # Check every 30s
+    liveness_failure_threshold=5,  # Mark dead after 2.5min
+    readiness_interval_ms=10000,  # Check every 10s
     readiness_failure_threshold=3,  # Remove after 30s
 )
 ```

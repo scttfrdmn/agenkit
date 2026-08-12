@@ -238,16 +238,13 @@ from openai import OpenAI
 
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
+
 class OpenAILLM:
     async def process(self, message: Message) -> Message:
         response = await client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": message.content}]
+            model="gpt-4", messages=[{"role": "user", "content": message.content}]
         )
-        return Message(
-            role="assistant",
-            content=response.choices[0].message.content
-        )
+        return Message(role="assistant", content=response.choices[0].message.content)
 ```
 
 **Go:**

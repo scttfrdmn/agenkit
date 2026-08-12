@@ -97,10 +97,9 @@ agent = MyLLMAgent()
 agent_with_context = AgentsMdMiddleware(agent, project_root=".")
 
 # Agent now has project context automatically
-response = await agent_with_context.process(Message(
-    role="user",
-    content="Write a function following our code style"
-))
+response = await agent_with_context.process(
+    Message(role="user", content="Write a function following our code style")
+)
 ```
 
 ### 3. Parse Manually (Optional)
@@ -134,6 +133,7 @@ doc = parse_agents_md("./AGENTS.md")
 
 # Find all AGENTS.md in hierarchy
 from agenkit.agents_md import find_agents_md_hierarchy
+
 hierarchy = find_agents_md_hierarchy(".")
 ```
 

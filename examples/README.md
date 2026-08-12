@@ -773,7 +773,9 @@ Features:
 Usage:
     python example_name.py
 """
+
 from agenkit import Agent, Message
+
 
 class YourAgent(Agent):
     @property
@@ -784,14 +786,17 @@ class YourAgent(Agent):
         # Your implementation
         return Message(role="assistant", content="response")
 
+
 # Example usage
 async def main():
     agent = YourAgent()
     response = await agent.process(Message(role="user", content="test"))
     print(response.content)
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())
 ```
 

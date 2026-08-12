@@ -126,16 +126,14 @@ from research_assistant import ResearchCoordinator
 
 # Initialize coordinator
 coordinator = ResearchCoordinator(
-    num_researchers=3,
-    consensus_threshold=0.67,
-    max_reflection_rounds=3
+    num_researchers=3, consensus_threshold=0.67, max_reflection_rounds=3
 )
 
 # Run research
 report = await coordinator.research(
     topic="quantum computing applications",
     depth="comprehensive",  # shallow, moderate, comprehensive
-    format="markdown"       # markdown, html, json
+    format="markdown",  # markdown, html, json
 )
 
 print(report.content)

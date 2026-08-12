@@ -44,10 +44,10 @@ from agenkit import Agent, Message, Tool
 
 # Everything else is patterns built ON TOP:
 from agenkit.patterns import (
-    SequentialAgent,      # Chain agents together
-    RouterAgent,          # Conditional routing
+    SequentialAgent,  # Chain agents together
+    RouterAgent,  # Conditional routing
     ConversationalAgent,  # Conversation memory
-    ReActAgent,           # Tool-using agent
+    ReActAgent,  # Tool-using agent
     # ... 11+ patterns total
 )
 ```
@@ -172,21 +172,19 @@ researcher = CrewAgent(
     role="Market Researcher",
     goal="Uncover cutting-edge AI developments",
     backstory="Seasoned researcher with a knack for trends",
-    llm=llm
+    llm=llm,
 )
 
 # CrewAI-style task assignment
 research_task = CrewTask(
-    description="Research latest AI trends",
-    agent=researcher,
-    expected_output="Bullet-point report"
+    description="Research latest AI trends", agent=researcher, expected_output="Bullet-point report"
 )
 
 # CrewAI-style crew orchestration
 crew = Crew(
     agents=[researcher, analyst, writer],
     tasks=[research_task, analysis_task, writing_task],
-    process="sequential"  # or "parallel"
+    process="sequential",  # or "parallel"
 )
 
 result = await crew.kickoff()
@@ -251,25 +249,17 @@ Demonstrates how AutoGen's conversational multi-agent patterns map to Agenkit.
 from miniautogen import ConversableAgent, AssistantAgent, GroupChat, GroupChatManager
 
 # AutoGen-style conversational agents
-assistant = AssistantAgent(
-    name="assistant",
-    llm=llm
-)
+assistant = AssistantAgent(name="assistant", llm=llm)
 
 # AutoGen-style group chat
-researcher = AssistantAgent(name="researcher", llm=llm,
-                           system_message="You are a researcher.")
-analyst = AssistantAgent(name="analyst", llm=llm,
-                        system_message="You are an analyst.")
+researcher = AssistantAgent(name="researcher", llm=llm, system_message="You are a researcher.")
+analyst = AssistantAgent(name="analyst", llm=llm, system_message="You are an analyst.")
 
-group_chat = GroupChat(
-    agents=[researcher, analyst],
-    max_round=10
-)
+group_chat = GroupChat(agents=[researcher, analyst], max_round=10)
 
 manager = GroupChatManager(
     groupchat=group_chat,
-    selector="round_robin"  # or "auto"
+    selector="round_robin",  # or "auto"
 )
 
 result = await manager.process(message)
@@ -340,9 +330,9 @@ document_store.write_documents([...])
 
 pipeline = Pipeline()
 pipeline.add_component("retriever", Retriever(document_store))
-pipeline.add_component("prompt_builder", PromptBuilder(
-    template="Context: {{input}}\n\nAnswer the question."
-))
+pipeline.add_component(
+    "prompt_builder", PromptBuilder(template="Context: {{input}}\n\nAnswer the question.")
+)
 pipeline.add_component("generator", Generator(llm=llm))
 
 # Run RAG pipeline
@@ -406,17 +396,14 @@ Demonstrates how HuggingFace Smolagents' lightweight tool-using patterns map to 
 from minismolagents import ToolCallingAgent, CodeAgent, tool
 
 # Tool-calling agent (like Smolagents)
-agent = ToolCallingAgent(
-    llm=llm,
-    tools=[search_tool, calculator_tool],
-    max_iterations=5
-)
+agent = ToolCallingAgent(llm=llm, tools=[search_tool, calculator_tool], max_iterations=5)
 
 # Code generation agent
 code_agent = CodeAgent(
     llm=llm,
-    tools=[...]  # Converted to code functions
+    tools=[...],  # Converted to code functions
 )
+
 
 # @tool decorator (same as Smolagents!)
 @tool
@@ -598,6 +585,7 @@ assert result.content == "Hello"
 ```python
 # Develop in Python
 from agenkit.patterns import SequentialAgent
+
 pipeline = SequentialAgent([agent1, agent2, agent3])
 ```
 
@@ -616,6 +604,7 @@ Same logic, 18x performance boost. **No framework can do this.**
 router = RouterAgent(config)  # Conditional routing
 sequential = SequentialAgent([...])  # Pipeline
 parallel = ParallelAgent([...])  # Ensemble
+
 
 # Combine them
 class CustomOrchestrator(Agent):
@@ -843,6 +832,7 @@ def test_my_chain():
     chain = MyChain(agents)
     result = await chain.run(input)
 
+
 # ✅ Do: Test agent behavior
 def test_agent_logic():
     agent = MyAgent(llm=mock_llm)
@@ -896,6 +886,7 @@ async def translate(text: str, language: str) -> str:
 crew = Crew(agents, tasks)
 result1 = crew.kickoff()
 result2 = crew.kickoff()  # Different result? Why?
+
 
 # ✅ Explicit state
 class StatefulCrew:
@@ -1000,7 +991,7 @@ config = RouterConfig(
         "billing": BillingAgent(llm),
         "technical": TechAgent(llm),
         "account": AccountAgent(llm),
-    }
+    },
 )
 
 router = RouterAgent(config)

@@ -121,11 +121,7 @@ This example implements an AI-powered code review system that uses multiple spec
 ### Debate Pattern
 ```python
 # Multiple agents argue their perspectives
-reviewers = [
-    SecurityReviewer(),
-    PerformanceReviewer(),
-    MaintainabilityReviewer()
-]
+reviewers = [SecurityReviewer(), PerformanceReviewer(), MaintainabilityReviewer()]
 
 # Round 1: Initial reviews
 initial_reviews = await gather(*[r.review(code) for r in reviewers])
@@ -165,7 +161,7 @@ linters = {
     ],
     "go": [
         agentAsTool(GolangCILintAgent(), "golangci-lint", "Go linter"),
-    ]
+    ],
 }
 
 # Supervisor coordinates linters
@@ -212,7 +208,7 @@ review = await coordinator.review_code(
         "file_path": "src/main.py",
         "diff": git_diff,
         "pr_number": 123,
-    }
+    },
 )
 
 # Check decision

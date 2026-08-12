@@ -216,12 +216,9 @@ state_manager.remove("/temp_data")
 Best for: User profiles, complex settings
 
 ```python
-state_manager = StateManager({
-    "user": {
-        "profile": {"name": "Alice", "age": 30},
-        "settings": {"theme": "dark"}
-    }
-})
+state_manager = StateManager(
+    {"user": {"profile": {"name": "Alice", "age": 30}, "settings": {"theme": "dark"}}}
+)
 
 # Update nested
 state_manager.update("/user/profile/name", "Bob")
@@ -252,9 +249,7 @@ Best for: Real-time collaboration, user preferences
 agent.state_manager.update("/preferences/theme", "dark")
 
 # Frontend sends changes
-frontend_patch = [
-    {"op": "replace", "path": "/preferences/language", "value": "es"}
-]
+frontend_patch = [{"op": "replace", "path": "/preferences/language", "value": "es"}]
 agent.state_manager.apply_patch(frontend_patch)
 
 # Both sides stay synchronized
@@ -336,6 +331,7 @@ eventSource.addEventListener('state_delta', (event) => {
 import pytest
 from agenkit.protocols.agui import StateManager
 
+
 def test_state_updates():
     manager = StateManager({"count": 0})
 
@@ -347,6 +343,7 @@ def test_state_updates():
     assert delta.delta[0]["op"] == "replace"
     assert delta.delta[0]["path"] == "/count"
     assert delta.delta[0]["value"] == 5
+
 
 def test_no_change_no_delta():
     manager = StateManager({"count": 5})
@@ -368,8 +365,7 @@ async def test_state_in_streaming():
 
     events = []
     async for event in adapter.stream_events(
-        Message(role="user", content="increment"),
-        thread_id="test"
+        Message(role="user", content="increment"), thread_id="test"
     ):
         events.append(event)
 
@@ -426,11 +422,9 @@ else:
 
 ```python
 # Good: Set initial state upfront
-state_manager = StateManager(initial_state={
-    "count": 0,
-    "items": [],
-    "settings": {"theme": "light"}
-})
+state_manager = StateManager(
+    initial_state={"count": 0, "items": [], "settings": {"theme": "light"}}
+)
 
 # Bad: Add fields incrementally (creates many operations)
 state_manager = StateManager({})
@@ -459,6 +453,7 @@ yield state_manager.get_delta_event()  # 1 operation
 ```python
 # Good: Clear, semantic paths
 "/conversation/message_count"
+
 "/user/preferences/theme"
 "/todos/0/completed"
 

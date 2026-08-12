@@ -71,7 +71,7 @@ Every component is a `Chain` with:
 chain = LLMChain(
     agent=openai_agent,
     prompt_template="Summarize this: {text}",
-    system_message="You are a helpful assistant"
+    system_message="You are a helpful assistant",
 )
 
 result = await chain.invoke({"text": "..."})
@@ -88,7 +88,7 @@ result = await chain.invoke({"text": "..."})
 chat = ConversationChain(
     agent=openai_agent,
     system_message="You are a coding tutor",
-    max_history=10  # Context window management
+    max_history=10,  # Context window management
 )
 
 # Multi-turn conversation
@@ -124,10 +124,7 @@ result = await pipeline.invoke({"topic": "AI"})
 
 ```python
 # Simple LLM call
-chain = LLMChain(
-    agent=llm,
-    prompt_template="Explain {topic} in one sentence"
-)
+chain = LLMChain(agent=llm, prompt_template="Explain {topic} in one sentence")
 result = await chain.invoke({"topic": "quantum computing"})
 
 # With transformations
@@ -166,11 +163,7 @@ result = await pipeline.invoke({"topic": "AI"})
 ### Example 3: Conversation Chain ([03_conversation_chain.py](03_conversation_chain.py))
 
 ```python
-chat = ConversationChain(
-    agent=llm,
-    system_message="You are a coding tutor",
-    max_history=10
-)
+chat = ConversationChain(agent=llm, system_message="You are a coding tutor", max_history=10)
 
 # Multi-turn with memory
 await chat.invoke("Explain variables")
@@ -225,10 +218,12 @@ These patterns are used in production systems. They're not toys.
 ```python
 # LangChain
 from langchain.chains import LLMChain
+
 chain = LLMChain(llm=llm, prompt=prompt)
 
 # MiniChain
 from minichain import LLMChain
+
 chain = LLMChain(agent=agent, prompt_template="...")
 ```
 
@@ -243,6 +238,7 @@ chain = ConversationChain(llm=llm, memory=memory)
 
 # MiniChain
 from minichain import ConversationChain
+
 chain = ConversationChain(agent=agent, max_history=10)
 ```
 

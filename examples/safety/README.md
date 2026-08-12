@@ -117,10 +117,7 @@ agent = OutputValidationMiddleware(agent, auto_redact=True)
 Use permissions to control what resources agents can access:
 
 ```python
-sandbox = Sandbox(
-    allowed_paths={"/app/data"},
-    allowed_commands={"ls", "cat", "grep"}
-)
+sandbox = Sandbox(allowed_paths={"/app/data"}, allowed_commands={"ls", "cat", "grep"})
 agent = PermissionMiddleware(base_agent, role=Role.USER, sandbox=sandbox)
 ```
 

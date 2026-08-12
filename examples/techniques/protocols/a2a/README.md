@@ -147,7 +147,7 @@ Every A2A message contains:
     "content": {"key": "value"},
     "metadata": {},
     "correlation_id": "parent-message-id",
-    "timestamp": "2024-01-01T00:00:00Z"
+    "timestamp": "2024-01-01T00:00:00Z",
 }
 ```
 
@@ -178,10 +178,7 @@ from agenkit.techniques.protocols.a2a import create_request, A2AServer
 
 # Client sends request
 request = create_request(
-    from_agent="client-001",
-    to_agent="server-001",
-    action="process",
-    content={"text": "Hello"}
+    from_agent="client-001", to_agent="server-001", action="process", content={"text": "Hello"}
 )
 
 # Server processes
@@ -201,9 +198,7 @@ agents = await discovery.discover("summarization")
 
 # Send to discovered agent
 response = await client.send_to_agent(
-    to_agent=agents[0].agent_id,
-    action="process",
-    content={"text": "Document..."}
+    to_agent=agents[0].agent_id, action="process", content={"text": "Document..."}
 )
 ```
 
@@ -213,6 +208,7 @@ response = await client.send_to_agent(
 from agenkit.techniques.protocols.a2a import A2AAgent
 
 agent = A2AAgent(agent_id="custom-001", capabilities=["data"])
+
 
 @agent.on_action("store")
 async def handle_store(message):
@@ -226,11 +222,7 @@ async def handle_store(message):
 from agenkit.techniques.protocols.a2a import create_vertex_agent
 
 # Vertex AI
-adapter = create_vertex_agent(
-    agent=my_agent,
-    project_id="my-project",
-    location="us-central1"
-)
+adapter = create_vertex_agent(agent=my_agent, project_id="my-project", location="us-central1")
 await adapter.deploy(port=8080)
 ```
 
@@ -238,10 +230,7 @@ await adapter.deploy(port=8080)
 from agenkit.techniques.protocols.a2a import create_bedrock_agent
 
 # AWS Bedrock
-adapter = create_bedrock_agent(
-    agent=my_agent,
-    region="us-east-1"
-)
+adapter = create_bedrock_agent(agent=my_agent, region="us-east-1")
 await adapter.deploy(port=8080)
 ```
 

@@ -128,16 +128,13 @@ import openai
 
 openai.api_key = os.environ["OPENAI_API_KEY"]
 
+
 class OpenAILLM:
     async def process(self, message: Message) -> Message:
         response = await openai.ChatCompletion.acreate(
-            model="gpt-4",
-            messages=[{"role": "user", "content": message.content}]
+            model="gpt-4", messages=[{"role": "user", "content": message.content}]
         )
-        return Message(
-            role="assistant",
-            content=response.choices[0].message.content
-        )
+        return Message(role="assistant", content=response.choices[0].message.content)
 ```
 
 #### AWS Bedrock
@@ -145,16 +142,16 @@ class OpenAILLM:
 ```python
 import boto3
 
-bedrock = boto3.client('bedrock-runtime')
+bedrock = boto3.client("bedrock-runtime")
+
 
 class BedrockLLM:
     async def process(self, message: Message) -> Message:
         response = bedrock.invoke_model(
-            modelId='anthropic.claude-3-sonnet',
-            body=json.dumps({
-                "messages": [{"role": "user", "content": message.content}],
-                "max_tokens": 1024
-            })
+            modelId="anthropic.claude-3-sonnet",
+            body=json.dumps(
+                {"messages": [{"role": "user", "content": message.content}], "max_tokens": 1024}
+            ),
         )
         # Parse and return response
 ```
@@ -221,6 +218,7 @@ import httpx
 
 http_client = httpx.AsyncClient()
 
+
 def lambda_handler(event, context):
     # Reuse http_client
     ...
@@ -286,13 +284,15 @@ Use AWS Secrets Manager for API keys:
 ```python
 import boto3
 
-secrets_client = boto3.client('secretsmanager')
+secrets_client = boto3.client("secretsmanager")
+
 
 def get_secret(secret_name):
     response = secrets_client.get_secret_value(SecretId=secret_name)
-    return json.loads(response['SecretString'])
+    return json.loads(response["SecretString"])
 
-OPENAI_API_KEY = get_secret('prod/openai/api_key')['api_key']
+
+OPENAI_API_KEY = get_secret("prod/openai/api_key")["api_key"]
 ```
 
 ## Troubleshooting

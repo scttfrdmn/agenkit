@@ -149,6 +149,7 @@ Each language should have tests that:
 import json
 from pathlib import Path
 
+
 def test_message_serialization():
     fixtures = json.loads(Path("tests/cross_language/fixtures/messages.json").read_text())
 

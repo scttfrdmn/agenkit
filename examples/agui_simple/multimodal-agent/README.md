@@ -280,11 +280,7 @@ async def _process_image(self, query: str, metadata: dict):
     image_format = metadata.get("image_format")
 
     # Simulate analysis
-    analysis = {
-        "description": "...",
-        "objects_detected": [...],
-        "dominant_colors": [...]
-    }
+    analysis = {"description": "...", "objects_detected": [...], "dominant_colors": [...]}
 
     return {"type": "image", "analysis": analysis}
 ```

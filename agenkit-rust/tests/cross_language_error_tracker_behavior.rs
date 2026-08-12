@@ -67,8 +67,8 @@ fn build_steps(test_case: &ErrorTrackerTestCase) -> Vec<bool> {
         .as_ref()
         .expect("test case must have steps or steps_spec");
     let mut steps = Vec::with_capacity(spec.fail + spec.success);
-    steps.extend(std::iter::repeat(false).take(spec.fail));
-    steps.extend(std::iter::repeat(true).take(spec.success));
+    steps.extend(std::iter::repeat_n(false, spec.fail));
+    steps.extend(std::iter::repeat_n(true, spec.success));
     steps
 }
 

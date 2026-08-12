@@ -359,19 +359,12 @@ class HarnessDiscoveryError(RuntimeError):
 _HARNESS_PATHS: dict[str, Callable[[Path], Path]] = {
     "python": lambda root: root / "tests" / "cross_language" / "harness_python.py",
     "go": lambda root: root / "tests" / "cross_language" / "harness_go" / "harness_go",
-    "typescript": lambda root: root
-    / "tests"
-    / "cross_language"
-    / "harness_ts"
-    / "dist"
-    / "index.js",
-    "rust": lambda root: root
-    / "tests"
-    / "cross_language"
-    / "harness_rust"
-    / "target"
-    / "release"
-    / "harness_rust",
+    "typescript": lambda root: (
+        root / "tests" / "cross_language" / "harness_ts" / "dist" / "index.js"
+    ),
+    "rust": lambda root: (
+        root / "tests" / "cross_language" / "harness_rust" / "target" / "release" / "harness_rust"
+    ),
     "cpp": lambda root: root / "tests" / "cross_language" / "harness_cpp" / "build" / "harness_cpp",
     "zig": lambda root: root / "tests" / "cross_language" / "harness_zig" / "harness_zig",
 }

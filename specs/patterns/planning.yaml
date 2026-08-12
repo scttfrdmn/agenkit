@@ -38,6 +38,12 @@ interface:
         default: null
         description: "Optional system prompt for planning"
 
+      - name: "enable_error_tracking"
+        type: "boolean"
+        required: false
+        default: false
+        description: "When true, record each executed step's success/failure via an ErrorTracker and expose it on the result message's metadata under \"error_tracker\" (#653)"
+
   methods:
     process:
       input: "Message"

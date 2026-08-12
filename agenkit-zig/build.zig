@@ -191,6 +191,19 @@ pub fn build(b: *std.Build) void {
     });
     const run_retry_behavior_tests = b.addRunArtifact(retry_behavior_tests);
 
+    // Cross-language error tracker behavior tests
+    const error_tracker_behavior_tests = b.addTest(.{
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("tests/cross_language/error_tracker_behavior_test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "agenkit", .module = mod },
+            },
+        }),
+    });
+    const run_error_tracker_behavior_tests = b.addRunArtifact(error_tracker_behavior_tests);
+
     // Property-based message tests
     const prop_message_tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -266,6 +279,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_api_consistency_tests.step);
     test_step.dependOn(&run_retry_behavior_tests.step);
     test_step.dependOn(&run_rate_limiter_tests.step);
+    test_step.dependOn(&run_error_tracker_behavior_tests.step);
     test_step.dependOn(&run_prop_message_tests.step);
     test_step.dependOn(&run_prop_middleware_tests.step);
     test_step.dependOn(&run_prop_agent_tests.step);

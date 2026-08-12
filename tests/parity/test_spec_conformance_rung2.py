@@ -55,7 +55,14 @@ class TestPythonBaselineIsClean:
             if entry["status"] == "no_interface":
                 continue
             if entry["status"] != "match":
-                failures.append((stem, entry["status"], entry.get("missing_in_code"), entry.get("extra_in_code")))
+                failures.append(
+                    (
+                        stem,
+                        entry["status"],
+                        entry.get("missing_in_code"),
+                        entry.get("extra_in_code"),
+                    )
+                )
         assert not failures, f"Python constructor/spec mismatches: {failures}"
 
     def test_all_18_specs_have_an_interface_section(self):
@@ -131,7 +138,9 @@ class TestNonGating:
     a conformance failure) -- never because mismatches were found.
     """
 
-    def test_main_without_check_flag_returns_zero_regardless_of_mismatches(self, monkeypatch, tmp_path):
+    def test_main_without_check_flag_returns_zero_regardless_of_mismatches(
+        self, monkeypatch, tmp_path
+    ):
         monkeypatch.setattr(rung2, "ROOT", tmp_path)
         monkeypatch.setattr(rung2.sys, "argv", ["spec_conformance_rung2.py"])
         assert rung2.main() == 0

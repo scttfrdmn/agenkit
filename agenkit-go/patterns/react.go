@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/evaluation"
 )
 
 // ReActStep represents a single step in the ReAct reasoning-acting loop.
@@ -71,6 +72,10 @@ type ReActConfig struct {
 	Verbose bool
 	// PromptTemplate is a custom prompt template for the agent
 	PromptTemplate string
+	// EnableErrorTracking opts into recording each tool-execution step's
+	// success/failure via evaluation.ErrorTracker, exposed on the result
+	// message's Metadata["error_tracker"] (default: false, opt-in; see #653).
+	EnableErrorTracking bool
 }
 
 // ReActAgent combines reasoning with tool use.
@@ -92,13 +97,18 @@ type ReActConfig struct {
 //	Thought: [reasoning about conclusion]
 //	Final Answer: [the final answer]
 type ReActAgent struct {
-	name           string
-	agent          agenkit.Agent
-	tools          map[string]agenkit.Tool
-	maxSteps       int
-	verbose        bool
-	promptTemplate string
-	steps          []ReActStep
+	name                string
+	agent               agenkit.Agent
+	tools               map[string]agenkit.Tool
+	maxSteps            int
+	verbose             bool
+	promptTemplate      string
+	steps               []ReActStep
+	enableErrorTracking bool
+	// ErrorTracker records each tool-execution step's success/failure when
+	// EnableErrorTracking is set on the config. The zero value is a disabled
+	// tracker (RecordStep is a no-op), so it is always safe to read.
+	ErrorTracker *evaluation.ErrorTracker
 }
 
 // NewReActAgent creates a new ReAct agent.
@@ -132,13 +142,15 @@ func NewReActAgent(config *ReActConfig) (*ReActAgent, error) {
 	}
 
 	return &ReActAgent{
-		name:           "ReActAgent",
-		agent:          config.Agent,
-		tools:          toolsMap,
-		maxSteps:       maxSteps,
-		verbose:        verbose,
-		promptTemplate: promptTemplate,
-		steps:          []ReActStep{},
+		name:                "ReActAgent",
+		agent:               config.Agent,
+		tools:               toolsMap,
+		maxSteps:            maxSteps,
+		verbose:             verbose,
+		promptTemplate:      promptTemplate,
+		steps:               []ReActStep{},
+		enableErrorTracking: config.EnableErrorTracking,
+		ErrorTracker:        &evaluation.ErrorTracker{Enabled: config.EnableErrorTracking},
 	}, nil
 }
 
@@ -216,6 +228,7 @@ func (r *ReActAgent) Introspect() *agenkit.IntrospectionResult {
 // Process executes the ReAct reasoning-acting loop.
 func (r *ReActAgent) Process(ctx context.Context, message *agenkit.Message) (*agenkit.Message, error) {
 	r.steps = []ReActStep{}
+	r.ErrorTracker.Reset() // Reset for new task (no-op when disabled)
 	conversationHistory := []string{r.promptTemplate, fmt.Sprintf("\nQuestion: %s", message.ContentString())}
 
 	for step := 0; step < r.maxSteps; step++ {
@@ -256,6 +269,10 @@ func (r *ReActAgent) Process(ctx context.Context, message *agenkit.Message) (*ag
 			parsed.Observation = fmt.Sprintf("Error: Tool '%s' not found. Available tools: %s",
 				parsed.Action, strings.Join(toolNames, ", "))
 			r.steps = append(r.steps, parsed)
+			r.ErrorTracker.RecordStep(false,
+				evaluation.WithStepName(parsed.Action),
+				evaluation.WithStepError(parsed.Observation),
+			)
 			conversationHistory = append(conversationHistory, r.formatStep(parsed))
 			continue
 		}
@@ -265,17 +282,26 @@ func (r *ReActAgent) Process(ctx context.Context, message *agenkit.Message) (*ag
 		if err != nil {
 			parsed.Observation = fmt.Sprintf("Error: %v", err)
 			r.steps = append(r.steps, parsed)
+			r.ErrorTracker.RecordStep(false,
+				evaluation.WithStepName(parsed.Action),
+				evaluation.WithStepError(err.Error()),
+			)
 			return r.formatFinalAnswer(parsed, StopReasonToolError), nil
 		}
 
 		if toolResult.Success {
 			parsed.Observation = fmt.Sprintf("%v", toolResult.Data)
+			r.ErrorTracker.RecordStep(true, evaluation.WithStepName(parsed.Action))
 		} else {
 			errorMsg := "Tool execution failed"
 			if toolResult.Error != "" {
 				errorMsg = toolResult.Error
 			}
 			parsed.Observation = fmt.Sprintf("Error: %s", errorMsg)
+			r.ErrorTracker.RecordStep(false,
+				evaluation.WithStepName(parsed.Action),
+				evaluation.WithStepError(errorMsg),
+			)
 		}
 
 		// Record step and add to conversation
@@ -386,14 +412,19 @@ func (r *ReActAgent) formatFinalAnswer(step ReActStep, stopReason ReActStopReaso
 		}
 	}
 
+	metadata := map[string]interface{}{
+		"stop_reason": string(stopReason),
+		"steps":       len(r.steps),
+		"reasoning":   r.steps,
+	}
+	if r.enableErrorTracking {
+		metadata["error_tracker"] = r.ErrorTracker
+	}
+
 	return &agenkit.Message{
-		Role:    "assistant",
-		Content: content.String(),
-		Metadata: map[string]interface{}{
-			"stop_reason": string(stopReason),
-			"steps":       len(r.steps),
-			"reasoning":   r.steps,
-		},
+		Role:     "assistant",
+		Content:  content.String(),
+		Metadata: metadata,
 	}
 }
 

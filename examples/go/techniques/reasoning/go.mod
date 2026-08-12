@@ -11,6 +11,7 @@ require (
 	github.com/redis/go-redis/v9 v9.22.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
+	gonum.org/v1/gonum v0.17.0 // indirect
 )
 
 // Build against the in-repo agenkit-go (monorepo); not a separately published module.

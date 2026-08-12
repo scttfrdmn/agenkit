@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/evaluation"
 )
 
 // planningMockLLMClient is a mock LLM client for planning tests.
@@ -47,6 +48,20 @@ func (m *mockStepExecutor) Execute(ctx context.Context, step PlanStep, context m
 	}
 	if m.err != nil {
 		return nil, m.err
+	}
+	return fmt.Sprintf("Completed: %s", step.Description), nil
+}
+
+// mixedOutcomeExecutor is a step executor that fails on a set of 0-indexed
+// step numbers. Used to exercise ErrorTracker with a known, reproducible
+// mix of successes and failures.
+type mixedOutcomeExecutor struct {
+	failOnSteps map[int]bool
+}
+
+func (m *mixedOutcomeExecutor) Execute(ctx context.Context, step PlanStep, context map[string]interface{}) (interface{}, error) {
+	if m.failOnSteps[step.StepNumber] {
+		return nil, fmt.Errorf("step %d failed", step.StepNumber)
 	}
 	return fmt.Sprintf("Completed: %s", step.Description), nil
 }
@@ -673,5 +688,126 @@ Steps:
 		if step.Status != StepStatusCompleted {
 			t.Errorf("expected step %d to be completed, got status: %s", i, step.Status)
 		}
+	}
+}
+
+// ============================================================================
+// ErrorTracker integration tests (#653)
+// ============================================================================
+
+// TestPlanningAgent_ErrorTrackingDisabledByDefault verifies that when
+// EnableErrorTracking is absent (the default), no tracker is populated on
+// the result metadata and RecordStep is never called (behavior unchanged
+// from before #653).
+func TestPlanningAgent_ErrorTrackingDisabledByDefault(t *testing.T) {
+	llm := &planningMockLLMClient{
+		response: `Goal: Test
+Steps:
+1. Step 1
+2. Step 2
+3. Step 3`,
+	}
+	executor := &mixedOutcomeExecutor{failOnSteps: map[int]bool{1: true}}
+
+	agent := NewPlanningAgent(llm, executor, nil)
+
+	result, err := agent.Process(context.Background(), &agenkit.Message{
+		Role:    "user",
+		Content: "Do task",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, ok := result.Metadata["error_tracker"]; ok {
+		t.Error("expected no error_tracker key in metadata when tracking disabled")
+	}
+	if agent.ErrorTracker.Enabled {
+		t.Error("expected ErrorTracker.Enabled false by default")
+	}
+	if agent.ErrorTracker.TotalSteps() != 0 {
+		t.Errorf("expected 0 recorded steps, got %d", agent.ErrorTracker.TotalSteps())
+	}
+}
+
+// TestPlanningAgent_ErrorTrackingEnabledMixedOutcomes verifies that a
+// multi-step run with a mix of successes and failures produces a tracker
+// whose PerStepErrorRate matches manual expectation for that specific step
+// sequence.
+func TestPlanningAgent_ErrorTrackingEnabledMixedOutcomes(t *testing.T) {
+	llm := &planningMockLLMClient{
+		response: `Goal: Test
+Steps:
+1. Step 1
+2. Step 2
+3. Step 3
+4. Step 4`,
+	}
+	// Steps 1 and 3 (0-indexed) fail -> 2 failures out of 4 steps -> p_a = 0.5.
+	executor := &mixedOutcomeExecutor{failOnSteps: map[int]bool{1: true, 3: true}}
+
+	agent := NewPlanningAgent(llm, executor, &PlanningAgentConfig{
+		EnableErrorTracking: true,
+	})
+
+	result, err := agent.Process(context.Background(), &agenkit.Message{
+		Role:    "user",
+		Content: "Do task",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	tracker, ok := result.Metadata["error_tracker"].(*evaluation.ErrorTracker)
+	if !ok {
+		t.Fatalf("expected error_tracker of type *evaluation.ErrorTracker in metadata, got %T", result.Metadata["error_tracker"])
+	}
+	if tracker != agent.ErrorTracker {
+		t.Error("expected metadata tracker to be the same instance as agent.ErrorTracker")
+	}
+	if tracker.TotalSteps() != 4 {
+		t.Errorf("expected 4 recorded steps, got %d", tracker.TotalSteps())
+	}
+	if tracker.FailedSteps() != 2 {
+		t.Errorf("expected 2 failed steps, got %d", tracker.FailedSteps())
+	}
+	if got := tracker.PerStepErrorRate(); got < 0.5-1e-9 || got > 0.5+1e-9 {
+		t.Errorf("expected PerStepErrorRate 0.5, got %.6f", got)
+	}
+}
+
+// TestPlanningAgent_ErrorTrackingResetsBetweenRuns verifies ErrorTracker is
+// reset at the start of each Process call.
+func TestPlanningAgent_ErrorTrackingResetsBetweenRuns(t *testing.T) {
+	llm := &planningMockLLMClient{
+		response: `Goal: Test
+Steps:
+1. Step 1
+2. Step 2`,
+	}
+	executor := &mixedOutcomeExecutor{failOnSteps: map[int]bool{0: true}}
+
+	agent := NewPlanningAgent(llm, executor, &PlanningAgentConfig{
+		EnableErrorTracking: true,
+	})
+
+	_, err := agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "first"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if agent.ErrorTracker.TotalSteps() != 2 || agent.ErrorTracker.FailedSteps() != 1 {
+		t.Fatalf("expected 2 recorded steps with 1 failure after first run, got total=%d failed=%d",
+			agent.ErrorTracker.TotalSteps(), agent.ErrorTracker.FailedSteps())
+	}
+
+	// Second run: no failures this time.
+	agent.executor = &mixedOutcomeExecutor{failOnSteps: map[int]bool{}}
+	_, err = agent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "second"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if agent.ErrorTracker.TotalSteps() != 2 || agent.ErrorTracker.FailedSteps() != 0 {
+		t.Errorf("expected tracker reset with 2 steps and 0 failures on second run, got total=%d failed=%d",
+			agent.ErrorTracker.TotalSteps(), agent.ErrorTracker.FailedSteps())
 	}
 }

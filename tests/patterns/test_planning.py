@@ -5,7 +5,7 @@ Tests for Planning Agent pattern.
 import pytest
 
 from agenkit import Message
-from agenkit.patterns import Plan, PlanningAgent, PlanStep, StepStatus
+from agenkit.patterns import Plan, PlanningAgent, PlanningConfig, PlanStep, StepStatus
 
 
 # Mock Planning Agent
@@ -288,3 +288,100 @@ def test_plan_dataclass():
     assert plan.goal == "Test goal"
     assert len(plan.steps) == 1
     assert plan.created_at is not None
+
+
+# ============================================================================
+# ErrorTracker integration tests (#653)
+# ============================================================================
+
+
+class MixedOutcomeExecutor:
+    """Step executor that fails on specific 0-indexed step numbers.
+
+    Used to exercise ErrorTracker with a known, reproducible mix of
+    successes and failures.
+    """
+
+    def __init__(self, fail_on_steps: set[int]):
+        self.fail_on_steps = fail_on_steps
+
+    async def execute(self, step, context):
+        if step.step_number in self.fail_on_steps:
+            raise RuntimeError(f"step {step.step_number} failed")
+        return f"Completed: {step.description}"
+
+
+@pytest.mark.asyncio
+async def test_planning_agent_error_tracking_disabled_by_default():
+    """When enable_error_tracking is absent (default), no tracker is
+    populated on the result metadata and record_step is never called
+    (behavior unchanged from before #653)."""
+    mock_planner = MockPlanningAgent(
+        plan_text="""Goal: Test
+Steps:
+1. Step one
+2. Step two
+3. Step three"""
+    )
+
+    agent = PlanningAgent(PlanningConfig(planner=mock_planner))
+    agent.executor = MixedOutcomeExecutor(fail_on_steps={1})
+
+    result = await agent.process(Message(role="user", content="Test"))
+
+    assert "error_tracker" not in result.metadata
+    assert agent.error_tracker.enabled is False
+    assert agent.error_tracker.total_steps == 0
+    assert agent.error_tracker.per_step_error_rate() == 0.0
+
+
+@pytest.mark.asyncio
+async def test_planning_agent_error_tracking_enabled_mixed_outcomes():
+    """When enable_error_tracking=True, a multi-step run with a mix of
+    successes and failures produces a tracker whose per_step_error_rate()
+    matches manual expectation for that specific step sequence."""
+    mock_planner = MockPlanningAgent(
+        plan_text="""Goal: Test
+Steps:
+1. Step one
+2. Step two
+3. Step three
+4. Step four"""
+    )
+
+    agent = PlanningAgent(PlanningConfig(planner=mock_planner, enable_error_tracking=True))
+    # Steps 1 and 3 (0-indexed) fail -> 2 failures out of 4 steps -> p_a = 0.5.
+    agent.executor = MixedOutcomeExecutor(fail_on_steps={1, 3})
+
+    result = await agent.process(Message(role="user", content="Test"))
+
+    tracker = result.metadata["error_tracker"]
+    assert tracker is agent.error_tracker
+    assert tracker.total_steps == 4
+    assert tracker.failed_steps == 2
+    assert tracker.per_step_error_rate() == pytest.approx(0.5)
+
+
+@pytest.mark.asyncio
+async def test_planning_agent_error_tracking_resets_between_runs():
+    """error_tracker is reset at the start of each process() call."""
+    mock_planner = MockPlanningAgent(
+        plan_text="""Goal: Test
+Steps:
+1. Step one
+2. Step two"""
+    )
+
+    agent = PlanningAgent(PlanningConfig(planner=mock_planner, enable_error_tracking=True))
+    agent.executor = MixedOutcomeExecutor(fail_on_steps={0})
+
+    await agent.process(Message(role="user", content="First run"))
+    assert agent.error_tracker.total_steps == 2
+    assert agent.error_tracker.failed_steps == 1
+
+    # Second run: no failures this time.
+    agent.executor = MixedOutcomeExecutor(fail_on_steps=set())
+    await agent.process(Message(role="user", content="Second run"))
+
+    assert agent.error_tracker.total_steps == 2
+    assert agent.error_tracker.failed_steps == 0

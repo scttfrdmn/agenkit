@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
+	"github.com/scttfrdmn/agenkit/agenkit-go/evaluation"
 )
 
 // mockReActAgent is a mock agent that returns predefined responses.
@@ -713,5 +714,147 @@ func TestReActAgent_FinalAnswerAsActionEndToEnd(t *testing.T) {
 	}
 	if result.Metadata["stop_reason"] != string(StopReasonFinalAnswer) {
 		t.Errorf("expected stop_reason final_answer, got %v", result.Metadata["stop_reason"])
+	}
+}
+
+// ============================================================================
+// ErrorTracker integration tests (#653)
+// ============================================================================
+
+// TestReActAgent_ErrorTrackingDisabledByDefault verifies that when
+// EnableErrorTracking is absent (the default), no tracker is populated on
+// the result metadata and RecordStep is never called (behavior unchanged
+// from before #653).
+func TestReActAgent_ErrorTrackingDisabledByDefault(t *testing.T) {
+	agent := &mockReActAgent{
+		name: "test",
+		responses: []string{
+			"Thought: Use calculator\nAction: calculator\nAction Input: 2+2",
+			"Thought: Use failing tool\nAction: failing\nAction Input: test",
+			"Thought: Done\nFinal Answer: Complete",
+		},
+	}
+	calcTool := &mockTool{name: "calculator", description: "Calc", response: "4"}
+	failingTool := &mockTool{name: "failing", description: "Fails", shouldFail: true}
+
+	reactAgent, err := NewReActAgent(&ReActConfig{
+		Agent:    agent,
+		Tools:    []agenkit.Tool{calcTool, failingTool},
+		MaxSteps: 5,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	result, err := reactAgent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "test"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, ok := result.Metadata["error_tracker"]; ok {
+		t.Error("expected no error_tracker key in metadata when tracking disabled")
+	}
+	if reactAgent.ErrorTracker.Enabled {
+		t.Error("expected ErrorTracker.Enabled false by default")
+	}
+	if reactAgent.ErrorTracker.TotalSteps() != 0 {
+		t.Errorf("expected 0 recorded steps, got %d", reactAgent.ErrorTracker.TotalSteps())
+	}
+}
+
+// TestReActAgent_ErrorTrackingEnabledMixedOutcomes verifies that a
+// multi-step run with a mix of successes and failures produces a tracker
+// whose PerStepErrorRate matches manual expectation for that specific step
+// sequence.
+func TestReActAgent_ErrorTrackingEnabledMixedOutcomes(t *testing.T) {
+	agent := &mockReActAgent{
+		name: "test",
+		responses: []string{
+			"Thought: Use calculator\nAction: calculator\nAction Input: 2+2",
+			"Thought: Try unknown tool\nAction: unknown\nAction Input: test",
+			"Thought: Use search\nAction: search\nAction Input: query",
+			"Thought: Done\nFinal Answer: Complete",
+		},
+	}
+	calcTool := &mockTool{name: "calculator", description: "Calc", response: "4"}
+	searchTool := &mockTool{name: "search", description: "Search", response: "results"}
+
+	reactAgent, err := NewReActAgent(&ReActConfig{
+		Agent:               agent,
+		Tools:               []agenkit.Tool{calcTool, searchTool},
+		MaxSteps:            10,
+		EnableErrorTracking: true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	result, err := reactAgent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "test"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	tracker, ok := result.Metadata["error_tracker"].(*evaluation.ErrorTracker)
+	if !ok {
+		t.Fatalf("expected error_tracker of type *evaluation.ErrorTracker in metadata, got %T", result.Metadata["error_tracker"])
+	}
+	if tracker != reactAgent.ErrorTracker {
+		t.Error("expected metadata tracker to be the same instance as reactAgent.ErrorTracker")
+	}
+	// 3 recorded steps: calculator (success), unknown tool (failure), search (success).
+	if tracker.TotalSteps() != 3 {
+		t.Errorf("expected 3 recorded steps, got %d", tracker.TotalSteps())
+	}
+	if tracker.FailedSteps() != 1 {
+		t.Errorf("expected 1 failed step, got %d", tracker.FailedSteps())
+	}
+	want := 1.0 / 3.0
+	if got := tracker.PerStepErrorRate(); got < want-1e-9 || got > want+1e-9 {
+		t.Errorf("expected PerStepErrorRate %.6f, got %.6f", want, got)
+	}
+}
+
+// TestReActAgent_ErrorTrackingResetsBetweenRuns verifies ErrorTracker is
+// reset at the start of each Process call, mirroring the reset-on-new-task
+// behavior of r.steps.
+func TestReActAgent_ErrorTrackingResetsBetweenRuns(t *testing.T) {
+	failingTool := &mockTool{name: "failing", description: "Fails", shouldFail: true}
+	agent := &mockReActAgent{
+		name: "test",
+		responses: []string{
+			"Thought: Use failing tool\nAction: failing\nAction Input: test",
+		},
+	}
+
+	reactAgent, err := NewReActAgent(&ReActConfig{
+		Agent:               agent,
+		Tools:               []agenkit.Tool{failingTool},
+		MaxSteps:            5,
+		EnableErrorTracking: true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = reactAgent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "first"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if reactAgent.ErrorTracker.TotalSteps() != 1 || reactAgent.ErrorTracker.FailedSteps() != 1 {
+		t.Fatalf("expected 1 recorded failed step after first run, got total=%d failed=%d",
+			reactAgent.ErrorTracker.TotalSteps(), reactAgent.ErrorTracker.FailedSteps())
+	}
+
+	// Second run: immediate final answer, no tool steps.
+	reactAgent.agent = &mockReActAgent{
+		name:      "test2",
+		responses: []string{"Thought: Done\nFinal Answer: Complete"},
+	}
+	_, err = reactAgent.Process(context.Background(), &agenkit.Message{Role: "user", Content: "second"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if reactAgent.ErrorTracker.TotalSteps() != 0 {
+		t.Errorf("expected tracker reset to 0 steps on second run, got %d", reactAgent.ErrorTracker.TotalSteps())
 	}
 }

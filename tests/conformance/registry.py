@@ -39,6 +39,7 @@ from agenkit.composition.parallel import ParallelAgent as CompositionParallelAge
 from agenkit.composition.sequential import SequentialAgent as CompositionSequentialAgent
 from agenkit.infrastructure.load_balancer import LoadBalancer
 from agenkit.infrastructure.retry_enhanced import EnhancedRetryDecorator
+from agenkit.interfaces import Tool, ToolResult
 from agenkit.middleware.batching import BatchingDecorator
 from agenkit.middleware.caching import CachingDecorator
 from agenkit.middleware.circuit_breaker import CircuitBreakerDecorator
@@ -47,11 +48,19 @@ from agenkit.middleware.per_user_rate_limiter import PerUserRateLimiterDecorator
 from agenkit.middleware.rate_limiter import RateLimiterDecorator
 from agenkit.middleware.retry import RetryDecorator
 from agenkit.middleware.timeout import TimeoutDecorator
-from agenkit.patterns.autonomous import AutonomousAgent
-from agenkit.patterns.collaborative import CollaborativeAgent
-from agenkit.patterns.conversational import ConversationalAgent, StreamingConversationalAgent
-from agenkit.patterns.fallback import FallbackAgent, RecoveryAgent
-from agenkit.patterns.human_in_loop import HumanInLoopAgent
+from agenkit.patterns.autonomous import AutonomousAgent, AutonomousConfig
+from agenkit.patterns.collaborative import (
+    CollaborativeAgent,
+    CollaborativeConfig,
+    default_merge_funcs,
+)
+from agenkit.patterns.conversational import (
+    ConversationalAgent,
+    ConversationalAgentConfig,
+    StreamingConversationalAgent,
+)
+from agenkit.patterns.fallback import FallbackAgent, RecoveryAgent, default_recovery
+from agenkit.patterns.human_in_loop import HumanInLoopAgent, HumanInLoopConfig, simple_approval_func
 from agenkit.patterns.multiagent import (
     ConsensusAgent,
     ConsensusConfig,
@@ -60,31 +69,33 @@ from agenkit.patterns.multiagent import (
 )
 from agenkit.patterns.orchestration import (
     OrchestrationAgent,
+    OrchestrationConfig,
     ParallelPattern,
     RouterPattern,
     SequentialPattern,
 )
-from agenkit.patterns.parallel import ParallelAgent
-from agenkit.patterns.planning import PlanningAgent
-from agenkit.patterns.react import ReActAgent
+from agenkit.patterns.parallel import ParallelAgent, default_aggregators
+from agenkit.patterns.planning import PlanningAgent, PlanningConfig
+from agenkit.patterns.react import ReActAgent, ReActConfig
 from agenkit.patterns.reasoning_with_tools import ReasoningWithToolsAgent
-from agenkit.patterns.reflection import ReflectionAgent
-from agenkit.patterns.router import RouterAgent
+from agenkit.patterns.reflection import ReflectionAgent, ReflectionConfig
+from agenkit.patterns.router import RouterAgent, RouterConfig, SimpleClassifier
 from agenkit.patterns.sequential import SequentialAgent
-from agenkit.patterns.supervisor import SupervisorAgent
+from agenkit.patterns.supervisor import SimplePlanner, SupervisorAgent, SupervisorConfig
 from agenkit.routing.load_balancer import LoadBalancerRouter
 from agenkit.safety.anomaly_detection import AnomalyDetectionMiddleware
 from agenkit.safety.input_validation import InputValidationMiddleware
 from agenkit.safety.output_validation import OutputValidationMiddleware
 from agenkit.safety.permissions import PermissionMiddleware
 from agenkit.skills.agent import SkillEnabledAgent
+from agenkit.skills.loader import SkillRegistry
 from agenkit.techniques.compositions.actor_critic_variation import ActorCriticVariation
 from agenkit.techniques.compositions.context_optimization import ContextOptimizer
 from agenkit.techniques.compositions.exploration import ExplorationStrategy
 from agenkit.techniques.compositions.goal_monitoring import GoalMonitor
 from agenkit.techniques.compositions.learning_feedback import LearningFromFeedback
 from agenkit.techniques.compositions.rag import SimpleRAG
-from agenkit.techniques.compositions.rag_with_citations import CitedRAG
+from agenkit.techniques.compositions.rag_with_citations import CitedRAG, Document
 from agenkit.techniques.reasoning.chain_of_thought import ChainOfThought
 from agenkit.techniques.reasoning.graph_of_thought import GraphOfThought
 from agenkit.techniques.reasoning.least_to_most import LeastToMost
@@ -92,6 +103,14 @@ from agenkit.techniques.reasoning.plan_and_solve import PlanAndSolve
 from agenkit.techniques.reasoning.self_consistency import SelfConsistency
 from agenkit.techniques.reasoning.tree_of_thought import TreeOfThought
 from agenkit.tools.tool_agent import ToolAgent
+from agenkit.tools.tool_registry import ToolRegistry
+
+# Reuses the reasoning-technique suite's real-``LLM``-contract double (see
+# tests/techniques/reasoning/conftest.py's module docstring for why this
+# subclasses agenkit.adapters.llm.base.LLM rather than duck-typing it, #802).
+from tests.techniques.reasoning.conftest import ContractLLM
+
+from .conftest import ContractAgent
 
 ALL_AGENT_CLASSES: list[type] = [
     APIKeyAuth,
@@ -281,17 +300,270 @@ CENSUS_KEY_TO_CLASS: dict[tuple[str, str], type] = {
 # ---------------------------------------------------------------------------
 # Layer B: instantiable factories, for behavioral conformance.
 #
-# Tier 1a only (truly zero-arg constructible) -- registered now. Tier 1b
-# (~39 classes needing a trivial fake agent/LLM/config) and Tier 1c (~11
-# classes needing real registries/auth providers/non-empty collections) are
-# staged into Phase 5 in subsystem-sized tranches, per the plan. Registering
-# all of Layer B in one PR would have made this PR's review surface both
-# the conformance-suite design AND ~40 individual fixture designs at once.
+# Tier 1a (truly zero-arg constructible) and Tier 1b (needs a trivial fake
+# agent/LLM/config) are registered below. Tier 1c (needs a real remote
+# endpoint/transport) and the out-of-scope-by-design decorators remain in
+# EXCLUDED -- see the comments there. Tier 1b was drained in subsystem-sized
+# tranches per #923; this file's history is the tranche log.
 # ---------------------------------------------------------------------------
+
+
+class _EchoTool(Tool):
+    """Trivial ``Tool`` double: echoes its ``input`` parameter back.
+
+    Used by the ``ReActAgent``/``ToolAgent`` fixtures below, which need at
+    least one real tool but not one that does anything interesting -- the
+    conformance suite is testing the agent's own contract, not the tool's.
+    """
+
+    @property
+    def name(self) -> str:
+        return "echo"
+
+    @property
+    def description(self) -> str:
+        return "Echoes its input parameter back."
+
+    async def execute(self, params: dict) -> ToolResult:
+        return ToolResult(success=True, data=params.get("input", ""))
+
+
+def _make_tool_registry() -> ToolRegistry:
+    registry = ToolRegistry()
+    registry.register(_EchoTool())
+    return registry
+
+
+def _make_react_agent() -> ReActAgent:
+    # The wrapped reasoning agent must emit the ReAct "Final Answer" shape
+    # ReActAgent's parser expects, or it would loop to max_steps every time.
+    base = ContractAgent(
+        name="react_base",
+        response="Thought: done\nAction: Final Answer\nAction Input: 42",
+    )
+    return ReActAgent(ReActConfig(agent=base, tools=[_EchoTool()]))
+
+
+def _make_cited_rag() -> CitedRAG:
+    def retriever(_query: str) -> list[Document]:
+        # CitedRAG.process() reads .content/.source off each item and calls
+        # ._build_citations() (doc.source) -- a plain string retriever
+        # (SimpleRAG's shape) would raise AttributeError here, hence real
+        # Document objects rather than reusing SimpleRAG's fixture.
+        return [
+            Document(content="Aspirin reduces fever.", source="Smith et al. 2020"),
+            Document(content="Exercise reduces stress.", source="Jones et al. 2021"),
+        ]
+
+    return CitedRAG(retriever=retriever, answerer=ContractAgent(name="cited_rag_answerer"))
+
 
 AGENT_CASES = [
     pytest.param(lambda: MultiAgentOrchestrator(MultiAgentConfig()), id="multi_agent_orchestrator"),
     pytest.param(lambda: ConsensusAgent(ConsensusConfig()), id="consensus_agent"),
+    # --- Tier 1b: trivial fake agent/LLM, no special config -----------------
+    pytest.param(
+        lambda: AutonomousAgent(AutonomousConfig(objective="conformance probe")),
+        id="autonomous_agent",
+    ),
+    pytest.param(
+        lambda: ConversationalAgent(ConversationalAgentConfig(llm_client=ContractLLM())),
+        id="conversational_agent",
+    ),
+    pytest.param(
+        lambda: StreamingConversationalAgent(ConversationalAgentConfig(llm_client=ContractLLM())),
+        id="streaming_conversational_agent",
+    ),
+    pytest.param(
+        lambda: OrchestrationAgent(
+            OrchestrationConfig(workflow=[{"agent": "a1"}], agents={"a1": ContractAgent(name="a1")})
+        ),
+        id="orchestration_agent",
+    ),
+    pytest.param(
+        lambda: ParallelPattern([ContractAgent(name="a1"), ContractAgent(name="a2")]),
+        id="parallel_pattern",
+    ),
+    pytest.param(
+        lambda: RouterPattern(router=lambda m: "a1", handlers={"a1": ContractAgent(name="a1")}),
+        id="router_pattern",
+    ),
+    pytest.param(
+        lambda: SequentialPattern([ContractAgent(name="a1"), ContractAgent(name="a2")]),
+        id="sequential_pattern",
+    ),
+    pytest.param(
+        lambda: ParallelAgent(
+            agents=[ContractAgent(name="a1"), ContractAgent(name="a2")],
+            aggregator=default_aggregators.first,
+        ),
+        id="parallel_agent_patterns",
+    ),
+    pytest.param(
+        lambda: CompositionParallelAgent(
+            name="parallel_agent", agents=[ContractAgent(name="a1"), ContractAgent(name="a2")]
+        ),
+        id="parallel_agent_composition",
+    ),
+    pytest.param(
+        lambda: PlanningAgent(
+            PlanningConfig(
+                planner=ContractAgent(name="planner", response="Goal: g\nSteps:\n1. step")
+            )
+        ),
+        id="planning_agent",
+    ),
+    pytest.param(
+        lambda: ReasoningWithToolsAgent(llm=ContractAgent(name="llm"), tools=[]),
+        id="reasoning_with_tools_agent",
+    ),
+    pytest.param(
+        lambda: RecoveryAgent(
+            agent=ContractAgent(name="a1"),
+            recovery_func=default_recovery.static_message("recovered"),
+        ),
+        id="recovery_agent",
+    ),
+    pytest.param(
+        lambda: ReflectionAgent(
+            ReflectionConfig(
+                generator=ContractAgent(name="generator", response="draft"),
+                critic=ContractAgent(name="critic", response='{"score": 0.95, "feedback": "good"}'),
+                max_iterations=1,
+            )
+        ),
+        id="reflection_agent",
+    ),
+    pytest.param(
+        lambda: RouterAgent(
+            RouterConfig(
+                classifier=SimpleClassifier(
+                    agent=ContractAgent(name="a1"), keywords={"a1": ["probe"]}
+                ),
+                agents={"a1": ContractAgent(name="a1")},
+            )
+        ),
+        id="router_agent",
+    ),
+    pytest.param(
+        lambda: FallbackAgent(agents=[ContractAgent(name="a1"), ContractAgent(name="a2")]),
+        id="fallback_agent_patterns",
+    ),
+    pytest.param(
+        lambda: CompositionFallbackAgent(
+            name="fallback_agent", agents=[ContractAgent(name="a1"), ContractAgent(name="a2")]
+        ),
+        id="fallback_agent_composition",
+    ),
+    pytest.param(
+        lambda: SequentialAgent(agents=[ContractAgent(name="a1"), ContractAgent(name="a2")]),
+        id="sequential_agent_patterns",
+    ),
+    pytest.param(
+        lambda: CompositionSequentialAgent(
+            name="sequential_agent", agents=[ContractAgent(name="a1"), ContractAgent(name="a2")]
+        ),
+        id="sequential_agent_composition",
+    ),
+    pytest.param(
+        lambda: SupervisorAgent(
+            SupervisorConfig(
+                planner=SimplePlanner(ContractAgent(name="planner")),
+                specialists={"a1": ContractAgent(name="a1")},
+            )
+        ),
+        id="supervisor_agent",
+    ),
+    pytest.param(
+        lambda: ConditionalAgent(name="conditional_agent", default_agent=ContractAgent(name="a1")),
+        id="conditional_agent",
+    ),
+    # --- Tier 1b: hand-tuned *Config literal --------------------------------
+    pytest.param(
+        lambda: CollaborativeAgent(
+            CollaborativeConfig(
+                agents=[ContractAgent(name="a1"), ContractAgent(name="a2")],
+                merge_func=default_merge_funcs.first,
+                max_rounds=1,
+            )
+        ),
+        id="collaborative_agent",
+    ),
+    pytest.param(
+        lambda: HumanInLoopAgent(
+            HumanInLoopConfig(
+                agent=ContractAgent(name="a1"),
+                approval_func=simple_approval_func(auto_approve=True),
+            )
+        ),
+        id="human_in_loop_agent",
+    ),
+    pytest.param(_make_react_agent, id="react_agent"),
+    # --- Tier 1b: reasoning techniques ---------------------------------------
+    pytest.param(lambda: ChainOfThought(llm=ContractLLM()), id="chain_of_thought"),
+    pytest.param(lambda: GraphOfThought(llm=ContractLLM(), max_nodes=3), id="graph_of_thought"),
+    pytest.param(lambda: LeastToMost(llm=ContractLLM()), id="least_to_most"),
+    pytest.param(lambda: PlanAndSolve(llm=ContractLLM()), id="plan_and_solve"),
+    pytest.param(
+        lambda: SelfConsistency(
+            agent=ContractAgent(response="Therefore, the answer is 42"), num_samples=2
+        ),
+        id="self_consistency",
+    ),
+    pytest.param(
+        lambda: TreeOfThought(llm=ContractLLM(), branching_factor=2, max_depth=1),
+        id="tree_of_thought",
+    ),
+    # --- Tier 1b: compositions -----------------------------------------------
+    pytest.param(
+        lambda: ActorCriticVariation(
+            actor=ContractAgent(name="actor", response="an answer"),
+            critic=ContractAgent(name="critic", response="score: 9/10"),
+            max_iterations=1,
+        ),
+        id="actor_critic_variation",
+    ),
+    pytest.param(
+        lambda: ContextOptimizer(
+            agent=ContractAgent(name="a1"),
+            summarizer=ContractAgent(name="summarizer", response="summary"),
+        ),
+        id="context_optimizer",
+    ),
+    pytest.param(
+        # actions is deliberately non-empty: ExplorationStrategy.select_action()
+        # calls max() over self.actions and crashes on an empty list -- see the
+        # note on the (now-removed) EXCLUDED entry, and the PR description for
+        # a possible follow-up issue on that crash.
+        lambda: ExplorationStrategy(
+            agent=ContractAgent(name="a1"), actions=["search", "calculate"]
+        ),
+        id="exploration_strategy",
+    ),
+    pytest.param(
+        lambda: GoalMonitor(agent=ContractAgent(name="a1"), goal_fn=lambda state: True),
+        id="goal_monitor",
+    ),
+    pytest.param(
+        lambda: LearningFromFeedback(agent=ContractAgent(name="a1")),
+        id="learning_from_feedback",
+    ),
+    pytest.param(
+        lambda: SimpleRAG(
+            retriever=lambda query: ["doc1", "doc2"], answerer=ContractAgent(name="answerer")
+        ),
+        id="simple_rag",
+    ),
+    pytest.param(_make_cited_rag, id="cited_rag"),
+    # --- Tier 1b: skills and tools -------------------------------------------
+    pytest.param(
+        lambda: SkillEnabledAgent(ContractAgent(name="a1"), SkillRegistry(search_paths=[])),
+        id="skill_enabled_agent",
+    ),
+    pytest.param(
+        lambda: ToolAgent(ContractAgent(name="a1"), _make_tool_registry()),
+        id="tool_agent",
+    ),
 ]
 
 # Census keys covered by AGENT_CASES above. Kept as an explicit, parallel
@@ -301,82 +573,54 @@ AGENT_CASES = [
 REGISTERED_CENSUS_KEYS: set[tuple[str, str]] = {
     ("MultiAgentOrchestrator", "agenkit/patterns/multiagent.py"),
     ("ConsensusAgent", "agenkit/patterns/multiagent.py"),
+    ("AutonomousAgent", "agenkit/patterns/autonomous.py"),
+    ("ConversationalAgent", "agenkit/patterns/conversational.py"),
+    ("StreamingConversationalAgent", "agenkit/patterns/conversational.py"),
+    ("OrchestrationAgent", "agenkit/patterns/orchestration.py"),
+    ("ParallelPattern", "agenkit/patterns/orchestration.py"),
+    ("RouterPattern", "agenkit/patterns/orchestration.py"),
+    ("SequentialPattern", "agenkit/patterns/orchestration.py"),
+    ("ParallelAgent", "agenkit/patterns/parallel.py"),
+    ("ParallelAgent", "agenkit/composition/parallel.py"),
+    ("PlanningAgent", "agenkit/patterns/planning.py"),
+    ("ReasoningWithToolsAgent", "agenkit/patterns/reasoning_with_tools.py"),
+    ("RecoveryAgent", "agenkit/patterns/fallback.py"),
+    ("ReflectionAgent", "agenkit/patterns/reflection.py"),
+    ("RouterAgent", "agenkit/patterns/router.py"),
+    ("FallbackAgent", "agenkit/patterns/fallback.py"),
+    ("FallbackAgent", "agenkit/composition/fallback.py"),
+    ("SequentialAgent", "agenkit/patterns/sequential.py"),
+    ("SequentialAgent", "agenkit/composition/sequential.py"),
+    ("SupervisorAgent", "agenkit/patterns/supervisor.py"),
+    ("ConditionalAgent", "agenkit/composition/conditional.py"),
+    ("CollaborativeAgent", "agenkit/patterns/collaborative.py"),
+    ("HumanInLoopAgent", "agenkit/patterns/human_in_loop.py"),
+    ("ReActAgent", "agenkit/patterns/react.py"),
+    ("ChainOfThought", "agenkit/techniques/reasoning/chain_of_thought.py"),
+    ("GraphOfThought", "agenkit/techniques/reasoning/graph_of_thought.py"),
+    ("LeastToMost", "agenkit/techniques/reasoning/least_to_most.py"),
+    ("PlanAndSolve", "agenkit/techniques/reasoning/plan_and_solve.py"),
+    ("SelfConsistency", "agenkit/techniques/reasoning/self_consistency.py"),
+    ("TreeOfThought", "agenkit/techniques/reasoning/tree_of_thought.py"),
+    ("ActorCriticVariation", "agenkit/techniques/compositions/actor_critic_variation.py"),
+    ("ContextOptimizer", "agenkit/techniques/compositions/context_optimization.py"),
+    ("ExplorationStrategy", "agenkit/techniques/compositions/exploration.py"),
+    ("GoalMonitor", "agenkit/techniques/compositions/goal_monitoring.py"),
+    ("LearningFromFeedback", "agenkit/techniques/compositions/learning_feedback.py"),
+    ("SimpleRAG", "agenkit/techniques/compositions/rag.py"),
+    ("CitedRAG", "agenkit/techniques/compositions/rag_with_citations.py"),
+    ("SkillEnabledAgent", "agenkit/skills/agent.py"),
+    ("ToolAgent", "agenkit/tools/tool_agent.py"),
 }
 
 # {census_key: reason}. Every key here must exist in CENSUS_KEY_TO_CLASS;
 # test_registry_coverage.py enforces census == (AGENT_CASES ids) | EXCLUDED.
 EXCLUDED: dict[tuple[str, str], str] = {
-    # Tier 1b: needs a trivial fake agent/LLM/config -- deferred to Phase 5,
-    # tranche "core patterns".
-    ("AutonomousAgent", "agenkit/patterns/autonomous.py"): "Tier 1b, Phase 5",
-    ("CollaborativeAgent", "agenkit/patterns/collaborative.py"): (
-        "Tier 1b, Phase 5 -- CollaborativeConfig requires merge_func"
-    ),
-    ("ConversationalAgent", "agenkit/patterns/conversational.py"): "Tier 1b, Phase 5",
-    (
-        "StreamingConversationalAgent",
-        "agenkit/patterns/conversational.py",
-    ): "Tier 1b, Phase 5",
-    ("HumanInLoopAgent", "agenkit/patterns/human_in_loop.py"): (
-        "Tier 1b, Phase 5 -- HumanInLoopConfig requires approval_func"
-    ),
-    ("OrchestrationAgent", "agenkit/patterns/orchestration.py"): "Tier 1b, Phase 5",
-    ("ParallelPattern", "agenkit/patterns/orchestration.py"): "Tier 1b, Phase 5",
-    ("RouterPattern", "agenkit/patterns/orchestration.py"): "Tier 1b, Phase 5",
-    ("SequentialPattern", "agenkit/patterns/orchestration.py"): "Tier 1b, Phase 5",
-    ("ParallelAgent", "agenkit/composition/parallel.py"): "Tier 1b, Phase 5",
-    ("ParallelAgent", "agenkit/patterns/parallel.py"): "Tier 1b, Phase 5",
-    ("PlanningAgent", "agenkit/patterns/planning.py"): "Tier 1b, Phase 5",
-    ("ReActAgent", "agenkit/patterns/react.py"): (
-        "Tier 1b, Phase 5 -- ReActConfig rejects an empty tools list"
-    ),
-    (
-        "ReasoningWithToolsAgent",
-        "agenkit/patterns/reasoning_with_tools.py",
-    ): "Tier 1b, Phase 5",
-    ("RecoveryAgent", "agenkit/patterns/fallback.py"): "Tier 1b, Phase 5",
-    ("ReflectionAgent", "agenkit/patterns/reflection.py"): "Tier 1b, Phase 5",
-    ("RouterAgent", "agenkit/patterns/router.py"): "Tier 1b, Phase 5",
-    ("FallbackAgent", "agenkit/composition/fallback.py"): "Tier 1b, Phase 5",
-    ("FallbackAgent", "agenkit/patterns/fallback.py"): "Tier 1b, Phase 5",
-    ("SequentialAgent", "agenkit/composition/sequential.py"): "Tier 1b, Phase 5",
-    ("SequentialAgent", "agenkit/patterns/sequential.py"): "Tier 1b, Phase 5",
-    ("SupervisorAgent", "agenkit/patterns/supervisor.py"): "Tier 1b, Phase 5",
-    ("ConditionalAgent", "agenkit/composition/conditional.py"): "Tier 1b, Phase 5",
-    ("ChainOfThought", "agenkit/techniques/reasoning/chain_of_thought.py"): "Tier 1b, Phase 5",
-    ("GraphOfThought", "agenkit/techniques/reasoning/graph_of_thought.py"): "Tier 1b, Phase 5",
-    ("LeastToMost", "agenkit/techniques/reasoning/least_to_most.py"): "Tier 1b, Phase 5",
-    ("PlanAndSolve", "agenkit/techniques/reasoning/plan_and_solve.py"): "Tier 1b, Phase 5",
-    ("SelfConsistency", "agenkit/techniques/reasoning/self_consistency.py"): ("Tier 1b, Phase 5"),
-    ("TreeOfThought", "agenkit/techniques/reasoning/tree_of_thought.py"): "Tier 1b, Phase 5",
-    (
-        "ActorCriticVariation",
-        "agenkit/techniques/compositions/actor_critic_variation.py",
-    ): "Tier 1b, Phase 5",
-    (
-        "ContextOptimizer",
-        "agenkit/techniques/compositions/context_optimization.py",
-    ): "Tier 1b, Phase 5",
-    (
-        "ExplorationStrategy",
-        "agenkit/techniques/compositions/exploration.py",
-    ): "Tier 1b, Phase 5 -- crashes on an empty actions list, see plan notes",
-    (
-        "GoalMonitor",
-        "agenkit/techniques/compositions/goal_monitoring.py",
-    ): "Tier 1b, Phase 5",
-    (
-        "LearningFromFeedback",
-        "agenkit/techniques/compositions/learning_feedback.py",
-    ): "Tier 1b, Phase 5",
-    ("SimpleRAG", "agenkit/techniques/compositions/rag.py"): "Tier 1b, Phase 5",
-    ("CitedRAG", "agenkit/techniques/compositions/rag_with_citations.py"): (
-        "Tier 1b, Phase 5 -- needs a retriever returning real Document objects"
-    ),
-    ("SkillEnabledAgent", "agenkit/skills/agent.py"): "Tier 1b, Phase 5",
-    ("ToolAgent", "agenkit/tools/tool_agent.py"): (
-        "Tier 1b, Phase 5 -- also gated on #762 (Tool.execute signature split)"
-    ),
+    # Tier 1b is fully drained as of #923's Tier 1b tranche -- all classes
+    # that needed only a trivial fake agent/LLM/config, or a hand-tuned
+    # *Config literal, are registered in AGENT_CASES above. Tier 1c (below)
+    # and the out-of-scope-by-design decorators remain.
+    #
     # Tier 1c: needs a real registry/auth provider/non-empty collection --
     # excluded, not deferred to a fixture; building fixtures for subsystems
     # this suite isn't testing would make it depend on their correctness.

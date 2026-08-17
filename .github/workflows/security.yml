@@ -93,13 +93,13 @@ jobs:
           go-version: "1.25.12"
           cache: false
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4.37.6
+        uses: github/codeql-action/init@v4.37.7
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-extended
       - name: Analyze
-        uses: github/codeql-action/analyze@v4.37.6
+        uses: github/codeql-action/analyze@v4.37.7
         with:
           category: "/language:${{ matrix.language }}"
 
@@ -136,7 +136,7 @@ jobs:
           ignore-unfixed: true
       - name: Upload Trivy SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v4.37.6
+        uses: github/codeql-action/upload-sarif@v4.37.7
         with:
           sarif_file: trivy-results.sarif
           category: trivy-fs
@@ -227,7 +227,7 @@ jobs:
             semgrep scan --config auto --sarif --output semgrep.sarif
       - name: Upload Semgrep SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v4.37.6
+        uses: github/codeql-action/upload-sarif@v4.37.7
         with:
           sarif_file: semgrep.sarif
           category: semgrep

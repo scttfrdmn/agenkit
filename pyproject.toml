@@ -69,7 +69,7 @@ dev = [
     # findings against a locked 0.14.4 reporting none, because the six rules
     # involved are preview-only in 0.14.4 and stable by 0.15.x. Bump deliberately,
     # with the new version's findings fixed in the same change.
-    "ruff==0.16.2",
+    "ruff==0.16.3",
     "bandit>=1.7.5",
     "pylint>=3.0.0",
     "hypothesis>=6.0.0",

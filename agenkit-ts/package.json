@@ -42,7 +42,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.116.0",
+    "@anthropic-ai/sdk": "^0.122.0",
     "@aws-sdk/client-bedrock-runtime": "^3.709.0",
     "@google/generative-ai": "^0.24.1",
     "@grpc/grpc-js": "^1.14.1",

@@ -58,7 +58,7 @@ jobs:
           ref: ${{ inputs.tag || github.ref }}
 
       - name: Install syft (SBOM generator)
-        uses: anchore/sbom-action/download-syft@v0.24.0
+        uses: anchore/sbom-action/download-syft@v0.24.2
 
       - name: Install cosign
         uses: sigstore/cosign-installer@v4.1.2

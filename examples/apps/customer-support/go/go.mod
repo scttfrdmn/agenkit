@@ -1,6 +1,6 @@
 module github.com/scttfrdmn/agenkit/examples/customer-support-worker
 
-go 1.25.12
+go 1.25.14
 
 require github.com/scttfrdmn/agenkit/agenkit-go v0.0.0
 

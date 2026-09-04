@@ -59,7 +59,7 @@ cd agenkit/agenkit-go
 go mod download
 ```
 
-**Requirements:** Go 1.25.12+
+**Requirements:** Go 1.25.14+
 
 ### TypeScript
 

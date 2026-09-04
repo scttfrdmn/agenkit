@@ -20,7 +20,7 @@ calls or middleware.
 | Language   | Tool required                     |
 |------------|-----------------------------------|
 | Python     | Python 3.11+ and `uv`             |
-| Go         | Go 1.25.12+                       |
+| Go         | Go 1.25.14+                       |
 | TypeScript | Node 22+ and `npm`                |
 | Rust       | Rust 1.75+ (`rustup`)             |
 | C++        | CMake 3.20+ and a C++17 compiler  |

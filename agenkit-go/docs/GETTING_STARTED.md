@@ -18,7 +18,7 @@ A beginner-friendly guide to building AI agents with Go.
 
 ### Prerequisites
 
-You need Go 1.25.12 or later. Check your version:
+You need Go 1.25.14 or later. Check your version:
 
 ```bash
 go version

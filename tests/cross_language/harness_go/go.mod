@@ -1,6 +1,6 @@
 module github.com/scttfrdmn/agenkit/tests/cross_language/harness_go
 
-go 1.25.12
+go 1.25.14
 
 replace github.com/scttfrdmn/agenkit/agenkit-go => ../../../agenkit-go
 

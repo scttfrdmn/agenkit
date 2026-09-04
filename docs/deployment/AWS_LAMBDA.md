@@ -94,7 +94,7 @@ brew install terraform
 - pip
 
 **Go:**
-- Go 1.25.12+
+- Go 1.25.14+
 - Make
 
 ## Quick Start

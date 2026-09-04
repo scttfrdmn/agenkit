@@ -54,7 +54,7 @@ jobs:
     timeout-minutes: 30
     env:
       # The self-hosted runner has an older system `go` (1.22) earlier on PATH
-      # than setup-go's 1.25.12 below — setup-go@v6+ no longer guarantees its
+      # than setup-go's 1.25.14 below — setup-go@v6+ no longer guarantees its
       # Go wins PATH (v5 did) — and the runner's go env pins GOTOOLCHAIN=local.
       # Go autobuild for the new examples/*, tests/cross_language/harness_go
       # modules (added in #860) then fails extraction on every push run with
@@ -83,14 +83,14 @@ jobs:
             build-mode: autobuild
     steps:
       - uses: actions/checkout@v7
-      # Go autobuild compiles agenkit-go, whose go.mod requires Go 1.25.12.
+      # Go autobuild compiles agenkit-go, whose go.mod requires Go 1.25.14.
       # Provision that toolchain (and put it first on PATH) so autobuild on the
       # self-hosted runner doesn't fall back to an older system Go.
       - name: Set up Go (for go autobuild)
         if: matrix.language == 'go'
         uses: actions/setup-go@v7
         with:
-          go-version: "1.25.12"
+          go-version: "1.25.14"
           cache: false
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4.37.6
@@ -168,7 +168,7 @@ jobs:
       - uses: actions/setup-go@v7
         id: setup-go
         with:
-          go-version: "1.25.12"
+          go-version: "1.25.14"
           # cache disabled: on the persistent self-hosted runner the module
           # cache already lives on disk, and setup-go's tar-based restore
           # collided with it ("Cannot open: File exists"), corrupting state.

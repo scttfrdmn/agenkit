@@ -3,7 +3,7 @@
 // run and nothing compiled the scraper (#857).
 module github.com/scttfrdmn/agenkit/examples/research-assistant-scraper
 
-go 1.25.12
+go 1.25.14
 
 require github.com/scttfrdmn/agenkit/agenkit-go v0.0.0
 

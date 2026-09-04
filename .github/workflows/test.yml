@@ -382,7 +382,7 @@ jobs:
       # --- Java ---
       - name: Set up JDK
         if: matrix.lang == 'java'
-        uses: actions/setup-java@v5.7.0
+        uses: actions/setup-java@v6.0.0
         with:
           distribution: temurin
           java-version: '17'
@@ -399,7 +399,7 @@ jobs:
       # --- Scala ---
       - name: Set up JDK (Scala)
         if: matrix.lang == 'scala'
-        uses: actions/setup-java@v5.7.0
+        uses: actions/setup-java@v6.0.0
         with:
           distribution: temurin
           java-version: '17'

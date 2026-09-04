@@ -3,7 +3,7 @@
 // importing a package that does not exist (#857).
 module github.com/scttfrdmn/agenkit/examples/infrastructure-go
 
-go 1.25.14
+go 1.26.8
 
 require github.com/scttfrdmn/agenkit/agenkit-go v0.0.0
 

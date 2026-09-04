@@ -86,8 +86,8 @@ scikit-learn >= 1.3.0
 
 | Go Version | Support Status | Notes |
 |------------|---------------|-------|
-| **1.25.14** | ✅ **Required** | `go` directive in `agenkit-go/go.mod`; also the CI toolchain version |
-| < 1.25.14 | ❌ Not supported | Below the declared module floor |
+| **1.26.8** | ✅ **Required** | `go` directive in `agenkit-go/go.mod`; also the CI toolchain version |
+| < 1.26.8 | ❌ Not supported | Below the declared module floor |
 
 Note: `agenkit-go` is a nested module inside this monorepo
 (`github.com/scttfrdmn/agenkit/agenkit-go`), not a separately tagged
@@ -301,7 +301,7 @@ reviewer can re-run them):
 | Language | Command | Result |
 |----------|---------|--------|
 | Python | `grep requires-python pyproject.toml` | `>=3.12` |
-| Go | `grep '^go ' agenkit-go/go.mod` | `go 1.25.14` |
+| Go | `grep '^go ' agenkit-go/go.mod` | `go 1.26.8` |
 | TypeScript | `grep -A2 '"engines"' agenkit-ts/package.json` | `"node": ">=18.0.0"` |
 | Rust | `grep '^edition' agenkit-rust/Cargo.toml` | `edition = "2021"` (no pinned MSRV) |
 | C++ | `grep CXX_STANDARD agenkit-cpp/CMakeLists.txt` | `CMAKE_CXX_STANDARD 17` |
@@ -397,7 +397,7 @@ CI runs on GitHub-hosted `ubuntu-latest` runners for all workflows
 | Language | CI Toolchain Version |
 |----------|----------------------|
 | Python | 3.13 (`uv python install 3.13`) |
-| Go | 1.25.14 |
+| Go | 1.26.8 |
 | TypeScript/Node | 22 |
 | Rust | `stable` (rolling) |
 | Zig | 0.16.0 |

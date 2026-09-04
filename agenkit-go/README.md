@@ -1,6 +1,6 @@
 # Agenkit Go
 
-**Production-grade AI agent toolkit for Go 1.25.14+**
+**Production-grade AI agent toolkit for Go 1.26.8+**
 
 The Go implementation of Agenkit maintains 100% behavioral parity with the reference
 Python implementation, with true parallelism and single-binary deployment.

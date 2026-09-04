@@ -12,7 +12,7 @@
 // docs/RELEASING_AGENKIT_GO.md.
 module github.com/scttfrdmn/agenkit/agenkit-go
 
-go 1.26.0
+go 1.26.8
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.45.1

@@ -2,7 +2,7 @@
 # Agenkit Go Agent - Production Dockerfile
 # ============================================================
 
-# Must be >= the `go` directive in go.mod (1.25.14); 1.21/1.22 could not build
+# Must be >= the `go` directive in go.mod (1.26.8); 1.21/1.22 could not build
 # these modules at all, so every one of these image builds failed at `go mod
 # download` (#857).
 FROM golang:1.25-alpine AS builder

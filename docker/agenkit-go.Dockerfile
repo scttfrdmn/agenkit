@@ -2,12 +2,12 @@
 # Multi-stage build for minimal production image
 
 # Build stage
-# Must be >= the `go` directive in agenkit-go/go.mod (1.25.14). This was pinned to
+# Must be >= the `go` directive in agenkit-go/go.mod (1.26.8). This was pinned to
 # 1.21-alpine, so `go mod download` failed outright with
 # `go.mod requires go >= 1.25.12 (running go 1.21.13; GOTOOLCHAIN=local)` — the
 # image had not built since the toolchain moved (#856). Keep this in step with the
 # `go-version:` pins in .github/workflows/.
-FROM golang:1.25.14-alpine AS builder
+FROM golang:1.26.8-alpine AS builder
 
 LABEL org.opencontainers.image.title="Agenkit Go Builder"
 LABEL org.opencontainers.image.description="Foundation layer for AI agents - Go build environment"

@@ -63,7 +63,7 @@ Real LLM provider integrations for production use:
 
 ### Prerequisites
 
-- Go 1.25.14 or later
+- Go 1.26.8 or later
 - For adapter examples: API keys (OPENAI_API_KEY, ANTHROPIC_API_KEY)
 - For pattern examples: **No API keys required!** Uses mock agents
 

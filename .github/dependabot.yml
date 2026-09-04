@@ -23,6 +23,14 @@
 #
 # Note: Dependabot has no support for sbt (agenkit-scala) or Zig
 # (agenkit-zig); those ecosystems are necessarily excluded.
+#
+# Two tiers below. The entries in the first block watch the *shipped*
+# packages (agenkit-*), weekly. The block at the bottom (#714) uses
+# Dependabot's `directories:` (plural, with globs, since 2024) to cover the
+# long tail of example/tutorial/test-infra manifests — before #714 only 7 of
+# ~44 manifests were watched, so alerts in the other 37 were reported in the
+# Security tab with no possible fix PR. That tail runs monthly and grouped so
+# it never competes with the shipped-package updates for review.
 version: 2
 updates:
   # GitHub Actions used by the workflows
@@ -127,5 +135,73 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
       maven-major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Examples, tutorials & test infrastructure (#714)
+  #
+  # Documentation / test infra, not shipped artifacts — so MONTHLY, grouped,
+  # at a low open-PR limit, to never compete with the weekly shipped-package
+  # entries above for review. The minor-patch / major split is preserved (see
+  # header): frontend-framework majors are routine here, and — unlike an
+  # `ignore` rule, which would also suppress *security* updates — isolating
+  # them in their own group keeps the security-relevant bumps landing (#714
+  # decisions 3 & 4). Globs cover the whole long tail, not just the dirs that
+  # happened to have an open alert when #714 was filed.
+  #
+  # Deliberately NOT covered here:
+  #   - pip requirements.txt: most use `>=` floors (already permit the patched
+  #     version, so nothing to fix); the `==`-pinned ones aren't worth the
+  #     noise — revisit if one gets an advisory (#714 decision 1).
+  #   - lockfiles: intentionally absent by repo convention (.gitignore), so
+  #     Dependabot bumps the declared ranges, which is exactly the surface an
+  #     example teaches (#714 decision 2).
+
+  # npm — example frontends, packages/wasm, TS/wasm test harnesses
+  - package-ecosystem: npm
+    directories:
+      - "/examples/**"
+      - "/packages/wasm"
+      - "/tests/**"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      examples-npm-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      examples-npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  # Go — example modules + the Go cross-language test harness
+  - package-ecosystem: gomod
+    directories:
+      - "/examples/**"
+      - "/tests/**"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      examples-go-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      examples-go-major:
+        patterns: ["*"]
+        update-types: ["major"]
+
+  # Rust — the Rust cross-language test harness (tests/cross_language/harness_rust)
+  - package-ecosystem: cargo
+    directories:
+      - "/tests/**"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      examples-cargo-minor-patch:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      examples-cargo-major:
         patterns: ["*"]
         update-types: ["major"]

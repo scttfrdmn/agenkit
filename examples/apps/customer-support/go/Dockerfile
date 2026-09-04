@@ -7,7 +7,7 @@
 #   reading /agenkit-go/go.mod: no such file or directory
 # no matter which Go version the builder used (#857).
 #
-# Must be >= the `go` directive in go.mod (1.25.12); this used to pin
+# Must be >= the `go` directive in go.mod (1.25.14); this used to pin
 # golang:1.21-alpine, which could not build the module at all.
 FROM golang:1.25-alpine AS builder
 

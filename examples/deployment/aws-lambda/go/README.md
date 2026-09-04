@@ -19,7 +19,7 @@ Deploy Agenkit agents as high-performance serverless functions on AWS Lambda wit
 
 - AWS CLI configured (`aws configure`)
 - AWS SAM CLI installed (`brew install aws-sam-cli`)
-- Go 1.25.12+
+- Go 1.25.14+
 - Make
 - Active AWS account
 

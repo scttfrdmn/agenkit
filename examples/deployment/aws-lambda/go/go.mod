@@ -3,7 +3,7 @@
 // docs/deployment/AWS_LAMBDA.md failed on its first step (#857).
 module github.com/scttfrdmn/agenkit/examples/aws-lambda-go
 
-go 1.25.12
+go 1.25.14
 
 require (
 	github.com/aws/aws-lambda-go v1.54.0

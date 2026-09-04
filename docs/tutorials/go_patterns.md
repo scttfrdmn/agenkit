@@ -32,7 +32,7 @@ For background services handling many concurrent LLM requests, Go is an excellen
 go get github.com/scttfrdmn/agenkit-go@latest
 ```
 
-Go 1.25.12+ is required. All examples compile and run with `go run main.go`.
+Go 1.25.14+ is required. All examples compile and run with `go run main.go`.
 
 ---
 

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T23:54:50.354245+00:00",
+  "generated_at": "2026-09-05T01:13:35.862964+00:00",
   "version": "1.0",
   "languages": {
     "python": {
@@ -67,6 +67,11 @@
         "ReasoningTree",
         "SelfConsistency",
         "TreeOfThought"
+      ],
+      "protocols": [
+        "a2a",
+        "agui",
+        "mcp"
       ]
     },
     "go": {
@@ -131,6 +136,10 @@
         "ReasoningTree",
         "SelfConsistency",
         "TreeOfThought"
+      ],
+      "protocols": [
+        "agui",
+        "mcp"
       ]
     },
     "typescript": {
@@ -188,6 +197,10 @@
         "ReasoningTree",
         "SelfConsistencyAgent",
         "TreeOfThought"
+      ],
+      "protocols": [
+        "agui",
+        "mcp"
       ]
     },
     "rust": {
@@ -247,6 +260,10 @@
         "ReasoningTree",
         "SelfConsistencyAgent",
         "TreeOfThoughtAgent"
+      ],
+      "protocols": [
+        "agui",
+        "mcp"
       ]
     },
     "cpp": {
@@ -307,6 +324,9 @@
         "ReasoningTree",
         "SelfConsistencyAgent",
         "TreeOfThoughtAgent"
+      ],
+      "protocols": [
+        "mcp"
       ]
     },
     "zig": {
@@ -363,6 +383,9 @@
         "ReasoningTree",
         "SelfConsistencyAgent",
         "TreeOfThoughtAgent"
+      ],
+      "protocols": [
+        "mcp"
       ]
     },
     "csharp": {
@@ -406,7 +429,10 @@
         "MemoryHierarchy",
         "VectorMemory"
       ],
-      "techniques": []
+      "techniques": [],
+      "protocols": [
+        "mcp"
+      ]
     },
     "java": {
       "patterns": [
@@ -449,7 +475,10 @@
         "MemoryHierarchy",
         "VectorMemory"
       ],
-      "techniques": []
+      "techniques": [],
+      "protocols": [
+        "mcp"
+      ]
     },
     "scala": {
       "patterns": [
@@ -492,7 +521,10 @@
         "MemoryHierarchy",
         "VectorMemory"
       ],
-      "techniques": []
+      "techniques": [],
+      "protocols": [
+        "mcp"
+      ]
     }
   },
   "summary": {
@@ -551,16 +583,27 @@
       "java": 0,
       "scala": 0
     },
+    "protocols": {
+      "python": 3,
+      "go": 2,
+      "typescript": 2,
+      "rust": 2,
+      "cpp": 1,
+      "zig": 1,
+      "csharp": 1,
+      "java": 1,
+      "scala": 1
+    },
     "total": {
-      "python": 55,
-      "go": 52,
-      "typescript": 45,
-      "rust": 47,
-      "cpp": 48,
-      "zig": 44,
-      "csharp": 32,
-      "java": 32,
-      "scala": 32
+      "python": 58,
+      "go": 54,
+      "typescript": 47,
+      "rust": 49,
+      "cpp": 49,
+      "zig": 45,
+      "csharp": 33,
+      "java": 33,
+      "scala": 33
     }
   }
 }

@@ -1676,6 +1676,7 @@ Focus: Test coverage parity, CI/CD health, evaluation benchmarks, code quality.
 - [#231-240] Additional Reasoning Techniques (Graph-of-Thought, Least-to-Most, Plan-and-Solve)
 - [#231-240] Composition Patterns (RAG, Context Optimization, Actor-Critic, Multi-Turn Dialogue)
 - [#231-240] Communication Protocols (MCP - Model Context Protocol, A2A - Agent-to-Agent)
+- [#1000](https://github.com/scttfrdmn/agenkit/issues/1000) Zed ACP (Agent Client Protocol) adapter — client + server engine-abstraction layer (design: `docs/techniques/protocols/ACP.md`)
 - Java/C# language ports (based on demand)
 - Additional WASM optimizations and features
 

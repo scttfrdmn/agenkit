@@ -120,6 +120,7 @@ def scan_all_languages() -> dict[str, Any]:
                 "llm_adapters": [],
                 "memory": [],
                 "techniques": [],
+                "protocols": [],
                 "error": str(e),
             }
             raise
@@ -180,7 +181,7 @@ def count_features(features: dict[str, Any]) -> int:
         Total count of features
     """
     count = 0
-    for category in ["patterns", "middleware", "llm_adapters", "memory", "techniques"]:
+    for category in ["patterns", "middleware", "llm_adapters", "memory", "techniques", "protocols"]:
         if category in features and isinstance(features[category], list):
             count += len(features[category])
     return count
@@ -201,6 +202,7 @@ def calculate_summary(results: dict[str, Any]) -> dict[str, Any]:
         "llm_adapters": {},
         "memory": {},
         "techniques": {},
+        "protocols": {},
         "total": {},
     }
 
@@ -208,7 +210,14 @@ def calculate_summary(results: dict[str, Any]) -> dict[str, Any]:
         if "error" in features:
             continue
 
-        for category in ["patterns", "middleware", "llm_adapters", "memory", "techniques"]:
+        for category in [
+            "patterns",
+            "middleware",
+            "llm_adapters",
+            "memory",
+            "techniques",
+            "protocols",
+        ]:
             count = len(features.get(category, []))
             summary[category][lang] = count
 
@@ -243,7 +252,7 @@ def print_summary(manifest: dict[str, Any]) -> None:
     print("Summary by Category:")
     print("-" * 70)
 
-    categories = ["patterns", "middleware", "llm_adapters", "memory", "techniques"]
+    categories = ["patterns", "middleware", "llm_adapters", "memory", "techniques", "protocols"]
     languages = ["python", "go", "typescript", "rust", "cpp", "zig", "csharp", "java", "scala"]
 
     # Header

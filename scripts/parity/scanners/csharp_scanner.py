@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, detect_protocols, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -25,6 +25,7 @@ def scan() -> dict[str, Any]:
         "llm_adapters": scan_llm_adapters(root),
         "memory": scan_memory(root),
         "techniques": scan_techniques(root),
+        "protocols": scan_protocols(root),
     }
 
 
@@ -233,6 +234,19 @@ def scan_techniques(root: Path) -> list[str]:
     # No techniques subsystem in this language yet -- declared gap, not a
     # stale path. See #754.
     return scan_techniques_by_filename(techniques_dir, "*.cs", required=False)
+
+
+def scan_protocols(root: Path) -> list[str]:
+    """Scan for agent-interop protocols in the protocols/ directory.
+
+    Args:
+        root: Root directory of the language package
+
+    Returns:
+        Sorted list of protocol names (e.g., ["agui", "mcp"])
+    """
+    protocols_dir = root / "Protocols"
+    return detect_protocols(protocols_dir)
 
 
 if __name__ == "__main__":

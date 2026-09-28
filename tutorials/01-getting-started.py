@@ -31,7 +31,7 @@ def __(mo):
         1. **Installation** - Setting up Agenkit
         2. **Your First Agent** - Creating a simple echo agent
         3. **Composing Agents** - Building agent pipelines
-        4. **Working with LLMs** - Connecting to OpenAI/Claude
+        4. **Working with LLMs** - Connecting to OpenAI and Anthropic
         5. **Running and Testing** - Executing and validating agents
 
         ## Prerequisites
@@ -74,7 +74,7 @@ def __(mo):
         """
         ## 2. Your First Agent: Echo Agent
 
-        Let's create the simplest possible agent - one that echoes back whatever you say.
+        Let's create the simplest possible agent: one that echoes back whatever you say.
 
         ### Core Concepts
 

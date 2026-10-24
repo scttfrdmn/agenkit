@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **TypeScript: `@anthropic-ai/sdk` 0.133 → 1.3** (#1066). SDK 1.x sends
+  `anthropic-version: 2026-10-21`, which returns 400 for any request
+  carrying `temperature`, `top_p` or `top_k`, on every model. Neither TS
+  Anthropic integration sends them any more.
+
+### Deprecated
+
+- **TypeScript: Anthropic sampling options** (#1066). `AnthropicAdapter`'s
+  `temperature`/`topP`/`topK`, `AnthropicAgent`'s `temperature`, and
+  per-call `CallOptions.temperature`/`topP` on `AnthropicAdapter.processWith`
+  are accepted but ignored, with a `console.warn`. `AnthropicAgent` no longer
+  range-checks `temperature`, since the value is never sent. To be removed
+  in a later 0.x release.
+
 ## [v0.92.0] - 2026-08-12
 
 Two milestones: v0.88.0 (Observability, closing #715) and the first tranche

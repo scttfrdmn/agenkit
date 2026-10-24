@@ -42,11 +42,10 @@ describe('Anthropic Adapter: Unit Tests', () => {
     expect(response.metadata.usage.total_tokens).toBe(25);
   });
 
-  it('should pass temperature and max_tokens options', async () => {
+  it('should pass max_tokens option', async () => {
     const message = getSimpleTestMessage();
 
     // Override adapter config
-    (adapter as any).config.temperature = 0.5;
     (adapter as any).config.maxTokens = 100;
 
     await adapter.complete([message]);
@@ -54,10 +53,61 @@ describe('Anthropic Adapter: Unit Tests', () => {
     // Verify mock was called with correct parameters
     expect(mockClient.messages.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        temperature: 0.5,
         max_tokens: 100,
       })
     );
+  });
+
+  // API version 2026-10-21 returns 400 for any of these, on every model (#1066)
+  const SAMPLING_PARAMS = ['temperature', 'top_p', 'top_k'];
+
+  it('should never send sampling parameters, even when configured', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const configured = new AnthropicAdapter({
+      apiKey: 'test-key',
+      temperature: 0.5,
+      topP: 0.9,
+      topK: 5,
+    });
+    (configured as any).client = mockClient;
+
+    await configured.complete([getSimpleTestMessage()]);
+    await configured.process(getSimpleTestMessage());
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('ignores temperature, topP, topK');
+    for (const [params] of mockClient.messages.create.mock.calls) {
+      for (const key of SAMPLING_PARAMS) expect(params).not.toHaveProperty(key);
+    }
+    warn.mockRestore();
+  });
+
+  it('should warn on per-call sampling options and not send them', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await adapter.processWith(getSimpleTestMessage(), {
+      temperature: 0.2,
+      topP: 0.5,
+      stop: ['END'],
+    });
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0][0]).toContain('ignores temperature, topP');
+    const params = mockClient.messages.create.mock.calls[0][0];
+    for (const key of SAMPLING_PARAMS) expect(params).not.toHaveProperty(key);
+    expect(params.stop_sequences).toEqual(['END']);
+    warn.mockRestore();
+  });
+
+  it('should not warn when no sampling options are set', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const plain = new AnthropicAdapter({ apiKey: 'test-key' });
+    (plain as any).client = mockClient;
+
+    await plain.processWith(getSimpleTestMessage(), { maxTokens: 50 });
+
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('should convert user message correctly', async () => {

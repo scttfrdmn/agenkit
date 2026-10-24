@@ -2,7 +2,7 @@
  * Tests for Anthropic adapter
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { AnthropicAdapter } from '../adapters/anthropic';
 import { createMessage } from '../core/interfaces';
 
@@ -41,12 +41,15 @@ describe('AnthropicAdapter', () => {
   });
 
   describe('configuration', () => {
-    it('should use custom temperature', () => {
+    it('should accept deprecated temperature with a warning', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const adapter = new AnthropicAdapter({
         apiKey: 'test-key',
         temperature: 0.5,
       });
       expect(adapter.name).toBe('anthropic-claude-sonnet-5');
+      expect(warn).toHaveBeenCalledTimes(1);
+      warn.mockRestore();
     });
 
     it('should use custom maxTokens', () => {
@@ -100,7 +103,6 @@ describe('AnthropicAdapter', () => {
     it('should process a message with real API', async () => {
       const adapter = new AnthropicAdapter({
         model: 'claude-sonnet-5',
-        temperature: 0.7,
         maxTokens: 100,
       });
 
@@ -122,7 +124,6 @@ describe('AnthropicAdapter', () => {
     it('should stream responses with real API', async () => {
       const adapter = new AnthropicAdapter({
         model: 'claude-sonnet-5',
-        temperature: 0.7,
         maxTokens: 50,
       });
 
@@ -146,7 +147,6 @@ describe('AnthropicAdapter', () => {
     it('should handle system messages correctly', async () => {
       const adapter = new AnthropicAdapter({
         model: 'claude-sonnet-5',
-        temperature: 0.7,
         maxTokens: 100,
       });
 
@@ -169,7 +169,6 @@ describe('AnthropicAdapter', () => {
     it('should handle multi-turn conversation', async () => {
       const adapter = new AnthropicAdapter({
         model: 'claude-sonnet-5',
-        temperature: 0.7,
         maxTokens: 100,
       });
 

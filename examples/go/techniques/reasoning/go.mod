@@ -1,16 +1,16 @@
 // Standalone module: this example was in no Go module, so nothing compiled it (#857).
 module github.com/scttfrdmn/agenkit/examples/go-techniques-reasoning
 
-go 1.26.8
+go 1.26.10
 
 require github.com/scttfrdmn/agenkit/agenkit-go v0.0.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/redis/go-redis/v9 v9.22.0 // indirect
-	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	github.com/redis/go-redis/v9 v9.23.0 // indirect
+	go.uber.org/atomic v1.12.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
 	gonum.org/v1/gonum v0.17.0 // indirect
 )
 

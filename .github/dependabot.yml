@@ -167,6 +167,15 @@ updates:
     schedule:
       interval: monthly
     open-pull-requests-limit: 3
+    # Same typescript 7 hold as /agenkit-ts above (#722), for a different tool:
+    # packages/wasm builds with `tsup --dts`, which reads `ts.sys` from the
+    # compiler's JS API — absent in TS 7 (`import "typescript"` resolves to a
+    # version stub). Every browser example runs that build as `prebuild`, so
+    # #1020 failed all four. Delete with the block above once #1053 (TS 6 cleanup)
+    # lands and tsup/typedoc/typescript-eslint accept TS 7.
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     groups:
       examples-npm-minor-patch:
         patterns: ["*"]

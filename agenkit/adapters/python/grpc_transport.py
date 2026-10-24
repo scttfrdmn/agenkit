@@ -593,7 +593,7 @@ class GRPCTransport(Transport):
             payload["tool_result"] = {
                 "success": response.tool_result.success,
                 "data": self._deserialize_content(response.tool_result.data),
-                "error": response.tool_result.error if response.tool_result.error else None,
+                "error": response.tool_result.error or None,
                 "metadata": dict(response.tool_result.metadata),
             }
 

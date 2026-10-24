@@ -623,7 +623,7 @@ def execute_test(
                             best_category = category
 
                     # Return default if no matches
-                    return best_category if best_category else self._default
+                    return best_category or self._default
 
             classifier = TestClassifier(keywords_dict, default_agent_name, routes_list)
             router_config = RouterConfig(
@@ -1086,7 +1086,7 @@ def execute_test(
 
         # Transform Python's real metadata to match spec expectations for cross-language equivalence
         # Message objects are frozen, so we need to create new ones with updated metadata
-        transformed_metadata = output_message.metadata if output_message.metadata else {}
+        transformed_metadata = output_message.metadata or {}
 
         if pattern_name == "Planning":
             # Planning: Detect scenario and provide spec-compliant metadata

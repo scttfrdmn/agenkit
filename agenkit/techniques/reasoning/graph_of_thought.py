@@ -391,7 +391,7 @@ Final conclusion:"""
         if self.aggregator == "path_based":
             # Aggregate by considering complete paths
             # Find highest scoring path
-            best_path = max(paths, key=lambda p: graph.get_path_score(p))
+            best_path = max(paths, key=graph.get_path_score)
 
             # Get conclusion from best path
             conclusion_node = graph.get_node(best_path[-1])

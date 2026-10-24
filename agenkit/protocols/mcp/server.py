@@ -62,7 +62,7 @@ class MCPServer:
         await loop.connect_read_pipe(lambda: proto, sys.stdin.buffer)
 
         writer_transport, writer_protocol = await loop.connect_write_pipe(
-            lambda: asyncio.BaseProtocol(), sys.stdout.buffer
+            asyncio.BaseProtocol, sys.stdout.buffer
         )
         writer = asyncio.StreamWriter(writer_transport, writer_protocol, reader, loop)
 

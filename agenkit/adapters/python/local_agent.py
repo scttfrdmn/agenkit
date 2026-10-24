@@ -1,6 +1,7 @@
 """Local agent server for protocol adapter."""
 
 import asyncio
+import contextlib
 import logging
 import os
 import struct
@@ -76,7 +77,7 @@ class LocalAgent:
         socket_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
 
         # Remove existing socket file if present
-        if os.path.exists(socket_path):
+        with contextlib.suppress(FileNotFoundError):
             os.remove(socket_path)
 
         # This will be awaited in start()
@@ -102,7 +103,7 @@ class LocalAgent:
                 socket_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
 
                 # Remove existing socket file if present
-                if os.path.exists(socket_path):
+                with contextlib.suppress(FileNotFoundError):
                     os.remove(socket_path)
 
                 # Start Unix socket server
@@ -191,7 +192,7 @@ class LocalAgent:
         # Clean up Unix socket file
         if self._endpoint and self._endpoint.startswith("unix://"):
             socket_path = self._endpoint[7:]
-            if os.path.exists(socket_path):
+            with contextlib.suppress(FileNotFoundError):
                 os.remove(socket_path)
 
         logger.info(f"Agent '{self._agent.name}' stopped")

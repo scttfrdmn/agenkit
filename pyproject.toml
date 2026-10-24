@@ -247,6 +247,7 @@ select = [
 ignore = [
     "S101",    # Allow assert statements (used in tests)
     "PLR0913", # Too many arguments - sometimes necessary for middleware
+    "PLR0917", # Too many positional args - fixing = keyword-only on 24 public ctors, an API break (#1054)
     "PLR2004", # Magic value used in comparison - acceptable for tests/examples
     "PLR0912", # Too many branches - acceptable for complex logic
     "PLC0415", # Import not at top - often necessary for circular imports

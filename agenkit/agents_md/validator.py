@@ -6,12 +6,12 @@ completeness and correctness.
 """
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 from .types import AgentsMdDocument, SectionType
 
 
-class IssueSeverity(str, Enum):
+class IssueSeverity(StrEnum):
     """Severity levels for validation issues."""
 
     ERROR = "error"

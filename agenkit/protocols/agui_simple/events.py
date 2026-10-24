@@ -20,11 +20,11 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any, cast
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """AG-UI event type enumeration."""
 
     # Text message events
@@ -54,7 +54,7 @@ class EventType(str, Enum):
     HEARTBEAT = "heartbeat"
 
 
-class InterruptReason(str, Enum):
+class InterruptReason(StrEnum):
     """Reasons for agent interruption (HITL)."""
 
     APPROVAL_REQUIRED = "approval_required"
@@ -64,7 +64,7 @@ class InterruptReason(str, Enum):
     USER_REQUESTED = "user_requested"
 
 
-class InterruptAction(str, Enum):
+class InterruptAction(StrEnum):
     """Actions user can take in response to interruption."""
 
     APPROVE = "approve"
@@ -75,7 +75,7 @@ class InterruptAction(str, Enum):
     CANCEL = "cancel"
 
 
-class AttachmentType(str, Enum):
+class AttachmentType(StrEnum):
     """Types of attachments for multimodal support."""
 
     IMAGE = "image"

@@ -376,7 +376,7 @@ Continue reasoning or provide final answer."""
         response_message = Message(
             role="assistant",
             content=final_answer,
-            metadata=metadata if metadata else None,
+            metadata=metadata or None,
         )
 
         return response_message

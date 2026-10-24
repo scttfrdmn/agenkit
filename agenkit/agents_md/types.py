@@ -3,11 +3,11 @@ Data structures for AGENTS.md documents.
 """
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 
-class SectionType(str, Enum):
+class SectionType(StrEnum):
     """Standard AGENTS.md section types."""
 
     SETUP = "setup"

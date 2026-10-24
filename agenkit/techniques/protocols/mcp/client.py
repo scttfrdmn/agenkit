@@ -83,7 +83,7 @@ class MCPClient:
                     self.server_url,
                     json=request.to_dict(),
                     timeout=self.timeout,
-                    headers=self.auth if self.auth else None,
+                    headers=self.auth or None,
                 )
 
                 response.raise_for_status()

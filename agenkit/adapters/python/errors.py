@@ -1,10 +1,10 @@
 """Error types for Python protocol adapter."""
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 
-class ProtocolErrorCode(str, Enum):
+class ProtocolErrorCode(StrEnum):
     """Standard error codes for protocol-level errors."""
 
     # Connection errors

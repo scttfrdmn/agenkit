@@ -61,7 +61,7 @@ describe('Middleware', () => {
       const agent = new LocalAgent({
         name: 'streaming',
         process: async (msg) => createMessage('assistant', msg.content),
-        processStream: async function* (msg) {
+        processStream: async function* (_msg) {
           yield createMessage('assistant', 'chunk1');
           yield createMessage('assistant', 'chunk2');
         },
@@ -97,7 +97,7 @@ describe('Middleware', () => {
 
       const agent = new LocalAgent({
         name: 'flaky',
-        process: async (msg) => {
+        process: async (_msg) => {
           attempts++;
 
           if (attempts < 3) {
@@ -293,7 +293,7 @@ describe('Middleware', () => {
 
       const agent = new LocalAgent({
         name: 'composition-test',
-        process: async (msg) => {
+        process: async (_msg) => {
           attempts++;
 
           // Fail on first attempt
@@ -386,7 +386,7 @@ describe('Middleware', () => {
     it('should fall back to default timeout for unspecified methods', async () => {
       const agent = new LocalAgent({
         name: 'fallback-test',
-        process: async (msg) => {
+        process: async (_msg) => {
           await new Promise((resolve) => setTimeout(resolve, 150));
           return createMessage('assistant', 'Done');
         },
@@ -412,7 +412,7 @@ describe('Middleware', () => {
       const agent = new LocalAgent({
         name: 'slow-stream',
         process: async (msg) => createMessage('assistant', msg.content),
-        processStream: async function* (msg) {
+        processStream: async function* (_msg) {
           for (let i = 0; i < 5; i++) {
             await new Promise((resolve) => setTimeout(resolve, 50));
             yield createMessage('assistant', `chunk${i}`);
@@ -442,7 +442,7 @@ describe('Middleware', () => {
       const agent = new LocalAgent({
         name: 'fast-stream',
         process: async (msg) => createMessage('assistant', msg.content),
-        processStream: async function* (msg) {
+        processStream: async function* (_msg) {
           for (let i = 0; i < 3; i++) {
             await new Promise((resolve) => setTimeout(resolve, 10));
             yield createMessage('assistant', `chunk${i}`);

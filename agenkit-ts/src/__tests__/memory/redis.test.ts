@@ -258,7 +258,6 @@ describe.skipIf(!redisAvailable)('RedisMemory', () => {
         const sessionId = 'filter-time';
 
         const now = new Date();
-        const oneHourAgo = new Date(now.getTime() - 3600 * 1000);
         const twoHoursAgo = new Date(now.getTime() - 2 * 3600 * 1000);
 
         await memory.store(sessionId, createMessage('user', 'Recent'));

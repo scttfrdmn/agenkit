@@ -209,7 +209,7 @@ export class RouterAgent implements Agent {
       category = await this.classifier.classify(message);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`classification failed: ${errorMsg}`);
+      throw new Error(`classification failed: ${errorMsg}`, { cause: error });
     }
 
     // Step 2: Select agent based on category
@@ -233,7 +233,7 @@ export class RouterAgent implements Agent {
       result = await agent.process(message);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`agent '${agent.name}' (category: ${category}) failed: ${errorMsg}`);
+      throw new Error(`agent '${agent.name}' (category: ${category}) failed: ${errorMsg}`, { cause: error });
     }
 
     // Add routing metadata
@@ -416,7 +416,7 @@ Message: `;
       result = await this.agent.process(classificationMsg);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`llm classification failed: ${errorMsg}`);
+      throw new Error(`llm classification failed: ${errorMsg}`, { cause: error });
     }
 
     const category = String(result.content).trim();

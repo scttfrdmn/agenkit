@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ReasoningTree, NodeState, type ReasoningNode } from './reasoning-tree';
+import { ReasoningTree, NodeState } from './reasoning-tree';
 
 // ============================================
 // Tree Creation Tests
@@ -146,7 +146,7 @@ describe('ReasoningTree: Adding Children', () => {
     const child1 = tree.addChild(rootId, 'Level 1', 0.5);
     expect(tree.maxDepth).toBe(1);
 
-    const child2 = tree.addChild(child1, 'Level 2', 0.5);
+    tree.addChild(child1, 'Level 2', 0.5);
     expect(tree.maxDepth).toBe(2);
 
     // Adding sibling shouldn't change max depth
@@ -296,9 +296,9 @@ describe('ReasoningTree: Leaf Operations', () => {
   it('should get best scoring leaf', () => {
     const tree = new ReasoningTree();
     const rootId = tree.createRoot('Root');
-    const child1 = tree.addChild(rootId, 'Leaf 1', 0.7);
+    tree.addChild(rootId, 'Leaf 1', 0.7);
     const child2 = tree.addChild(rootId, 'Leaf 2', 0.9); // Best
-    const child3 = tree.addChild(rootId, 'Leaf 3', 0.6);
+    tree.addChild(rootId, 'Leaf 3', 0.6);
 
     const bestLeaf = tree.getBestLeaf();
     expect(bestLeaf).toBeDefined();
@@ -358,7 +358,7 @@ describe('ReasoningTree: Pruning', () => {
     const tree = new ReasoningTree();
     const rootId = tree.createRoot('Root');
     const child1 = tree.addChild(rootId, 'Child 1', 0.3);
-    const child2 = tree.addChild(rootId, 'Child 2', 0.8);
+    tree.addChild(rootId, 'Child 2', 0.8);
 
     tree.pruneNode(child1);
 
@@ -375,8 +375,8 @@ describe('ReasoningTree: Statistics', () => {
   it('should compute correct statistics', () => {
     const tree = new ReasoningTree();
     const rootId = tree.createRoot('Root');
-    const child1 = tree.addChild(rootId, 'Child 1', 0.7);
-    const child2 = tree.addChild(rootId, 'Child 2', 0.9);
+    tree.addChild(rootId, 'Child 1', 0.7);
+    tree.addChild(rootId, 'Child 2', 0.9);
 
     const stats = tree.getStatistics();
     expect(stats.totalNodes).toBe(3);

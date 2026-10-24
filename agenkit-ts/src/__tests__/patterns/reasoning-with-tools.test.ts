@@ -19,7 +19,7 @@ import {
   finalizeTrace,
   getTraceDuration,
 } from '../../patterns/reasoning-with-tools';
-import { Message, Tool, ToolResult, createMessage } from '../../core/interfaces';
+import { Tool, ToolResult, createMessage } from '../../core/interfaces';
 import { createMockAgent } from './test-helpers';
 
 /** Mock tool for testing */
@@ -35,7 +35,7 @@ class MockTool implements Tool {
     this.result = result;
   }
 
-  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+  async execute(_params: Record<string, unknown>): Promise<ToolResult> {
     this.callCount++;
     return { output: this.result, success: true };
   }

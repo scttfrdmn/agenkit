@@ -26,7 +26,7 @@ class ConfidenceAgent implements Agent {
 
   constructor(private confidence: number) {}
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return {
       role: 'assistant',
       content: 'Response',

@@ -6,9 +6,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   AutonomousAgent,
   Goal,
-  GoalStatus,
   createGoal,
-  AutonomousResult,
 } from '../patterns/autonomous';
 import { createMessage } from '../core/interfaces';
 
@@ -29,7 +27,7 @@ class MockAutonomousAgent extends AutonomousAgent {
 class CountingAgent extends AutonomousAgent {
   public count: number = 0;
 
-  protected async workOnGoal(goal: Goal): Promise<string> {
+  protected async workOnGoal(_goal: Goal): Promise<string> {
     this.count++;
     await new Promise(resolve => setTimeout(resolve, 10));
     return `Iteration ${this.count}`;

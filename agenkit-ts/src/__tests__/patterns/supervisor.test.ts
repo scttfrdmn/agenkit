@@ -21,7 +21,6 @@ import { Message, createMessage, Agent } from '../../core/interfaces';
 import {
   createMockAgent,
   createErrorAgent,
-  validateMessage,
   hasMetadata,
   getMetadata,
 } from './test-helpers';
@@ -41,15 +40,15 @@ class MockPlanner implements PlannerAgent {
     return ['mock', 'planning'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', 'planner direct response');
   }
 
-  async plan(message: Message): Promise<Subtask[]> {
+  async plan(_message: Message): Promise<Subtask[]> {
     return this.subtasks;
   }
 
-  async synthesize(original: Message, results: Record<string, Message>): Promise<Message> {
+  async synthesize(_original: Message, _results: Record<string, Message>): Promise<Message> {
     return createMessage('assistant', this.synthesisResponse);
   }
 }
@@ -69,11 +68,11 @@ class ErrorPlanner implements PlannerAgent {
     return ['mock', 'planning'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', 'error planner response');
   }
 
-  async plan(message: Message): Promise<Subtask[]> {
+  async plan(_message: Message): Promise<Subtask[]> {
     if (this.planError) {
       throw this.planError;
     }
@@ -81,7 +80,7 @@ class ErrorPlanner implements PlannerAgent {
     return [{ type: 'dummy', message: createMessage('user', 'dummy') }];
   }
 
-  async synthesize(original: Message, results: Record<string, Message>): Promise<Message> {
+  async synthesize(_original: Message, _results: Record<string, Message>): Promise<Message> {
     if (this.synthesisError) {
       throw this.synthesisError;
     }

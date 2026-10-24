@@ -38,7 +38,7 @@ class AgentWithMemory implements Agent {
 
   private messageCount = 0;
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     this.messageCount++;
     return {
       role: 'assistant',

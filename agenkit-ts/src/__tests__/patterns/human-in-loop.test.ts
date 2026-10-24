@@ -18,12 +18,11 @@ import {
   simpleApprovalFunc,
   confidenceBasedApprovalFunc,
 } from '../../patterns/human-in-loop';
-import { Message, createMessage } from '../../core/interfaces';
+import { createMessage } from '../../core/interfaces';
 import {
   createMockAgent,
   createErrorAgent,
   createConfidenceAgent,
-  validateMessage,
   hasMetadata,
   getMetadata,
 } from './test-helpers';
@@ -337,7 +336,7 @@ describe('HumanInLoopAgent', () => {
 
     it('should return modified response when provided', async () => {
       const agent = createConfidenceAgent('agent', 'original', 0.5);
-      const approvalFunc = async (request: ApprovalRequest): Promise<ApprovalResponse> => {
+      const approvalFunc = async (_request: ApprovalRequest): Promise<ApprovalResponse> => {
         return {
           approved: true,
           modifiedMessage: createMessage('assistant', 'modified by human'),

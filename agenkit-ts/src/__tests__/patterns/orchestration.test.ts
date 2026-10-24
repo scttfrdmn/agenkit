@@ -55,12 +55,12 @@ describe('SequentialPattern', () => {
       const agent1 = new (class {
         name = 'a1';
         capabilities = ['cap1', 'cap2'];
-        async process(m: Message) { return createMessage('assistant', ''); }
+        async process(_m: Message) { return createMessage('assistant', ''); }
       })();
       const agent2 = new (class {
         name = 'a2';
         capabilities = ['cap3'];
-        async process(m: Message) { return createMessage('assistant', ''); }
+        async process(_m: Message) { return createMessage('assistant', ''); }
       })();
 
       const pattern = new SequentialPattern([agent1, agent2]);

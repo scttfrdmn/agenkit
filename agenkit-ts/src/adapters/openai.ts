@@ -23,7 +23,7 @@
  */
 
 import OpenAI from 'openai';
-import type { ChatCompletionMessageParam, ChatCompletionChunk } from 'openai/resources/chat/completions';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
 import type { CallOptions } from '../core/call-options';
 

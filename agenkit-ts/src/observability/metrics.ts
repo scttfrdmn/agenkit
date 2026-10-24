@@ -10,7 +10,6 @@
 
 import {
   MeterProvider,
-  PeriodicExportingMetricReader,
 } from '@opentelemetry/sdk-metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';

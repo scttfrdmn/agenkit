@@ -22,47 +22,16 @@ import {
   DefaultStepExecutor,
   StepStatus,
   type LLMClient,
-  type StepExecutor,
-  type PlanStep,
 } from '../../patterns/planning';
 import { Message, createMessage } from '../../core/interfaces';
 
-/**
- * Mock LLM client that returns a plan.
- *
- * Implements `complete(messages)` — the contract the shipped adapters in
- * `src/adapters/` implement. Was `chat(messages)` until #805, a method no
- * adapter has, so this suite passed while `PlanningAgent` could not be used
- * with a real LLM. Do not rename it back.
- */
-class MockLLMClient implements LLMClient {
-  private response: string;
-  callCount = 0;
-
-  constructor(response: string) {
-    this.response = response;
-  }
-
-  async complete(messages: Message[]): Promise<Message> {
-    this.callCount++;
-    return createMessage('assistant', this.response);
-  }
-}
-
 /** LLM that returns a structured plan */
 class StructuredPlanLLM implements LLMClient {
-  async complete(messages: Message[]): Promise<Message> {
+  async complete(_messages: Message[]): Promise<Message> {
     return createMessage(
       'assistant',
       'Goal: Complete the task\nSteps:\n1. First step\n2. Second step\n3. Third step'
     );
-  }
-}
-
-/** Failing step executor */
-class FailingStepExecutor implements StepExecutor {
-  async execute(step: PlanStep, context: Record<string, any>): Promise<string> {
-    throw new Error('step failed');
   }
 }
 

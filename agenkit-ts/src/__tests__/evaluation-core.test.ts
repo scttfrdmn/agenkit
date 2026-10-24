@@ -29,10 +29,10 @@ class MockMetric implements Metric {
   name = 'mock_metric';
 
   async measure(
-    agent: Agent,
-    inputMessage: Message,
-    outputMessage: Message,
-    context?: Record<string, unknown>
+    _agent: Agent,
+    _inputMessage: Message,
+    _outputMessage: Message,
+    _context?: Record<string, unknown>
   ): Promise<number> {
     return 0.8;
   }

@@ -40,7 +40,6 @@ async function simulateRetry(
 ): Promise<RetryResult> {
   const delays: number[] = [];
   let attempts = 0;
-  let lastDelay = config.baseDelay;
 
   for (let attempt = 0; attempt < config.maxAttempts; attempt++) {
     attempts++;
@@ -61,7 +60,6 @@ async function simulateRetry(
         }
 
         delays.push(delay);
-        lastDelay = delay;
       }
     } else {
       // Success

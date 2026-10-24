@@ -8,7 +8,6 @@ import * as path from 'path';
 import {
   AuditEventType,
   AuditSeverity,
-  AuditEvent,
   createAuditEvent,
   ConsoleAuditAdapter,
   StructuredAuditAdapter,

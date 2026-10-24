@@ -137,7 +137,7 @@ export class AutonomousAgent implements Agent {
   /**
    * Process a message (autonomous agents don't need messages).
    */
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', `Autonomous agent working on: ${this.objective}`);
   }
 

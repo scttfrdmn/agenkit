@@ -218,7 +218,7 @@ export class SupervisorAgent implements Agent {
       subtasks = await this.planner.plan(message);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`planning failed: ${errorMsg}`);
+      throw new Error(`planning failed: ${errorMsg}`, { cause: error });
     }
 
     if (subtasks.length === 0) {
@@ -261,7 +261,7 @@ export class SupervisorAgent implements Agent {
         });
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        throw new Error(`specialist '${subtask.type}' failed on subtask ${i}: ${errorMsg}`);
+        throw new Error(`specialist '${subtask.type}' failed on subtask ${i}: ${errorMsg}`, { cause: error });
       }
     }
 
@@ -271,7 +271,7 @@ export class SupervisorAgent implements Agent {
       final = await this.planner.synthesize(message, results);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`synthesis failed: ${errorMsg}`);
+      throw new Error(`synthesis failed: ${errorMsg}`, { cause: error });
     }
 
     // Add supervisor metadata
@@ -343,7 +343,7 @@ export class SimplePlanner implements PlannerAgent {
    * @param message - Input message to decompose
    * @returns Array of subtasks (empty for this simple implementation)
    */
-  async plan(message: Message): Promise<Subtask[]> {
+  async plan(_message: Message): Promise<Subtask[]> {
     // In a real implementation, this would prompt the LLM to create a plan
     // and parse the response into Subtask structures.
     // For now, return empty to trigger direct processing.

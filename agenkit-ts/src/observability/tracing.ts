@@ -5,7 +5,7 @@
  * and middleware for instrumenting agent processing.
  */
 
-import { trace, context, propagation, Span, SpanStatusCode, Tracer } from '@opentelemetry/api';
+import { trace, context, propagation, SpanStatusCode, Tracer } from '@opentelemetry/api';
 import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
 import {
   CompositePropagator,

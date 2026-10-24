@@ -24,7 +24,7 @@ class MockAgent implements Agent {
     this.delay = delay;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     if (this.delay > 0) {
       await new Promise(resolve => setTimeout(resolve, this.delay));
     }

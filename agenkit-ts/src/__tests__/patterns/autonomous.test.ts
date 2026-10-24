@@ -13,8 +13,6 @@ import { describe, it, expect } from 'vitest';
 import {
   AutonomousAgent,
   createGoal,
-  type Goal,
-  type GoalStatus,
 } from '../../patterns/autonomous';
 import { createMessage } from '../../core/interfaces';
 

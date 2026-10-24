@@ -5,7 +5,7 @@
  * (TCP, Unix sockets, HTTP, WebSocket, gRPC, etc.).
  */
 
-import { ConnectionError, ConnectionClosedError, MalformedPayloadError } from './errors';
+import { MalformedPayloadError } from './errors';
 import { encodeBytes, decodeBytes, ProtocolEnvelope } from './codec';
 
 export const MAX_MESSAGE_SIZE = 10 * 1024 * 1024; // 10 MB

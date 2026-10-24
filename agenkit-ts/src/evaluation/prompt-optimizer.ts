@@ -180,7 +180,6 @@ export class PromptOptimizer {
     strategy: OptimizationStrategy,
     options?: Record<string, unknown>
   ): Promise<PromptOptimizationResult> {
-    const startTime = new Date();
     this.history = [];
 
     let result: PromptOptimizationResult;

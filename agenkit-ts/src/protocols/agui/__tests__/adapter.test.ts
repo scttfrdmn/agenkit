@@ -32,7 +32,7 @@ class MockAgent implements Agent {
     private confidence: number = 0.9,
   ) {}
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return {
       role: 'assistant',
       content: this.response,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Message } from '../../core/interfaces';
 import { CostTracker, MemoryStorage } from '../../budget/tracker';
-import { BudgetLimiter, BudgetExceededError, BudgetConfig } from '../../budget/limiter';
+import { BudgetLimiter, BudgetExceededError } from '../../budget/limiter';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -11,27 +11,6 @@ class MockAgent {
   async process(message: Message): Promise<Message> {
     return { role: 'assistant', content: `echo: ${message.content}` };
   }
-}
-
-/** Pre-load a tracker with spending for a session / agent */
-async function seedCost(
-  tracker: CostTracker,
-  sessionId: string,
-  agentName: string,
-  cost: number,
-) {
-  // Use a free model so pricing doesn't interfere; inject cost directly via
-  // a fake model pricing calculation.  The simplest approach is to set a
-  // model where pricing is known and feed token counts.
-  // claude-haiku-4: $0.00025/1k input, $0.00125/1k output (Jan 2026 rates)
-  // We just use a large enough number of output tokens to hit the desired cost.
-  // Alternatively, we mock getSessionCost — but here we use the real tracker
-  // via its recordCost mechanism.  Since exact pricing depends on ModelPricing,
-  // we bypass by recording a fake "cost-per-token-zero" scenario via spying
-  // instead of relying on exact model rates.
-  //
-  // Simplest: spy on getSessionCost directly per test that needs pre-seeded state.
-  void tracker; void sessionId; void agentName; void cost;
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────

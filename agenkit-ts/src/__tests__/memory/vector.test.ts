@@ -12,7 +12,7 @@ import {
   type EmbeddingProvider,
   type VectorStore,
 } from '../../memory/vector-memory';
-import { createMessage, type Message } from '../../core/interfaces';
+import { createMessage } from '../../core/interfaces';
 
 // Mock embedding provider for testing
 class MockEmbeddingProvider implements EmbeddingProvider {

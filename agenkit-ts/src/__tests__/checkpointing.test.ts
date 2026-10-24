@@ -269,7 +269,7 @@ describe('CheckpointManager', () => {
         parentCheckpointId: cp2,
       });
 
-      const replayFn = async (checkpoint: Checkpoint, state: Record<string, unknown>) => {
+      const replayFn = async (checkpoint: Checkpoint, _state: Record<string, unknown>) => {
         return checkpoint.stepNumber;
       };
 

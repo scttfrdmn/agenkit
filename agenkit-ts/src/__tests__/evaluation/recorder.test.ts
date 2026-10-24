@@ -25,7 +25,7 @@ class MockAgent implements Agent {
     this.responses = responses;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     const response = this.responses[this.callCount % this.responses.length];
     this.callCount++;
     return createMessage('assistant', response);

@@ -65,7 +65,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yaml from 'js-yaml';
 import type { Agent, Message } from '../index';
-import type { Benchmark } from './benchmarks';
 
 /**
  * Test case for pattern benchmarks (extends base TestCase with Message validator).

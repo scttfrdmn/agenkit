@@ -22,15 +22,15 @@ class MockAgent implements Agent {
     this.compressionStats = compressionStats || {};
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', 'Response');
   }
 
-  async getContextStats(sessionId: string): Promise<Record<string, unknown>> {
+  async getContextStats(_sessionId: string): Promise<Record<string, unknown>> {
     return this.contextStats;
   }
 
-  async getCompressionStats(sessionId: string): Promise<Record<string, unknown>> {
+  async getCompressionStats(_sessionId: string): Promise<Record<string, unknown>> {
     return this.compressionStats;
   }
 }

@@ -23,7 +23,7 @@ class MockAgent implements Agent {
     this.config = config;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     // Simulate accuracy based on temperature (lower = better)
     const temperature = (this.config.temperature as number) || 0.5;
     const accuracy = 1.0 - temperature * 0.5; // Higher temp = lower accuracy
@@ -100,8 +100,6 @@ describe('SearchSpace', () => {
   test('sample generates different configurations', () => {
     space.addContinuous('temperature', 0.0, 1.0);
 
-    const config1 = space.sample();
-    const config2 = space.sample();
 
     // Should be different (with very high probability)
     // Run multiple times to be sure

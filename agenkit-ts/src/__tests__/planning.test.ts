@@ -5,7 +5,6 @@
 import {
   PlanningAgent,
   StepStatus,
-  Plan,
   PlanStep,
   createPlan,
   createPlanStep,
@@ -37,7 +36,7 @@ class MockLLMClient implements LLMClient {
     this.callCount = 0;
   }
 
-  async complete(messages: Message[]): Promise<Message> {
+  async complete(_messages: Message[]): Promise<Message> {
     const response = this.responses[this.callCount] || this.responses[0];
     this.callCount++;
     return createMessage('assistant', response);
@@ -57,7 +56,7 @@ class MockStepExecutor implements StepExecutor {
     this.executedSteps = [];
   }
 
-  async execute(step: PlanStep, context: Record<string, any>): Promise<string> {
+  async execute(step: PlanStep, _context: Record<string, any>): Promise<string> {
     this.executedSteps.push(step);
 
     if (this.shouldFail) {

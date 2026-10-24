@@ -30,7 +30,7 @@ class MockAgent implements Agent {
     this.callCount = 0;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     if (this.shouldFail) {
       throw new Error('Mock agent failed');
     }

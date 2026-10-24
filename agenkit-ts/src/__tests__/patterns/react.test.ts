@@ -15,10 +15,9 @@ import {
   ReActAgent,
   createReActAgent,
   ReActStopReason,
-  type ReActStep,
 } from '../../patterns/react';
-import { Message, Tool, ToolResult, createMessage } from '../../core/interfaces';
-import { createMockAgent, createErrorAgent } from './test-helpers';
+import { Tool, ToolResult, createMessage } from '../../core/interfaces';
+import { createMockAgent } from './test-helpers';
 
 /** Mock tool for testing */
 class MockTool implements Tool {
@@ -33,7 +32,7 @@ class MockTool implements Tool {
     this.result = result;
   }
 
-  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+  async execute(_params: Record<string, unknown>): Promise<ToolResult> {
     this.callCount++;
     return { output: this.result, success: true };
   }
@@ -48,7 +47,7 @@ class FailingTool implements Tool {
     this.name = name;
   }
 
-  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+  async execute(_params: Record<string, unknown>): Promise<ToolResult> {
     throw new Error('tool execution failed');
   }
 }
@@ -56,25 +55,6 @@ class FailingTool implements Tool {
 /** Agent that always returns a "Final Answer:" */
 function createFinalAnswerAgent(answer: string) {
   return createMockAgent('llm', `Thought: I know the answer\nFinal Answer: ${answer}`);
-}
-
-/** Agent that returns an action then a final answer */
-function createToolUseAgent(toolName: string, toolInput: string, finalAnswer: string) {
-  let callCount = 0;
-  return {
-    name: 'llm',
-    capabilities: ['mock'],
-    async process(message: Message): Promise<Message> {
-      callCount++;
-      if (callCount === 1) {
-        return createMessage(
-          'assistant',
-          `Thought: I need to use a tool\nAction: ${toolName}\nAction Input: ${toolInput}`
-        );
-      }
-      return createMessage('assistant', `Thought: Done\nFinal Answer: ${finalAnswer}`);
-    },
-  };
 }
 
 describe('ReActAgent', () => {
@@ -271,8 +251,8 @@ describe('ReActAgent', () => {
       await react.process(createMessage('user', 'Second question'));
       const stepsAfterSecond = react.getSteps().length;
 
-      // Steps count may be the same since it resets each time
       expect(stepsAfterSecond).toBeGreaterThan(0);
+      expect(stepsAfterSecond).toBe(stepsAfterFirst);
     });
   });
 

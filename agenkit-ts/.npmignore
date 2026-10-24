@@ -11,7 +11,7 @@ jest.setup.js
 coverage/
 
 # Development files
-.eslintrc.js
+eslint.config.mjs
 .prettierrc
 node_modules/
 

@@ -2,9 +2,9 @@
  * Tests for Least-to-Most reasoning technique.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Agent, Message, createMessage } from '../../core/interfaces';
-import { LeastToMost, createLeastToMost, Subproblem } from './least-to-most';
+import { LeastToMost, createLeastToMost } from './least-to-most';
 
 /**
  * Mock agent for testing.
@@ -29,7 +29,7 @@ class MockAgent implements Agent {
     this.shouldFail = fail;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     if (this.shouldFail) {
       throw new Error('Mock agent failed');
     }
@@ -152,7 +152,7 @@ describe('LeastToMost', () => {
     });
 
     it('should use custom decomposer when provided', async () => {
-      const customDecomposer = (problem: string) => [
+      const customDecomposer = (_problem: string) => [
         'Custom step 1',
         'Custom step 2',
         'Custom step 3',
@@ -175,7 +175,7 @@ describe('LeastToMost', () => {
     });
 
     it('should support async custom decomposer', async () => {
-      const asyncDecomposer = async (problem: string) => {
+      const asyncDecomposer = async (_problem: string) => {
         await new Promise((resolve) => setTimeout(resolve, 10));
         return ['Async step 1', 'Async step 2'];
       };

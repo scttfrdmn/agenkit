@@ -25,7 +25,7 @@ class UnreliableAgent implements Agent {
     private delay: number = 0,
   ) {}
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     if (this.delay > 0) {
       await new Promise((resolve) => setTimeout(resolve, this.delay));
     }

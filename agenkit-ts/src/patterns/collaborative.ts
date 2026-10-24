@@ -222,7 +222,7 @@ export class CollaborativeAgent implements Agent {
           responses.push(response);
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
-          throw new Error(`agent ${agent.name} failed in round ${round}: ${errorMsg}`);
+          throw new Error(`agent ${agent.name} failed in round ${round}: ${errorMsg}`, { cause: error });
         }
       }
 
@@ -334,7 +334,7 @@ export const DefaultConsensusFunc = {
    *
    * @param threshold - Similarity threshold (0.0 to 1.0)
    */
-  similarityThreshold: (threshold: number): ConsensusFunc => {
+  similarityThreshold: (_threshold: number): ConsensusFunc => {
     return (messages: Message[]): boolean => {
       if (messages.length <= 1) {
         return true;

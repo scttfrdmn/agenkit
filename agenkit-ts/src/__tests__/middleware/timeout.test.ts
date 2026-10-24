@@ -16,7 +16,7 @@ class FastAgent implements Agent {
 
   constructor(private delay: number = 10) {}
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     await new Promise((resolve) => setTimeout(resolve, this.delay));
     return createMessage('assistant', 'fast response');
   }
@@ -29,7 +29,7 @@ class SlowAgent implements Agent {
 
   constructor(private delay: number = 5000) {}
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     await new Promise((resolve) => setTimeout(resolve, this.delay));
     return createMessage('assistant', 'slow response');
   }
@@ -54,7 +54,7 @@ class StreamingAgent implements Agent {
 
   constructor(private chunkDelay: number = 10, private numChunks: number = 3) {}
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', 'non-streaming response');
   }
 

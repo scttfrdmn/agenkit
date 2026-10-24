@@ -15,7 +15,7 @@ class TestAgent implements Agent {
   capabilities = [];
   private callCount = 0;
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     this.callCount++;
     return createMessage('assistant', `response ${this.callCount}`);
   }

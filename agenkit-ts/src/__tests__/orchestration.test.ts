@@ -46,7 +46,7 @@ class CounterAgent implements Agent {
     this.id = id;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     this.counter.push(this.id);
     return createMessage('assistant', `Agent ${this.id}`);
   }
@@ -369,14 +369,14 @@ describe('Pattern Composition', () => {
 describe('RouterPattern', () => {
   describe('Configuration', () => {
     it('should throw if handlers is empty', () => {
-      const router: Router = msg => 'default';
+      const router: Router = _msg => 'default';
       expect(() => {
         new RouterPattern(router, {});
       }).toThrow('Router pattern requires at least one handler');
     });
 
     it('should use default name', () => {
-      const router: Router = msg => 'agent1';
+      const router: Router = _msg => 'agent1';
       const agent1 = new MockAgent('agent1', 'response');
       const pattern = new RouterPattern(router, { agent1 });
 
@@ -384,7 +384,7 @@ describe('RouterPattern', () => {
     });
 
     it('should use custom name', () => {
-      const router: Router = msg => 'agent1';
+      const router: Router = _msg => 'agent1';
       const agent1 = new MockAgent('agent1', 'response');
       const pattern = new RouterPattern(router, { agent1 }, { name: 'my_router' });
 

@@ -42,7 +42,7 @@
 import type { Agent, Message } from '../../core/interfaces';
 import type { CallOptions } from '../../core/call-options';
 import { processWithOptions } from '../../core/call-options';
-import { ReasoningTree, NodeState, type ReasoningNode } from './reasoning-tree';
+import { ReasoningTree, NodeState } from './reasoning-tree';
 
 /**
  * Search strategy for tree exploration.

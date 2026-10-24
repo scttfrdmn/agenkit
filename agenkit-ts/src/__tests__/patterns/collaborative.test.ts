@@ -18,12 +18,11 @@ import {
   ConsensusFunc,
   MergeFunc,
 } from '../../patterns/collaborative';
-import { Message, createMessage } from '../../core/interfaces';
+import { createMessage } from '../../core/interfaces';
 import {
   createMockAgent,
   createErrorAgent,
   CallCountingAgent,
-  validateMessage,
   hasMetadata,
   getMetadata,
 } from './test-helpers';

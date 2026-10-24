@@ -15,7 +15,7 @@ import {
   StopReason,
   CritiqueFormat,
 } from '../../patterns/reflection';
-import { Message, createMessage } from '../../core/interfaces';
+import { createMessage } from '../../core/interfaces';
 import { createMockAgent, ExtendedMockAgent } from './test-helpers';
 
 /** Generator that returns a fixed output */
@@ -31,18 +31,6 @@ function createStructuredCriticAgent(score: number, feedback: string) {
 /** Critic that returns free-form text with score */
 function createFreeFormCriticAgent(score: number) {
   return createMockAgent('critic', `Score: ${score}\nThe output is good.`);
-}
-
-/** Generator that returns incrementally better outputs */
-class ProgressiveGeneratorAgent {
-  readonly name = 'progressive_generator';
-  private callCount = 0;
-  readonly capabilities = ['mock'];
-
-  async process(message: Message): Promise<Message> {
-    this.callCount++;
-    return createMessage('assistant', `Output version ${this.callCount}`);
-  }
 }
 
 describe('ReflectionAgent', () => {

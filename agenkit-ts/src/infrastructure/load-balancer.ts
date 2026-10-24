@@ -348,7 +348,7 @@ export class LoadBalancer implements Agent {
         }
 
         // No more failover
-        throw new Error(`Backend ${backend.agent.name} failed: ${error}`);
+        throw new Error(`Backend ${backend.agent.name} failed: ${error}`, { cause: error });
       }
     }
   }

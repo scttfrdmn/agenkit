@@ -21,7 +21,7 @@ class FailingAgent implements Agent {
     private errorMessage: string = 'network error',
   ) {}
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     this.attemptCount++;
 
     if (this.attemptCount <= this.failCount) {

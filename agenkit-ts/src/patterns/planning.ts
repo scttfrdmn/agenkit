@@ -193,7 +193,7 @@ export interface StepExecutor {
  * Default step executor that returns mock results.
  */
 export class DefaultStepExecutor implements StepExecutor {
-  async execute(step: PlanStep, context: Record<string, any>): Promise<string> {
+  async execute(step: PlanStep, _context: Record<string, any>): Promise<string> {
     // Mock execution - just return success
     return `Completed: ${step.description}`;
   }

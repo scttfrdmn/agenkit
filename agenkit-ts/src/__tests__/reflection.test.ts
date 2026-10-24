@@ -23,7 +23,7 @@ class MockAgent implements Agent {
     this.responses = responses;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     if (this.responseIndex >= this.responses.length) {
       throw new Error('No more mock responses available');
     }
@@ -377,7 +377,7 @@ describe('ReflectionAgent', () => {
       class CapableAgent implements Agent {
         readonly name = 'capable';
         readonly capabilities = ['coding', 'testing'];
-        async process(message: Message): Promise<Message> {
+        async process(_message: Message): Promise<Message> {
           return createMessage('assistant', 'response');
         }
       }

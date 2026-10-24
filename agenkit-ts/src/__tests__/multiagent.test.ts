@@ -6,7 +6,6 @@ import {
   MultiAgentOrchestrator,
   ConsensusAgent,
   AgentTask,
-  TaskStatus,
 } from '../patterns/multiagent';
 import { Agent, Message, createMessage } from '../core/interfaces';
 
@@ -42,7 +41,7 @@ class MockAgent implements Agent {
 class FailingAgent implements Agent {
   readonly name = 'FailingAgent';
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     throw new Error('Simulated failure');
   }
 }

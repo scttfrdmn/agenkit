@@ -123,7 +123,7 @@ export function createConfidenceAgent(name: string, response: string, confidence
 export function createDelayAgent(name: string, response: string, delayMs: number): Agent {
   return new ExtendedMockAgent({
     name,
-    processFunc: async (message: Message) => {
+    processFunc: async (_message: Message) => {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
       return createMessage('assistant', response);
     },
@@ -181,7 +181,7 @@ export class FlakyAgent implements Agent {
     return ['mock', 'flaky'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     this.callCount++;
     if (this.failuresLeft > 0) {
       this.failuresLeft--;

@@ -24,7 +24,7 @@ class MockAgent implements Agent {
     this.capabilities = capabilities;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', this.response);
   }
 }

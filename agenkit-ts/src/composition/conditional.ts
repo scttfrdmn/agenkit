@@ -124,6 +124,7 @@ export class ConditionalAgent implements Agent {
             error instanceof Error ? error.message : String(error);
           throw new Error(
             `Route ${i + 1} (${route.agent.name}) failed: ${errorMessage}`,
+            { cause: error },
           );
         }
       }
@@ -144,6 +145,7 @@ export class ConditionalAgent implements Agent {
         error instanceof Error ? error.message : String(error);
       throw new Error(
         `Default agent (${this.defaultAgent.name}) failed: ${errorMessage}`,
+        { cause: error },
       );
     }
   }

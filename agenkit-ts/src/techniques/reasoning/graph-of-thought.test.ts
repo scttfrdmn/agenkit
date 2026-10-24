@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { Message } from '../../core/interfaces';
 import { GraphOfThought } from './graph-of-thought';
 import { EdgeType, NodeType, ReasoningGraph } from './reasoning-graph';
@@ -20,7 +20,7 @@ class MockAgent {
     return ['mock'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     const response = this.responses[this.callCount % this.responses.length];
     this.callCount++;
 

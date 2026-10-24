@@ -154,7 +154,6 @@ describe('VectorMemory', () => {
 
   describe('Metadata Filtering', () => {
     beforeEach(async () => {
-      const now = Date.now();
 
       await vectorMemory.store('session-1', { role: 'user', content: 'Low importance' }, { importance: 0.3 });
 

@@ -74,7 +74,6 @@ describe('OpenAIAdapter', () => {
 
   describe('message processing', () => {
     it('should handle user messages', () => {
-      const adapter = new OpenAIAdapter({ apiKey: 'test-key' });
       const message = createMessage({
         role: 'user',
         content: 'Hello, how are you?',
@@ -86,7 +85,6 @@ describe('OpenAIAdapter', () => {
     });
 
     it('should validate message format', () => {
-      const adapter = new OpenAIAdapter({ apiKey: 'test-key' });
       const message = createMessage({
         role: 'user',
         content: 'Test message',

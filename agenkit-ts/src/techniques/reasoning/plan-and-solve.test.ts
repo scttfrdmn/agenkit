@@ -19,7 +19,7 @@ class MockAgent implements Agent {
     this.responses = Array.isArray(responses) ? responses : [responses];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     const response = this.responses[this.index % this.responses.length];
     this.index++;
 
@@ -249,7 +249,7 @@ describe('PlanAndSolve', () => {
     });
 
     it('should use custom solver when provided', async () => {
-      const customSolver = async (step: PlanStep, previousResults: string[]): Promise<string> => {
+      const customSolver = async (step: PlanStep, _previousResults: string[]): Promise<string> => {
         return `Custom solution for: ${step.description}`;
       };
 

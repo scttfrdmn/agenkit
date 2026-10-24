@@ -132,12 +132,10 @@ export class MetricsDecorator implements Agent {
     });
 
     const startTime = Date.now();
-    let success = false;
 
     try {
       // Call underlying agent
       const response = await this.agent.process(message);
-      success = true;
 
       // Calculate latency
       const latency = Date.now() - startTime;

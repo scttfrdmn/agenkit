@@ -41,7 +41,7 @@ class MockClassifier implements ClassifierAgent {
     return ['mock', 'classification'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', 'classifier response');
   }
 
@@ -360,10 +360,10 @@ describe('RouterAgent', () => {
         get capabilities() {
           return ['classification'];
         }
-        async process(message: Message) {
+        async process(_message: Message) {
           return createMessage('assistant', 'response');
         }
-        async classify(message: Message) {
+        async classify(_message: Message) {
           throw new Error('classification error');
         }
       }

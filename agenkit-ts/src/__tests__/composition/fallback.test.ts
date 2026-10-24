@@ -14,7 +14,7 @@ class ReliableAgent implements Agent {
     return ['reliable'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('agent', `Processed by ${this.name}`);
   }
 }

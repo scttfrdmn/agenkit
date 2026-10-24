@@ -249,12 +249,12 @@ describe('RetryMiddleware: Metrics', () => {
 // ============================================
 
 describe('RetryMiddleware: Configuration', () => {
-  it('should use default config values', () => {
+  it('should use default config values', async () => {
     const agent = new FailingAgent(0, 'success');
     const retry = new RetryMiddleware(agent);
 
     const input = createMessage('user', 'test');
-    expect(retry.process(input)).resolves.toBeDefined();
+    await expect(retry.process(input)).resolves.toBeDefined();
   });
 
   it('should accept custom config values', () => {

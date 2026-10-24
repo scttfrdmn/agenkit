@@ -5,17 +5,24 @@
  * and middleware for instrumenting agent processing.
  */
 
-import { trace, context, Span, SpanStatusCode, Tracer } from '@opentelemetry/api';
-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import { trace, context, propagation, Span, SpanStatusCode, Tracer } from '@opentelemetry/api';
+import { AsyncLocalStorageContextManager } from '@opentelemetry/context-async-hooks';
+import {
+  CompositePropagator,
+  W3CBaggagePropagator,
+  W3CTraceContextPropagator,
+} from '@opentelemetry/core';
 import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME } from '@opentelemetry/semantic-conventions';
 import {
+  TracerProvider,
   ConsoleSpanExporter,
   SimpleSpanProcessor as BaseSimpleSpanProcessor,
   BatchSpanProcessor as BaseBatchSpanProcessor,
+  TraceIdRatioBasedSampler,
+  ParentBasedSampler,
   type SpanProcessor,
-} from '@opentelemetry/sdk-trace-base';
-import { TraceIdRatioBasedSampler, ParentBasedSampler } from '@opentelemetry/sdk-trace-base';
+} from '@opentelemetry/sdk-trace';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { Agent, Message } from '../core/interfaces';
 import { BaseMiddleware } from '../middleware/base';
@@ -77,7 +84,7 @@ export interface TraceContext {
   tracestate?: string;
 }
 
-let tracerProvider: NodeTracerProvider | null = null;
+let tracerProvider: TracerProvider | null = null;
 let tracer: Tracer | null = null;
 
 /**
@@ -110,7 +117,7 @@ let tracer: Tracer | null = null;
  * initTracing({ sampleRate: 0.01 });
  * ```
  */
-export function initTracing(config: TracingConfig): NodeTracerProvider {
+export function initTracing(config: TracingConfig): TracerProvider {
   const serviceName = resolveServiceName(config.serviceName);
   const otlpEndpoint = resolveOtlpEndpoint(config.otlpEndpoint);
 
@@ -133,24 +140,34 @@ export function initTracing(config: TracingConfig): NodeTracerProvider {
   // constructor (`addSpanProcessor` was removed).
   const spanProcessors: SpanProcessor[] = [];
   if (config.consoleExport) {
-    spanProcessors.push(new BaseSimpleSpanProcessor(new ConsoleSpanExporter()));
+    spanProcessors.push(new BaseSimpleSpanProcessor({ exporter: new ConsoleSpanExporter() }));
   }
   if (otlpEndpoint) {
     const otlpExporter = new OTLPTraceExporter({
       url: otlpEndpoint,
     });
-    spanProcessors.push(new BaseBatchSpanProcessor(otlpExporter));
+    spanProcessors.push(new BaseBatchSpanProcessor({ exporter: otlpExporter }));
   }
 
   // Create tracer provider with sampler + processors
-  tracerProvider = new NodeTracerProvider({
+  tracerProvider = new TracerProvider({
     resource,
     sampler,
     spanProcessors,
   });
 
-  // Register as global provider
-  tracerProvider.register();
+  // Register globally. otel-js 3.0 merged sdk-trace-node into sdk-trace and
+  // dropped NodeTracerProvider.register(), so wire up what it used to do by
+  // default: an AsyncLocalStorage context manager (parent/child spans across
+  // awaits) and W3C trace-context + baggage propagation, which
+  // injectTraceContext/extractTraceContext rely on for cross-language traces.
+  context.setGlobalContextManager(new AsyncLocalStorageContextManager().enable());
+  propagation.setGlobalPropagator(
+    new CompositePropagator({
+      propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()],
+    })
+  );
+  trace.setGlobalTracerProvider(tracerProvider);
 
   // Get tracer
   tracer = trace.getTracer('@agenkit/core', '0.2.0');

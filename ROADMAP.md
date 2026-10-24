@@ -17,8 +17,10 @@ TypeScript, Rust, C++, Zig, C#, Java, Scala), MCP support, Reasoning Memory, and
 Skills landed by v0.85.0 (2026-03-18); v0.86.0/v0.87.0 added a typed cross-language token
 `Usage` struct; v0.88.0 is intentionally skipped (reserved for the observability
 milestone, #715); v0.89.0 was a defect-repair release (82 commits) closing out several
-release-gate and CI bugs. See `CHANGELOG.md` for full per-release detail and GitHub
-milestones for the authoritative work-tracking source.
+release-gate and CI bugs; v0.90.0–v0.92.0 (2026-08-09 → 2026-08-12) fixed contract bugs,
+converged `Tool.execute()`, and shipped spec-conformance rung 2. See `CHANGELOG.md` for
+full per-release detail and GitHub milestones for the authoritative work-tracking source.
+Upcoming releases: see "Upcoming (Q4 2026)" under Milestone Tracking below.
 
 1. **30-Hour Autonomous Operation**: Infrastructure ready for extended agent sessions
 2. **Production Infrastructure**: Checkpointing, budget tracking, and memory systems complete
@@ -1786,6 +1788,24 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 > release train; see the root `VERSION` file and `CHANGELOG.md` for the
 > actual history.
 
+#### Upcoming (Q4 2026)
+
+High-level only — issue lists live on the milestones.
+
+**v0.93.0 — Graph/Framework-Builder Support** ([milestone #98](https://github.com/scttfrdmn/agenkit/milestone/98))
+- Durable interrupt/resume contract in `agenkit.checkpointing`, wired to
+  `HumanInLoopAgent` and `minilanggraph` (#934, #932); HITL gating/escalation (#935)
+- Graph-shaped memory backend (#930); graph-frameworks guide for builders (#933)
+- Protocol adapters as a tracked 6th parity category (#1002)
+- Python `ruff check` gated in CI (#1054)
+
+**v0.94.0 — Spec Conformance Rung 3 & Parity** ([milestone #104](https://github.com/scttfrdmn/agenkit/milestone/104))
+- Continues the v0.92.0 theme, whose release shipped only its first tranche
+  (rung 2 checker, 38 conformance registrations — see `CHANGELOG.md`)
+- Rung 3 spec conformance: execute `specs/patterns/*.yaml` test cases (#909)
+- Drain the conformance `EXCLUDED` set in tranches (#923)
+- C#/Java/Scala cross-language harnesses (#754); 9-language parity audit (#654)
+
 #### Post-v1.0 (Q2-Q4 2026)
 
 **v1.1.0+:** Techniques Library expansion
@@ -1808,6 +1828,6 @@ See [.github/STRATEGIC_2026_ROADMAP.md](.github/STRATEGIC_2026_ROADMAP.md) for d
 - 🐛 Issues: [GitHub Issues](https://github.com/scttfrdmn/agenkit/issues)
 - 🐦 Twitter/X: [@agenkit]
 
-Last updated: 2026-08-06, tracking v0.89.0 (see `VERSION` and `CHANGELOG.md` for
+Last updated: 2026-10-24, tracking v0.92.0 (see `VERSION` and `CHANGELOG.md` for
 the current release — this line will drift again if hand-maintained, so treat
 those two files as authoritative and this one as historical narrative only).

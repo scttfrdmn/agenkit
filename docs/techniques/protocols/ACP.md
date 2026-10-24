@@ -39,10 +39,14 @@ are in scope for this design; the client direction is Phase 1.
 
 `agenkit/protocols/acp/` — the modern protocol tree (alongside
 `agenkit/protocols/mcp/` and `agenkit/protocols/agui/`), **not** the older
-`agenkit/techniques/protocols/` tree. Protocols are deliberately outside agenkit's
-cross-language parity matrix (the parity scanner tracks only patterns, middleware,
-llm_adapters, memory, and techniques), and A2A is already Python-only — so a
-Python-first ACP is legitimate and breaks no parity gate. An optional Go mirror
+`agenkit/techniques/protocols/` tree. Protocol adapters are a tracked parity
+category (#1002/#1003): the scanner names each protocol by the immediate child of a
+`protocols/` root, so `acp/` will appear in `docs/parity/GAPS_ANALYSIS.md` as a
+gap in every language that lacks it. That is reported, not gated — A2A is already
+Python-only the same way — so a Python-first ACP is legitimate and breaks no parity
+gate. Adding the directory does change Python's protocol set, which
+`tests/parity/test_feature_detection.py` pins exactly; update that assertion and
+regenerate the manifest in the same PR. An optional Go mirror
 (`agenkit-go/protocols/acp/`) is Phase 3, matching the existing
 `agenkit-go/protocols/{mcp,agui}`.
 

@@ -4,6 +4,8 @@ node_modules/
 # Build output
 dist/
 *.tsbuildinfo
+# Stray compiled copy of src/ that was once committed here
+examples/src/
 
 # Test coverage
 coverage/

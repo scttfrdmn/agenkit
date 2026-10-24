@@ -85,24 +85,24 @@ getrandom = { version = "0.2", features = ["js"], optional = true }
 statrs = "0.19"
 
 # Performance optimizations
-lru = { version = "0.18", optional = true }
+lru = { version = "0.19", optional = true }
 moka = { version = "0.12", features = ["future"], optional = true }
 crossbeam = { version = "0.8", optional = true }
 rayon = { version = "1.8", optional = true }
 lazy_static = { version = "1.4", optional = true }
-parking_lot = { version = "0.12", optional = true }
+parking_lot = { version = "0.13", optional = true }
 
 # Tracing and logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optional = true }
 
 # OpenTelemetry Core
-opentelemetry = { version = "0.32", features = ["trace", "metrics", "logs"], optional = true }
-opentelemetry_sdk = { version = "0.32", features = ["trace", "metrics", "logs", "rt-tokio"], optional = true }
+opentelemetry = { version = "0.33", features = ["trace", "metrics", "logs"], optional = true }
+opentelemetry_sdk = { version = "0.33", features = ["trace", "metrics", "logs", "rt-tokio"], optional = true }
 
 # OpenTelemetry Tracing Integration
-tracing-opentelemetry = { version = "0.33", optional = true }
-opentelemetry-otlp = { version = "0.32", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
+tracing-opentelemetry = { version = "0.34", optional = true }
+opentelemetry-otlp = { version = "0.33", features = ["trace", "metrics", "logs", "grpc-tonic"], optional = true }
 
 # OpenTelemetry Exporters
 # NOTE: opentelemetry-jaeger (deprecated upstream; Jaeger ingests OTLP natively),
@@ -110,7 +110,7 @@ opentelemetry-otlp = { version = "0.32", features = ["trace", "metrics", "logs",
 # removed — they were unused in the code and pulled in vulnerable transitive
 # crates (thrift, protobuf 2.x). The stdout exporter is the only one wired up;
 # OTLP remains for the modern export path.
-opentelemetry-stdout = { version = "0.32", optional = true }
+opentelemetry-stdout = { version = "0.33", optional = true }
 
 # Global state management
 once_cell = { version = "1.19", optional = true }

@@ -54,11 +54,13 @@ class AnthropicLLM(LLM):
     Provider-specific options:
         >>> response = await llm.complete(
         ...     messages,
-        ...     temperature=0.7,
         ...     max_tokens=1024,
-        ...     top_p=0.9,
         ...     stop_sequences=["Human:", "Assistant:"]
         ... )
+
+    ``temperature``, ``top_p`` and ``top_k`` are deprecated and ignored with a
+    warning: Anthropic API version 2026-10-21 (the default from ``anthropic``
+    2.0) rejects sampling parameters on every model.
     """
 
     def __init__(
@@ -79,7 +81,7 @@ class AnthropicLLM(LLM):
     async def complete(
         self,
         messages: list[Message],
-        temperature: float = 1.0,
+        temperature: float | None = None,
         max_tokens: int = 4096,
         **kwargs: Any,
     ) -> Message:
@@ -88,9 +90,9 @@ class AnthropicLLM(LLM):
 
         Args:
             messages: Conversation history as Agenkit Messages
-            temperature: Sampling temperature (0.0-1.0)
+            temperature: Deprecated and ignored (warns if set); see class docs
             max_tokens: Maximum tokens to generate
-            **kwargs: Additional Anthropic API options (top_p, top_k, stop_sequences, etc.)
+            **kwargs: Additional Anthropic API options (stop_sequences, metadata, etc.)
 
         Returns:
             Response as Agenkit Message with metadata including:
@@ -103,13 +105,13 @@ class AnthropicLLM(LLM):
             ...     Message(role="system", content="You are a helpful assistant."),
             ...     Message(role="user", content="What is 2+2?")
             ... ]
-            >>> response = await llm.complete(messages, temperature=0.2)
+            >>> response = await llm.complete(messages)
             >>> print(response.content)
             >>> print(response.metadata["usage"])
         """
         # Validate parameters
-        self._validate_llm_params(temperature, max_tokens, **kwargs)
-        kwargs = self._translate_options(kwargs)
+        self._validate_llm_params(None, max_tokens, **kwargs)
+        kwargs = self._translate_options(kwargs, temperature)
 
         # Convert Agenkit Messages to Anthropic format
         anthropic_messages = self._convert_messages(messages)
@@ -121,7 +123,6 @@ class AnthropicLLM(LLM):
         response = await self._client.messages.create(
             model=self._model,
             messages=anthropic_messages,
-            temperature=temperature,
             max_tokens=max_tokens,
             system=system_message or "",
             **kwargs,
@@ -155,7 +156,7 @@ class AnthropicLLM(LLM):
     async def stream(
         self,
         messages: list[Message],
-        temperature: float = 1.0,
+        temperature: float | None = None,
         max_tokens: int = 4096,
         **kwargs: Any,
     ) -> AsyncIterator[Message]:
@@ -164,7 +165,7 @@ class AnthropicLLM(LLM):
 
         Args:
             messages: Conversation history as Agenkit Messages
-            temperature: Sampling temperature (0.0-1.0)
+            temperature: Deprecated and ignored (warns if set); see class docs
             max_tokens: Maximum tokens to generate
             **kwargs: Additional Anthropic API options
 
@@ -177,8 +178,8 @@ class AnthropicLLM(LLM):
             ...     print(chunk.content, end="", flush=True)
         """
         # Validate parameters
-        self._validate_llm_params(temperature, max_tokens, **kwargs)
-        kwargs = self._translate_options(kwargs)
+        self._validate_llm_params(None, max_tokens, **kwargs)
+        kwargs = self._translate_options(kwargs, temperature)
 
         # Convert messages
         anthropic_messages = self._convert_messages(messages)
@@ -188,7 +189,6 @@ class AnthropicLLM(LLM):
         async with self._client.messages.stream(
             model=self._model,
             messages=anthropic_messages,
-            temperature=temperature,
             max_tokens=max_tokens,
             system=system_message or "",
             **kwargs,
@@ -223,7 +223,9 @@ class AnthropicLLM(LLM):
 
         return anthropic_messages
 
-    def _translate_options(self, kwargs: dict[str, Any]) -> dict[str, Any]:
+    def _translate_options(
+        self, kwargs: dict[str, Any], temperature: float | None = None
+    ) -> dict[str, Any]:
         """
         Translate portable :class:`~agenkit.CallOptions` fields to Anthropic's names.
 
@@ -238,15 +240,22 @@ class AnthropicLLM(LLM):
         output — that the option was dropped (#818, the same defect as #801's
         ``temperature``).
 
+        ``temperature``, ``top_p`` and ``top_k`` are dropped and warned about the
+        same way: API version 2026-10-21 returns 400 for any of them, on every
+        model (#1071).
+
         Args:
             kwargs: Rendered ``CallOptions`` kwargs (from ``to_kwargs()``) plus any
                 other provider kwargs the caller passed directly.
+            temperature: The explicit ``temperature`` argument, if any.
 
         Returns:
-            ``kwargs`` with ``stop`` renamed to ``stop_sequences`` and ``seed``
-            removed (after warning, if it was set).
+            ``kwargs`` with ``stop`` renamed to ``stop_sequences`` and ``seed`` and
+            sampling parameters removed (after warning, if they were set).
         """
         kwargs = dict(kwargs)
+        if temperature is not None:
+            kwargs["temperature"] = temperature
         if "stop" in kwargs:
             kwargs["stop_sequences"] = kwargs.pop("stop")
         if "seed" in kwargs:
@@ -254,6 +263,13 @@ class AnthropicLLM(LLM):
             self._warn_unsupported_option(
                 "seed", "the Anthropic Messages API has no sampling-seed parameter"
             )
+        for option in ("temperature", "top_p", "top_k"):
+            if kwargs.pop(option, None) is not None:
+                self._warn_unsupported_option(
+                    option,
+                    "Anthropic API version 2026-10-21 rejects sampling parameters "
+                    "(deprecated; will be removed)",
+                )
         return kwargs
 
     def _extract_system_message(self, messages: list[Message]) -> str | None:

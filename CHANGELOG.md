@@ -22,6 +22,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are accepted but ignored, with a `console.warn`. `AnthropicAgent` no longer
   range-checks `temperature`, since the value is never sent. To be removed
   in a later 0.x release.
+- **Python: `AnthropicLLM` sampling options** (#1071). `temperature`
+  (now defaulting to `None`), `top_p` and `top_k`, whether passed directly or
+  via `CallOptions`, are accepted but dropped with a `UserWarning`, the same
+  way `seed` is. To be removed in a later 0.x release.
+
+### Fixed
+
+- **Python: `AnthropicLLM` broken on `anthropic>=2.0`** (#1071). The
+  `anthropic` extra has no upper bound, so fresh installs resolve
+  `anthropic` 2.x, which sends `anthropic-version: 2026-10-21`. That version
+  returns 400 for any request carrying `temperature`/`top_p`/`top_k`, and
+  `complete()`/`stream()` always sent `temperature=1.0`. They no longer send
+  sampling parameters. The mocked adapter tests now run in CI: `anthropic`
+  was missing from the `test` extra, so they had always been skipped.
 
 ## [v0.92.0] - 2026-08-12
 

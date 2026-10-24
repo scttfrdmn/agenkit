@@ -21,7 +21,10 @@ export interface AnthropicConfig {
   /** Agent name (default: "claude") */
   name?: string;
 
-  /** Temperature (default: 1.0) */
+  /**
+   * @deprecated Ignored. Anthropic API version 2026-10-21 rejects sampling
+   * parameters on every model; setting this logs a warning. Will be removed.
+   */
   temperature?: number;
 
   /** Max tokens (default: 4096) */
@@ -44,7 +47,6 @@ export interface AnthropicConfig {
  *   const agent = new AnthropicAgent({
  *     apiKey: process.env.ANTHROPIC_API_KEY!,
  *     model: 'claude-sonnet-5',
- *     temperature: 1.0,
  *   });
  *
  *   const response = await agent.process({
@@ -58,7 +60,6 @@ export class AnthropicAgent implements Agent {
 
   private client: Anthropic;
   private model: string;
-  private temperature: number;
   private maxTokens: number;
   private options: Partial<Anthropic.Messages.MessageCreateParams>;
 
@@ -67,12 +68,12 @@ export class AnthropicAgent implements Agent {
     this.client = new Anthropic({ apiKey: config.apiKey });
     this.model = config.model || 'claude-sonnet-5';
 
-    // Validate temperature
-    const temperature = config.temperature !== undefined ? config.temperature : 1.0;
-    if (temperature < 0 || temperature > 2) {
-      throw new Error(`temperature must be between 0 and 2, got ${temperature}`);
+    if (config.temperature !== undefined) {
+      console.warn(
+        'AnthropicAgent ignores temperature: Anthropic API version 2026-10-21 ' +
+          'rejects sampling parameters. This option is deprecated.',
+      );
     }
-    this.temperature = temperature;
 
     // Validate maxTokens
     const maxTokens = config.maxTokens !== undefined ? config.maxTokens : 4096;
@@ -108,7 +109,6 @@ export class AnthropicAgent implements Agent {
     const response = (await this.client.messages.create({
       model: this.model,
       messages: [anthropicMessage],
-      temperature: this.temperature,
       max_tokens: this.maxTokens,
       stream: false,
       ...this.options,
@@ -142,7 +142,6 @@ export class AnthropicAgent implements Agent {
     const stream = (await this.client.messages.create({
       model: this.model,
       messages: [anthropicMessage],
-      temperature: this.temperature,
       max_tokens: this.maxTokens,
       stream: true,
       ...this.options,

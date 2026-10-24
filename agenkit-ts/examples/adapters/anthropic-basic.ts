@@ -36,7 +36,6 @@ async function main() {
   // Create Anthropic adapter
   const adapter = new AnthropicAdapter({
     model: 'claude-3-5-sonnet-20241022',
-    temperature: 0.7,
     maxTokens: 1024,
   });
 
@@ -129,7 +128,6 @@ async function main() {
 
   const haikuAdapter = new AnthropicAdapter({
     model: 'claude-3-haiku-20240307',
-    temperature: 0.7,
     maxTokens: 200,
   });
 

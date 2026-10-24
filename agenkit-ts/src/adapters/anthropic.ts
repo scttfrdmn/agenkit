@@ -11,7 +11,6 @@
  * const adapter = new AnthropicAdapter({
  *   apiKey: process.env.ANTHROPIC_API_KEY,
  *   model: 'claude-sonnet-5',
- *   temperature: 0.7,
  *   maxTokens: 1024,
  * });
  *
@@ -38,16 +37,19 @@ export interface AnthropicConfig {
   /** Model to use (e.g., 'claude-sonnet-5', 'claude-opus-5') */
   model?: string;
 
-  /** Temperature for sampling (0.0 - 1.0) */
+  /**
+   * @deprecated Ignored. Anthropic API version 2026-10-21 rejects sampling
+   * parameters on every model; setting this logs a warning. Will be removed.
+   */
   temperature?: number;
 
   /** Maximum tokens to generate */
   maxTokens?: number;
 
-  /** Top-p sampling parameter */
+  /** @deprecated Ignored; see {@link AnthropicConfig.temperature}. */
   topP?: number;
 
-  /** Top-k sampling parameter */
+  /** @deprecated Ignored; see {@link AnthropicConfig.temperature}. */
   topK?: number;
 
   /** Request timeout in milliseconds */
@@ -61,13 +63,13 @@ export interface AnthropicConfig {
  * - Support for Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku, and other Claude models
  * - Streaming and non-streaming completion
  * - Full metadata tracking (tokens, stop reason, model)
- * - Configurable parameters (temperature, max_tokens, etc.)
+ * - Configurable model, max_tokens and timeout
  * - Automatic message format conversion
  * - System message support
  */
 export class AnthropicAdapter implements Agent {
   private client: Anthropic;
-  private config: Required<Omit<AnthropicConfig, 'apiKey'>>;
+  private config: Required<Pick<AnthropicConfig, 'model' | 'maxTokens' | 'timeout'>>;
 
   /**
    * Creates a new Anthropic adapter.
@@ -75,12 +77,19 @@ export class AnthropicAdapter implements Agent {
    * @param config - Configuration options
    */
   constructor(config: AnthropicConfig = {}) {
+    const ignored = (['temperature', 'topP', 'topK'] as const).filter(
+      (key) => config[key] !== undefined,
+    );
+    if (ignored.length > 0) {
+      console.warn(
+        `AnthropicAdapter ignores ${ignored.join(', ')}: Anthropic API version ` +
+          '2026-10-21 rejects sampling parameters. These options are deprecated.',
+      );
+    }
+
     this.config = {
       model: config.model || 'claude-sonnet-5',
-      temperature: config.temperature ?? 0.7,
       maxTokens: config.maxTokens ?? 1024,
-      topP: config.topP ?? 1.0,
-      topK: config.topK ?? 5,
       timeout: config.timeout ?? 60000,
     };
 
@@ -122,7 +131,8 @@ export class AnthropicAdapter implements Agent {
    * error against the real SDK. `seed` has no Anthropic equivalent at all: the
    * Messages API exposes no sampling-seed parameter, so a caller who set one is
    * warned rather than left to discover — empirically, via non-reproducible
-   * output — that it had no effect.
+   * output — that it had no effect. `temperature` and `topP` are warned about
+   * the same way: API version 2026-10-21 rejects sampling parameters.
    *
    * @param message - Input message
    * @param options - Per-call inference options
@@ -137,6 +147,15 @@ export class AnthropicAdapter implements Agent {
           'no sampling-seed parameter. The value was not sent to the provider.',
       );
     }
+    const ignored = (['temperature', 'topP'] as const).filter(
+      (key) => options[key] !== undefined,
+    );
+    if (ignored.length > 0) {
+      console.warn(
+        `AnthropicAdapter ignores ${ignored.join(', ')}: Anthropic API version ` +
+          '2026-10-21 rejects sampling parameters. The value was not sent to the provider.',
+      );
+    }
 
     const { messages, system } = this.convertToAnthropicFormat([message]);
 
@@ -145,9 +164,6 @@ export class AnthropicAdapter implements Agent {
       messages,
       system,
       max_tokens: options.maxTokens ?? this.config.maxTokens,
-      temperature: options.temperature ?? this.config.temperature,
-      top_p: options.topP ?? this.config.topP,
-      top_k: this.config.topK,
       ...(options.stop !== undefined ? { stop_sequences: options.stop } : {}),
     });
 
@@ -188,9 +204,6 @@ export class AnthropicAdapter implements Agent {
       messages,
       system,
       max_tokens: this.config.maxTokens,
-      temperature: this.config.temperature,
-      top_p: this.config.topP,
-      top_k: this.config.topK,
       stream: true,
     });
 
@@ -267,9 +280,6 @@ export class AnthropicAdapter implements Agent {
       messages: anthropicMessages,
       system,
       max_tokens: this.config.maxTokens,
-      temperature: this.config.temperature,
-      top_p: this.config.topP,
-      top_k: this.config.topK,
     });
 
     const textContent = response.content
@@ -309,9 +319,6 @@ export class AnthropicAdapter implements Agent {
       messages: anthropicMessages,
       system,
       max_tokens: this.config.maxTokens,
-      temperature: this.config.temperature,
-      top_p: this.config.topP,
-      top_k: this.config.topK,
       stream: true,
     });
 

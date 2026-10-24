@@ -95,34 +95,24 @@ describe('AnthropicAgent parameter validation', () => {
     model: 'claude-sonnet-4-20250514',
   };
 
-  describe('temperature validation', () => {
-    it('accepts valid temperature 0.0', () => {
-      expect(() => new AnthropicAgent({ ...validConfig, temperature: 0.0 })).not.toThrow();
+  // Deprecated: Anthropic API version 2026-10-21 rejects sampling parameters,
+  // so the value is never sent and therefore not range-checked (#1066).
+  describe('temperature (deprecated, ignored)', () => {
+    it('warns and does not throw for any temperature', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      for (const temperature of [-0.5, 0.0, 1.0, 3.0]) {
+        expect(() => new AnthropicAgent({ ...validConfig, temperature })).not.toThrow();
+      }
+      expect(warn).toHaveBeenCalledTimes(4);
+      expect(warn.mock.calls[0][0]).toContain('ignores temperature');
+      warn.mockRestore();
     });
 
-    it('accepts valid temperature 1.0', () => {
-      expect(() => new AnthropicAgent({ ...validConfig, temperature: 1.0 })).not.toThrow();
-    });
-
-    it('accepts valid temperature 2.0', () => {
-      expect(() => new AnthropicAgent({ ...validConfig, temperature: 2.0 })).not.toThrow();
-    });
-
-    it('rejects temperature below 0', () => {
-      expect(() => new AnthropicAgent({ ...validConfig, temperature: -0.5 })).toThrow(
-        'temperature must be between 0 and 2, got -0.5'
-      );
-    });
-
-    it('rejects temperature above 2', () => {
-      expect(() => new AnthropicAgent({ ...validConfig, temperature: 3.0 })).toThrow(
-        'temperature must be between 0 and 2, got 3'
-      );
-    });
-
-    it('uses default temperature when not provided', () => {
-      const agent = new AnthropicAgent(validConfig);
-      expect(agent).toBeDefined();
+    it('does not warn when temperature is not provided', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      expect(new AnthropicAgent(validConfig)).toBeDefined();
+      expect(warn).not.toHaveBeenCalled();
+      warn.mockRestore();
     });
   });
 

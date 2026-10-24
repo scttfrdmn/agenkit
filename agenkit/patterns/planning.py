@@ -58,7 +58,7 @@ class PlanStep:
     error: str | None = None
     step_number: int = 0
     metadata: dict[str, Any] = field(default_factory=dict)
-    timestamp: datetime = field(default_factory=lambda: datetime.now())
+    timestamp: datetime = field(default_factory=datetime.now)
 
     def can_execute(self, completed_steps: list[int]) -> bool:
         """Check if this step's dependencies are met."""
@@ -79,7 +79,7 @@ class Plan:
 
     goal: str
     steps: list[PlanStep] = field(default_factory=list)
-    created_at: datetime = field(default_factory=lambda: datetime.now())
+    created_at: datetime = field(default_factory=datetime.now)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def get_next_steps(self) -> list[PlanStep]:

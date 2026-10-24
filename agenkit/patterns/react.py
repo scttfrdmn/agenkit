@@ -76,7 +76,7 @@ class ReActStep:
     action_input: Any
     observation: str = ""
     step_number: int = 0
-    timestamp: datetime = field(default_factory=lambda: datetime.now())
+    timestamp: datetime = field(default_factory=datetime.now)
 
 
 @dataclass

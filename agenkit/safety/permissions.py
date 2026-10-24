@@ -192,7 +192,7 @@ class Sandbox:
         Returns:
             Tuple of (is_allowed, error_message)
         """
-        cmd_name = command.split()[0] if command else ""
+        cmd_name = command.split(maxsplit=1)[0] if command else ""
 
         # Check denied commands first
         if cmd_name in self.denied_commands:

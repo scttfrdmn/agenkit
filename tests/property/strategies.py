@@ -47,7 +47,7 @@ def message_strategy(draw):
     content = draw(content_strategy)
     metadata = draw(metadata_strategy)
 
-    return Message(role=role, content=content, metadata=metadata if metadata else None)
+    return Message(role=role, content=content, metadata=metadata or None)
 
 
 # List of messages strategy

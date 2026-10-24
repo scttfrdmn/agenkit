@@ -38,6 +38,7 @@ Example:
             pass
 """
 
+import asyncio
 from typing import Any
 
 
@@ -93,8 +94,9 @@ class SimpleApprovalTool:
         else:
             prompt = self.prompt_template.format(action=action)
 
-        # Get user input
-        response = input(prompt).strip().lower()
+        # Get user input. input() blocks until the human answers, so run it on a
+        # worker thread rather than stalling every other task on the event loop.
+        response = (await asyncio.to_thread(input, prompt)).strip().lower()
 
         return {"approved": response in ("y", "yes"), "response": response}
 
@@ -122,8 +124,6 @@ def simple_approval(action: str, details: str | None = None) -> bool:
     tool = SimpleApprovalTool()
 
     # Create simple event loop for async call
-    import asyncio
-
     try:
         loop = asyncio.get_event_loop()
     except RuntimeError:

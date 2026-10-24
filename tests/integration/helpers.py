@@ -11,6 +11,12 @@ from contextlib import asynccontextmanager
 
 import httpx
 
+# Resolved once at import: computing it inside the async server helpers below
+# would run blocking os.path calls on the event loop (ASYNC240).
+GO_INTEGRATION_DIR = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "agenkit-go", "tests", "integration"
+)
+
 
 def find_free_port() -> int:
     """Find a free port on localhost.
@@ -216,14 +222,10 @@ async def go_http_server(port: int | None = None):
         port = find_free_port()
 
     # Start Go server
-    # Get the path to the agenkit-go directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
-
     # S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
     process = popen_server(
         ["go", "run", "test_server.go", str(port)],
-        cwd=go_test_dir,
+        cwd=GO_INTEGRATION_DIR,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
@@ -509,14 +511,10 @@ async def go_grpc_server(port: int | None = None):
     if port is None:
         port = find_free_port()
 
-    # Get the path to the agenkit-go directory
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    go_test_dir = os.path.join(current_dir, "..", "..", "agenkit-go", "tests", "integration")
-
     # S607, ASYNC220: Safe in test infrastructure - port is test parameter, not user input
     process = popen_server(
         ["go", "run", "test_grpc_server.go", str(port)],
-        cwd=go_test_dir,
+        cwd=GO_INTEGRATION_DIR,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )

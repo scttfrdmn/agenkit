@@ -343,9 +343,7 @@ class TracingMiddleware:
                 _promote_genai_attributes(span, response.metadata)
 
                 # Inject trace context into response
-                updated_metadata = inject_trace_context(
-                    response.metadata if response.metadata else {}
-                )
+                updated_metadata = inject_trace_context(response.metadata or {})
                 response = replace(response, metadata=updated_metadata)
 
                 return response

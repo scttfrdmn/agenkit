@@ -67,6 +67,14 @@ jobs:
       - name: Check Python formatting (ruff format)
         run: uv run --extra dev ruff format --check agenkit/ tests/ examples/ || (echo "❌ Python code not formatted. Run 'make format' to fix" && exit 1)
 
+      # No CI job ran `ruff check` at all, so `make lint` failed on main with 52
+      # findings while every check here stayed green (#1054). Scope matches
+      # `make lint` (agenkit/ tests/). examples/ is deliberately NOT included yet,
+      # unlike the format check above: it carries ~250 pre-existing findings that
+      # need their own pass before it can be gated.
+      - name: Lint Python (ruff check)
+        run: uv run --extra dev ruff check agenkit/ tests/ || (echo "❌ ruff check failed. Run 'make lint' locally" && exit 1)
+
       # Scope is the whole repo, and examples are NOT excluded. This check used to
       # run with `working-directory: agenkit-go` and `grep -v '^examples/'`, which
       # made it blind to 11 unformatted tracked files (#849) — 7 under

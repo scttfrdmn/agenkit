@@ -221,7 +221,7 @@ class TestRemoteAgentCommunication:
             # Start and stop multiple times
             for _ in range(3):
                 await server.start()
-                assert os.path.exists(socket_path)
+                assert os.path.exists(socket_path)  # noqa: ASYNC240 - one stat of a local socket in a test
 
                 # Make a request to verify it works
                 remote = RemoteAgent("echo", endpoint=endpoint)

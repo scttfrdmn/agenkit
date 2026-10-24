@@ -115,7 +115,7 @@ class GoalMonitor(Agent):
         Returns:
             State dictionary
         """
-        return message.metadata if message.metadata else {}
+        return message.metadata or {}
 
     async def achieve_goal(
         self, initial_message: Message, context: dict[str, Any] | None = None

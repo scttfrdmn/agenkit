@@ -55,7 +55,7 @@ describe('Agent Crashes', () => {
     const message: Message = { role: 'user', content: 'Test' };
 
     // Primary agent crashes
-    let response: Message | null = null;
+    let response: Message;
     try {
       response = await chaosAgent.process(message);
     } catch {

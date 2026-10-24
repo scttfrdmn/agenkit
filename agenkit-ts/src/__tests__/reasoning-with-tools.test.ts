@@ -6,7 +6,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ReasoningWithToolsAgent,
   ReasoningStepType,
-  ReasoningStep,
   ReasoningTrace,
   createReasoningStep,
   createReasoningTrace,
@@ -31,7 +30,7 @@ class MockLLM implements Agent {
     this.callCount = 0;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     if (this.callCount < this.responses.length) {
       const response = this.responses[this.callCount];
       this.callCount++;
@@ -469,7 +468,7 @@ describe('ReasoningWithToolsAgent', () => {
       const llm = new MockLLM(['TOOL_CALL: tool1\nPARAMETERS: {}', 'FINAL ANSWER: Done']);
       const agent = new ReasoningWithToolsAgent(llm, [tool]);
 
-      const response = await agent.process(createMessage('user', 'Test'));
+      await agent.process(createMessage('user', 'Test'));
 
       expect(tool.callCount).toBe(1);
       expect(tool.lastParameters).toEqual({});

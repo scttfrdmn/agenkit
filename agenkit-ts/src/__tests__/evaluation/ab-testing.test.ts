@@ -39,7 +39,7 @@ class MockAgent implements Agent {
     this.name = `mock_agent_${accuracy}`;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     // Simulate latency
     await new Promise((resolve) => setTimeout(resolve, this.latencyMs));
 

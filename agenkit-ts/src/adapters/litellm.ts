@@ -409,9 +409,9 @@ export class LiteLLMAdapter implements Agent {
       clearTimeout(timeoutId);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`LiteLLM request timeout after ${this.config.timeout}ms`);
+          throw new Error(`LiteLLM request timeout after ${this.config.timeout}ms`, { cause: error });
         }
-        throw new Error(`LiteLLM request failed: ${error.message}`);
+        throw new Error(`LiteLLM request failed: ${error.message}`, { cause: error });
       }
       throw error;
     }
@@ -507,9 +507,9 @@ export class LiteLLMAdapter implements Agent {
       clearTimeout(timeoutId);
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`LiteLLM stream timeout after ${this.config.timeout}ms`);
+          throw new Error(`LiteLLM stream timeout after ${this.config.timeout}ms`, { cause: error });
         }
-        throw new Error(`LiteLLM stream failed: ${error.message}`);
+        throw new Error(`LiteLLM stream failed: ${error.message}`, { cause: error });
       }
       throw error;
     }

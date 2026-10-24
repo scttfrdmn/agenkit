@@ -84,6 +84,7 @@ export class SequentialAgent implements Agent {
           error instanceof Error ? error.message : String(error);
         throw new Error(
           `Step ${i + 1} (${agent.name}) failed: ${errorMessage}`,
+          { cause: error },
         );
       }
     }

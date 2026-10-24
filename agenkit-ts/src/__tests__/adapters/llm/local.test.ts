@@ -39,7 +39,7 @@ describe('LocalAgent: Basic Functionality', () => {
   it('should add timestamp if missing', async () => {
     const agent = new LocalAgent({
       name: 'test-agent',
-      process: async (msg) => createMessage('assistant', 'Response'),
+      process: async (_msg) => createMessage('assistant', 'Response'),
     });
 
     const input: Message = { role: 'user', content: 'Hello', metadata: {} };
@@ -52,7 +52,7 @@ describe('LocalAgent: Basic Functionality', () => {
   it('should validate input message', async () => {
     const agent = new LocalAgent({
       name: 'test-agent',
-      process: async (msg) => createMessage('assistant', 'Response'),
+      process: async (_msg) => createMessage('assistant', 'Response'),
     });
 
     // Invalid message (missing required fields)
@@ -75,7 +75,7 @@ describe('LocalAgent: Basic Functionality', () => {
   it('should support capabilities', () => {
     const agent = new LocalAgent({
       name: 'test-agent',
-      process: async (msg) => createMessage('assistant', 'Response'),
+      process: async (_msg) => createMessage('assistant', 'Response'),
       capabilities: ['echo', 'transform'],
     });
 
@@ -91,7 +91,7 @@ describe('LocalAgent: Streaming', () => {
   it('should stream chunks through generator', async () => {
     const agent = new LocalAgent({
       name: 'streaming-agent',
-      process: async (msg) => createMessage('assistant', 'Non-streaming response'),
+      process: async (_msg) => createMessage('assistant', 'Non-streaming response'),
       processStream: async function* (msg) {
         const words = (msg.content as string).split(' ');
         for (const word of words) {
@@ -115,7 +115,7 @@ describe('LocalAgent: Streaming', () => {
   it('should throw error if streaming not supported', async () => {
     const agent = new LocalAgent({
       name: 'non-streaming-agent',
-      process: async (msg) => createMessage('assistant', 'Response'),
+      process: async (_msg) => createMessage('assistant', 'Response'),
     });
 
     const input: Message = { role: 'user', content: 'Hello', metadata: {} };
@@ -131,8 +131,8 @@ describe('LocalAgent: Streaming', () => {
   it('should add timestamps to chunks', async () => {
     const agent = new LocalAgent({
       name: 'streaming-agent',
-      process: async (msg) => createMessage('assistant', 'Response'),
-      processStream: async function* (msg) {
+      process: async (_msg) => createMessage('assistant', 'Response'),
+      processStream: async function* (_msg) {
         yield createMessage('assistant', 'Chunk 1');
         yield createMessage('assistant', 'Chunk 2');
       },
@@ -149,8 +149,8 @@ describe('LocalAgent: Streaming', () => {
   it('should validate streamed chunks', async () => {
     const agent = new LocalAgent({
       name: 'streaming-agent',
-      process: async (msg) => createMessage('assistant', 'Response'),
-      processStream: async function* (msg) {
+      process: async (_msg) => createMessage('assistant', 'Response'),
+      processStream: async function* (_msg) {
         yield { invalid: 'chunk' } as any;
       },
     });
@@ -242,7 +242,7 @@ describe('LocalAgent: Error Handling', () => {
   it('should propagate errors from stream function', async () => {
     const agent = new LocalAgent({
       name: 'error-agent',
-      process: async (msg) => createMessage('assistant', 'Response'),
+      process: async (_msg) => createMessage('assistant', 'Response'),
       // Intentionally throws before yielding to simulate a failing stream.
       // eslint-disable-next-line require-yield
       processStream: async function* () {
@@ -306,7 +306,7 @@ describe('LocalAgent: Metadata', () => {
   it('should allow adding metadata in response', async () => {
     const agent = new LocalAgent({
       name: 'test-agent',
-      process: async (msg) => createMessage('assistant', 'Response', { processed: true }),
+      process: async (_msg) => createMessage('assistant', 'Response', { processed: true }),
     });
 
     const input: Message = { role: 'user', content: 'Hello', metadata: {} };

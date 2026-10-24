@@ -90,6 +90,8 @@ export interface SSEStreamConfig {
   includeEventNames?: boolean;
   /** Seconds between ping comments (null = no pings) */
   pingInterval?: number | null;
+  /** Message ID for emitted events (auto-generated if omitted) */
+  messageId?: string;
 }
 
 /**
@@ -108,6 +110,7 @@ export class AGUISSEStream {
   private readonly message: Message;
   private readonly includeEventNames: boolean;
   private readonly pingInterval: number | null;
+  private readonly messageId?: string;
 
   /**
    * Initialize SSE stream.
@@ -121,6 +124,7 @@ export class AGUISSEStream {
     this.message = message;
     this.includeEventNames = config.includeEventNames || false;
     this.pingInterval = config.pingInterval !== undefined ? config.pingInterval : null;
+    this.messageId = config.messageId;
   }
 
   /**
@@ -129,7 +133,7 @@ export class AGUISSEStream {
   async *[Symbol.asyncIterator](): AsyncGenerator<string, void, undefined> {
     try {
       // Stream events from adapter
-      for await (const event of this.adapter.streamEvents(this.message)) {
+      for await (const event of this.adapter.streamEvents(this.message, this.messageId)) {
         yield SSEFormatter.formatEvent(event, this.includeEventNames);
       }
 
@@ -242,6 +246,7 @@ export function createSSEHandler(agent: Agent, config: SSEHandlerConfig = {}): R
       const stream = new AGUISSEStream(adapter, message, {
         includeEventNames: config.includeEventNames,
         pingInterval: config.pingInterval,
+        messageId,
       });
 
       // Stream events to response

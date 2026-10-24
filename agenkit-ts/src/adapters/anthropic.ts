@@ -24,7 +24,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import type { MessageParam, MessageStreamEvent } from '@anthropic-ai/sdk/resources/messages';
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';
 import type { CallOptions } from '../core/call-options';
 

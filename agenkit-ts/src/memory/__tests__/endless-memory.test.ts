@@ -2,7 +2,7 @@
  * Tests for EndlessMemory integration.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { Message } from '../../core/interfaces';
 import { EndlessMemory, EndlessClient } from '../endless-memory';
 
@@ -15,7 +15,7 @@ class MockEndlessClient implements EndlessClient {
   async storeContext(
     sessionId: string,
     messages: Array<Record<string, unknown>>,
-    metadata?: Record<string, unknown>
+    _metadata?: Record<string, unknown>
   ): Promise<void> {
     const existing = this.storage.get(sessionId) || [];
     this.storage.set(sessionId, [...existing, ...messages]);

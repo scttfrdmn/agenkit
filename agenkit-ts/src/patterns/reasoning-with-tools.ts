@@ -38,7 +38,7 @@
  * ```
  */
 
-import { Agent, Message, Tool, ToolResult, createMessage } from '../core/interfaces';
+import { Agent, Message, Tool, createMessage } from '../core/interfaces';
 
 /**
  * Type of reasoning step.

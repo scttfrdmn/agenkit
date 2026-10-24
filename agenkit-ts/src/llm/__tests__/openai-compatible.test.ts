@@ -2,7 +2,7 @@
  * Tests for OpenAI-Compatible LLM adapter.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OpenAICompatibleAgent } from '../openai-compatible';
 import { Message } from '../../core/interfaces';
 

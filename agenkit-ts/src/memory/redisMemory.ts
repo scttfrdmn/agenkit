@@ -253,7 +253,7 @@ export class RedisMemory implements Memory {
    */
   async summarize(
     sessionId: string,
-    options: {
+    _options: {
       maxLength?: number;
       style?: 'brief' | 'detailed';
       [key: string]: unknown;

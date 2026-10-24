@@ -647,7 +647,7 @@ describe('Safety: outputValidation Decorator', () => {
         return [];
       }
 
-      async process(message: Message): Promise<Message> {
+      async process(_message: Message): Promise<Message> {
         return { role: 'agent', content: 'test output' };
       }
     }
@@ -672,7 +672,7 @@ describe('Safety: outputValidation Decorator', () => {
         return [];
       }
 
-      async process(message: Message): Promise<Message> {
+      async process(_message: Message): Promise<Message> {
         return { role: 'agent', content: 'test output' };
       }
     }

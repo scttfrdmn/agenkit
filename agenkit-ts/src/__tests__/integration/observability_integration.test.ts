@@ -231,7 +231,7 @@ describe('Observability Integration: Metrics', () => {
         return ['test'];
       }
 
-      async process(message: Message): Promise<Message> {
+      async process(_message: Message): Promise<Message> {
         const start = Date.now();
 
         // Simulate processing

@@ -27,7 +27,6 @@ import {
   type GenerativeModel,
   type Content,
   type Part,
-  type GenerateContentResult,
   type EnhancedGenerateContentResponse,
 } from '@google/generative-ai';
 import { Agent, Message, createMessage, validateMessage } from '../core/interfaces';

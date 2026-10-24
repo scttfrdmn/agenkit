@@ -115,6 +115,8 @@ describe('CircuitBreakerMiddleware', () => {
     const response = await cb.process(createMessage('user', 'Test3'));
     expect(response.content).toBe('Test3');
     expect((cb as any).getState()).toBe(CircuitState.CLOSED);
+    // 2 failures + 3 successes; nothing reached the agent while OPEN
+    expect(callCount).toBe(5);
   });
 
   it('should reset failure count on success in CLOSED state', async () => {

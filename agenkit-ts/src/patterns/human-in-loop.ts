@@ -213,7 +213,7 @@ export class HumanInLoopAgent implements Agent {
       response = await this.agent.process(message);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`agent execution failed: ${errorMsg}`);
+      throw new Error(`agent execution failed: ${errorMsg}`, { cause: error });
     }
 
     // Extract confidence from metadata
@@ -254,7 +254,7 @@ export class HumanInLoopAgent implements Agent {
       approval = await this.approvalFunc(request);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new Error(`approval request failed: ${errorMsg}`);
+      throw new Error(`approval request failed: ${errorMsg}`, { cause: error });
     }
 
     // Handle approval decision

@@ -43,7 +43,6 @@ import {
   EdgeType,
   NodeType,
   ReasoningGraph,
-  ThoughtNode,
 } from './reasoning-graph';
 
 /**

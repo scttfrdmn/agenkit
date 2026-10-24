@@ -231,7 +231,7 @@ describe('Interface Signatures', () => {
       parameters: {},
 
       // Signature: execute(params: Record<string, unknown>): Promise<ToolResult>
-      async execute(params: Record<string, unknown>): Promise<ToolResult> {
+      async execute(_params: Record<string, unknown>): Promise<ToolResult> {
         return {
           content: 'test',
           metadata: {},
@@ -252,7 +252,7 @@ describe('Interface Signatures', () => {
       capabilities: [],
 
       // Signature: process(message: Message): Promise<Message>
-      async process(message: Message): Promise<Message> {
+      async process(_message: Message): Promise<Message> {
         return {
           role: 'agent',
           content: 'response',

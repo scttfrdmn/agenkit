@@ -7,26 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   SearchSpace,
-  Optimizer,
 } from '../../evaluation/optimizer';
-import type { Agent, Message } from '../../core/interfaces';
-import { createMessage } from '../../core/interfaces';
-
-// Mock agent factory for testing
-function createMockAgentFactory(
-  scoreFn: (params: Record<string, unknown>) => number
-): (params: Record<string, unknown>) => Agent {
-  return (params: Record<string, unknown>) => {
-    return {
-      name: 'mock-agent',
-      capabilities: [],
-      async process(message: Message): Promise<Message> {
-        const score = scoreFn(params);
-        return createMessage('assistant', `Score: ${score}`);
-      },
-    };
-  };
-}
 
 // ============================================
 // SearchSpace Tests

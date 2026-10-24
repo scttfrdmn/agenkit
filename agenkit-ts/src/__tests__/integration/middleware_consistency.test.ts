@@ -62,7 +62,7 @@ class FailingAgent implements Agent {
     return ['fail'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     this.attemptCount++;
     if (this.attemptCount <= this.failCount) {
       throw new Error(`Failure ${this.attemptCount}/${this.failCount}`);
@@ -97,7 +97,7 @@ class SlowAgent implements Agent {
     return ['slow'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     await new Promise((resolve) => setTimeout(resolve, this.delay));
     return {
       role: 'agent',
@@ -118,7 +118,7 @@ describe('Middleware Consistency: Retry', () => {
 
     // Manually implement retry logic to test expected behavior
     const maxRetries = 3;
-    let attempt = 0;
+    let attempt: number;
     let response: Message | null = null;
 
     for (attempt = 0; attempt <= maxRetries; attempt++) {

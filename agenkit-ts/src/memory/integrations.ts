@@ -71,24 +71,13 @@ export class OpenAIEmbeddings implements EmbeddingProvider {
 
       return response.data[0].embedding;
     } catch (error) {
-      throw new Error(`Failed to generate embedding: ${error}`);
+      throw new Error(`Failed to generate embedding: ${error}`, { cause: error });
     }
   }
 
   dimension(): number {
     return this.embeddingDimension;
   }
-}
-
-/**
- * Entry stored in vector store with timestamp.
- */
-interface VectorEntry {
-  messageId: string;
-  embedding: number[];
-  message: Message;
-  metadata: Record<string, unknown>;
-  timestamp: number;
 }
 
 /**
@@ -165,7 +154,7 @@ export class ChromaDBVectorStore implements VectorStore {
       });
       return this.collection;
     } catch (error) {
-      throw new Error(`Failed to create ChromaDB collection: ${error}`);
+      throw new Error(`Failed to create ChromaDB collection: ${error}`, { cause: error });
     }
   }
 
@@ -273,7 +262,7 @@ export class ChromaDBVectorStore implements VectorStore {
         metadatas: [chromaMetadata],
       });
     } catch (error) {
-      throw new Error(`Failed to add to ChromaDB: ${error}`);
+      throw new Error(`Failed to add to ChromaDB: ${error}`, { cause: error });
     }
   }
 
@@ -346,7 +335,7 @@ export class ChromaDBVectorStore implements VectorStore {
 
       return searchResults;
     } catch (error) {
-      throw new Error(`ChromaDB search failed: ${error}`);
+      throw new Error(`ChromaDB search failed: ${error}`, { cause: error });
     }
   }
 
@@ -414,7 +403,7 @@ export class ChromaDBVectorStore implements VectorStore {
         metadata: e.metadata,
       }));
     } catch (error) {
-      throw new Error(`ChromaDB getRecent failed: ${error}`);
+      throw new Error(`ChromaDB getRecent failed: ${error}`, { cause: error });
     }
   }
 
@@ -462,7 +451,7 @@ export class ChromaDBVectorStore implements VectorStore {
         metadatas,
       });
     } catch (error) {
-      throw new Error(`Failed to batch add to ChromaDB: ${error}`);
+      throw new Error(`Failed to batch add to ChromaDB: ${error}`, { cause: error });
     }
   }
 
@@ -536,7 +525,7 @@ export class ChromaDBVectorStore implements VectorStore {
 
       return allResults;
     } catch (error) {
-      throw new Error(`ChromaDB batch search failed: ${error}`);
+      throw new Error(`ChromaDB batch search failed: ${error}`, { cause: error });
     }
   }
 
@@ -555,7 +544,7 @@ export class ChromaDBVectorStore implements VectorStore {
         });
       }
     } catch (error) {
-      throw new Error(`Failed to clear ChromaDB session: ${error}`);
+      throw new Error(`Failed to clear ChromaDB session: ${error}`, { cause: error });
     }
   }
 }

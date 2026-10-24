@@ -268,7 +268,7 @@ export class SelfConsistencyAgent implements Agent {
 
       return { fullResponses, extractedAnswers };
     } catch (error) {
-      throw new Error(`Sampling failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Sampling failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
     }
   }
 

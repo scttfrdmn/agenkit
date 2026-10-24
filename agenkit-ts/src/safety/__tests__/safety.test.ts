@@ -9,7 +9,7 @@
  * - Audit logging (structured events)
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { Agent, Message, createMessage } from '../../core/interfaces';
 import {
   PromptInjectionDetector,

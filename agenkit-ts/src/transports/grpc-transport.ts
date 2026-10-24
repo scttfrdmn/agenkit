@@ -16,8 +16,6 @@ import { ProtocolEnvelope } from './codec';
 import {
   ConnectionError,
   ConnectionClosedError,
-  InvalidMessageError,
-  MalformedPayloadError,
 } from './errors';
 
 // ── Internal proto types (mirrors proto/agent.proto) ─────────────────────────
@@ -199,7 +197,7 @@ export class GRPCTransport extends Transport {
     }
   }
 
-  async send(data: Buffer): Promise<void> {
+  async send(_data: Buffer): Promise<void> {
     throw new Error('Use sendFramed() or sendFramedEnvelope() for gRPC transport');
   }
 
@@ -207,7 +205,7 @@ export class GRPCTransport extends Transport {
     throw new Error('Use receiveFramed() or receiveFramedEnvelope() for gRPC transport');
   }
 
-  async receiveExactly(n: number): Promise<Buffer> {
+  async receiveExactly(_n: number): Promise<Buffer> {
     throw new Error('gRPC has native framing - use receiveFramed() or receiveFramedEnvelope()');
   }
 

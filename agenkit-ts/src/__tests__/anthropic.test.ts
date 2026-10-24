@@ -74,7 +74,6 @@ describe('AnthropicAdapter', () => {
 
   describe('message processing', () => {
     it('should handle user messages', () => {
-      const adapter = new AnthropicAdapter({ apiKey: 'test-key' });
       const message = createMessage({
         role: 'user',
         content: 'Hello, how are you?',
@@ -86,7 +85,6 @@ describe('AnthropicAdapter', () => {
     });
 
     it('should validate message format', () => {
-      const adapter = new AnthropicAdapter({ apiKey: 'test-key' });
       const message = createMessage({
         role: 'user',
         content: 'Test message',

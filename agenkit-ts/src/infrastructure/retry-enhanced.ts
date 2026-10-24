@@ -403,7 +403,7 @@ export class EnhancedRetryDecorator implements Agent {
         // Check if should retry
         if (!strategy.shouldRetry) {
           this.metrics.failedAfterRetries++;
-          throw new Error(`Non-retryable error (${errorClass}): ${lastError.message}`);
+          throw new Error(`Non-retryable error (${errorClass}): ${lastError.message}`, { cause: error });
         }
 
         // Check if exceeded max attempts for this error class

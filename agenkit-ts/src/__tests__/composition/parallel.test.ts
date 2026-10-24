@@ -17,7 +17,7 @@ class CounterAgent implements Agent {
     return ['count'];
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('agent', `${this.name}: ${this.count}`);
   }
 }

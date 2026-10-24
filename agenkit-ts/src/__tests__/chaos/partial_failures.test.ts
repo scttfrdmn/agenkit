@@ -200,7 +200,7 @@ describe('Graceful Degradation with Fallbacks', () => {
     const message: Message = { role: 'user', content: 'Test' };
 
     // Try primary, fallback to cache
-    let response: Message | null = null;
+    let response: Message;
     let usedCache = false;
 
     try {
@@ -257,7 +257,7 @@ describe('Graceful Degradation with Fallbacks', () => {
 
     const message: Message = { role: 'user', content: 'Test' };
 
-    let response: Message | null = null;
+    let response: Message;
     let usedStaleData = false;
 
     try {

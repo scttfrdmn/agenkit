@@ -15,7 +15,7 @@ const createMockAgent = () => ({
       metadata: message.metadata || {},
     };
   },
-  async *processStream(message: any) {
+  async *processStream(_message: any) {
     yield { role: 'assistant', content: 'Chunk 1', metadata: {} };
     yield { role: 'assistant', content: 'Chunk 2', metadata: {} };
   },

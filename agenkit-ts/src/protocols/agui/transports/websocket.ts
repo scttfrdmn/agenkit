@@ -76,7 +76,7 @@ export class WebSocketMessageFormat {
       const result = JSON.parse(message);
       return typeof result === 'object' && result !== null ? result : { data: result };
     } catch (error) {
-      throw new Error(`Invalid JSON in WebSocket message: ${error}`);
+      throw new Error(`Invalid JSON in WebSocket message: ${error}`, { cause: error });
     }
   }
 }

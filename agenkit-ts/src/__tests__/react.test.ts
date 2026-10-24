@@ -4,8 +4,6 @@
 
 import {
   ReActAgent,
-  ReActConfig,
-  ReActStep,
   ReActStopReason,
   createReActAgent,
 } from '../patterns/react';
@@ -25,7 +23,7 @@ class MockAgent implements Agent {
     this.callCount = 0;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     if (this.callCount >= this.responses.length) {
       throw new Error('No more mock responses available');
     }
@@ -51,7 +49,7 @@ class MockTool implements Tool {
     this.shouldFail = shouldFail;
   }
 
-  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+  async execute(_params: Record<string, unknown>): Promise<ToolResult> {
     if (this.shouldFail) {
       throw new Error('Tool execution failed');
     }
@@ -170,7 +168,7 @@ describe('ReActAgent', () => {
       const calcTool = new MockTool('calculator', 'Does math', '8');
       const reactAgent = new ReActAgent({ agent, tools: [calcTool] });
 
-      const result = await reactAgent.process(createMessage('user', 'What is 5+3?'));
+      await reactAgent.process(createMessage('user', 'What is 5+3?'));
 
       const steps = reactAgent.getSteps();
       expect(steps[0].action).toBe('calculator');
@@ -186,7 +184,7 @@ describe('ReActAgent', () => {
       const tool = new MockTool('calculator', 'Does math', '42');
       const reactAgent = new ReActAgent({ agent, tools: [tool] });
 
-      const result = await reactAgent.process(createMessage('user', 'Test'));
+      await reactAgent.process(createMessage('user', 'Test'));
 
       const steps = reactAgent.getSteps();
       expect(steps[0].observation).toContain('not found');

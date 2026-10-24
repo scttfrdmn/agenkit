@@ -149,7 +149,7 @@ export class InMemoryMemory implements Memory {
    */
   async summarize(
     sessionId: string,
-    options?: { maxLength?: number; style?: 'brief' | 'detailed' },
+    _options?: { maxLength?: number; style?: 'brief' | 'detailed' },
   ): Promise<Message> {
     const messages = await this.retrieve(sessionId, { limit: 100 });
 

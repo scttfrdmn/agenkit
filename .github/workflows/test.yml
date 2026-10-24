@@ -251,6 +251,12 @@ jobs:
         if: matrix.lang == 'typescript'
         working-directory: agenkit-ts
         run: npm run build
+      # ESLint was silently dead from the v9 flat-config switch until #1067;
+      # running it here keeps it from rotting again.
+      - name: TypeScript lint (blocking)
+        if: matrix.lang == 'typescript'
+        working-directory: agenkit-ts
+        run: npm run lint
       # Blocking as of #658. This was `timeout 300 npm test || true` under
       # continue-on-error, on the belief that TS tests hung retrying an absent
       # Redis. Both halves of that were wrong: the Redis suite self-skips after a

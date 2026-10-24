@@ -29,7 +29,7 @@
  * ```
  */
 
-import { Agent, Message, createMessage } from '../core/interfaces';
+import { Agent, createMessage } from '../core/interfaces';
 
 /** Statistical significance levels */
 export enum SignificanceLevel {
@@ -300,7 +300,7 @@ export class ABTest {
     const treatmentSamples = this.treatment.samples;
 
     // T-test calculation
-    const { pValue, tStatistic } = this.tTest(controlSamples, treatmentSamples);
+    const { pValue } = this.tTest(controlSamples, treatmentSamples);
 
     // Cohen's d effect size
     const pooledStd = Math.sqrt(

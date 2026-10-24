@@ -26,7 +26,7 @@ class MockAgent implements Agent {
     this.callCount = 0;
   }
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     this.callCount++;
 
     if (this.delay > 0) {
@@ -373,7 +373,7 @@ describe('Task', () => {
       class FailingAgent implements Agent {
         readonly name = 'FailingAgent';
 
-        async process(message: Message): Promise<Message> {
+        async process(_message: Message): Promise<Message> {
           throw new CustomError('Custom failure');
         }
       }
@@ -389,7 +389,7 @@ describe('Task', () => {
       class StringThrowingAgent implements Agent {
         readonly name = 'StringThrowingAgent';
 
-        async process(message: Message): Promise<Message> {
+        async process(_message: Message): Promise<Message> {
           throw 'String error';
         }
       }
@@ -429,7 +429,7 @@ describe('Task', () => {
       class FlakyAgent implements Agent {
         readonly name = 'FlakyAgent';
 
-        async process(message: Message): Promise<Message> {
+        async process(_message: Message): Promise<Message> {
           attempt++;
           if (attempt === 1) throw new Error('Network error');
           if (attempt === 2) throw new Error('Timeout error');

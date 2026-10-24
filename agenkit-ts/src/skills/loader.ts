@@ -89,7 +89,7 @@ export class AgentSkill {
     try {
       fm = yaml.load(frontmatterText);
     } catch (exc) {
-      throw new Error(`Invalid YAML frontmatter in ${skillDir}/SKILL.md: ${String(exc)}`);
+      throw new Error(`Invalid YAML frontmatter in ${skillDir}/SKILL.md: ${String(exc)}`, { cause: exc });
     }
 
     if (typeof fm !== 'object' || fm === null || Array.isArray(fm)) {

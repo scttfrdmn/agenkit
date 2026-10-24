@@ -238,9 +238,9 @@ export class OllamaAdapter implements Agent {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`Ollama request timeout after ${this.config.timeout}ms`);
+          throw new Error(`Ollama request timeout after ${this.config.timeout}ms`, { cause: error });
         }
-        throw new Error(`Ollama request failed: ${error.message}`);
+        throw new Error(`Ollama request failed: ${error.message}`, { cause: error });
       }
       throw error;
     }
@@ -319,9 +319,9 @@ export class OllamaAdapter implements Agent {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`Ollama request timeout after ${this.config.timeout}ms`);
+          throw new Error(`Ollama request timeout after ${this.config.timeout}ms`, { cause: error });
         }
-        throw new Error(`Ollama request failed: ${error.message}`);
+        throw new Error(`Ollama request failed: ${error.message}`, { cause: error });
       }
       throw error;
     }
@@ -419,9 +419,9 @@ export class OllamaAdapter implements Agent {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`Ollama stream timeout after ${this.config.timeout}ms`);
+          throw new Error(`Ollama stream timeout after ${this.config.timeout}ms`, { cause: error });
         }
-        throw new Error(`Ollama stream failed: ${error.message}`);
+        throw new Error(`Ollama stream failed: ${error.message}`, { cause: error });
       }
       throw error;
     }
@@ -519,9 +519,9 @@ export class OllamaAdapter implements Agent {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`Ollama stream timeout after ${this.config.timeout}ms`);
+          throw new Error(`Ollama stream timeout after ${this.config.timeout}ms`, { cause: error });
         }
-        throw new Error(`Ollama stream failed: ${error.message}`);
+        throw new Error(`Ollama stream failed: ${error.message}`, { cause: error });
       }
       throw error;
     }

@@ -139,6 +139,7 @@ describe('Safety: Sandbox', () => {
     // Should deny /sys
     [isAllowed, error] = sandbox.isPathAllowed('/sys/kernel/test');
     expect(isAllowed).toBe(false);
+    expect(error).toBeTruthy();
   });
 
   it('should allow paths in specified directories', () => {
@@ -150,6 +151,7 @@ describe('Safety: Sandbox', () => {
 
     [isAllowed, error] = sandbox.isPathAllowed('/tmp/test.txt');
     expect(isAllowed).toBe(true);
+    expect(error).toBeNull();
   });
 
   it('should deny paths outside allowed directories', () => {
@@ -169,6 +171,7 @@ describe('Safety: Sandbox', () => {
 
     [isAllowed, error] = sandbox.isCommandAllowed('git status');
     expect(isAllowed).toBe(true);
+    expect(error).toBeNull();
   });
 
   it('should deny dangerous commands', () => {
@@ -180,6 +183,7 @@ describe('Safety: Sandbox', () => {
 
     [isAllowed, error] = sandbox.isCommandAllowed('sudo apt-get install');
     expect(isAllowed).toBe(false);
+    expect(error).toBeTruthy();
   });
 
   it('should deny commands not in allowed list', () => {
@@ -199,6 +203,7 @@ describe('Safety: Sandbox', () => {
 
     [isAllowed, error] = sandbox.isSqlOperationAllowed('EXPLAIN SELECT * FROM users');
     expect(isAllowed).toBe(true);
+    expect(error).toBeNull();
   });
 
   it('should deny write SQL operations by default', () => {
@@ -210,6 +215,7 @@ describe('Safety: Sandbox', () => {
 
     [isAllowed, error] = sandbox.isSqlOperationAllowed('DROP TABLE users');
     expect(isAllowed).toBe(false);
+    expect(error).toBeTruthy();
   });
 
   it('should allow domains by default when no restrictions set', () => {
@@ -229,6 +235,7 @@ describe('Safety: Sandbox', () => {
 
     [isAllowed, error] = sandbox.isDomainAllowed('127.0.0.1');
     expect(isAllowed).toBe(false);
+    expect(error).toBeTruthy();
   });
 
   it('should allow domains in allowed list', () => {

@@ -14,7 +14,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   FallbackAgent,
-  RecoveryAgent,
   withRecovery,
   DefaultRecovery,
 } from '../../patterns/fallback';

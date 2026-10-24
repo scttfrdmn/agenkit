@@ -43,7 +43,6 @@ import {
   Interrupt,
   InterruptAction,
   InterruptReason,
-  InterruptResponse,
   MetadataEvent,
   TextMessageChunk,
   TextMessageComplete,

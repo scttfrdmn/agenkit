@@ -35,7 +35,7 @@
  * ```
  */
 
-import { Agent, Message, createMessage } from '../core/interfaces';
+import { Agent, Message } from '../core/interfaces';
 
 /**
  * Stage information for observability.
@@ -172,7 +172,7 @@ export class SequentialAgent implements Agent {
         current = result;
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
-        throw new Error(`agent ${i} (${agent.name}) failed: ${errorMsg}`);
+        throw new Error(`agent ${i} (${agent.name}) failed: ${errorMsg}`, { cause: error });
       }
     }
 

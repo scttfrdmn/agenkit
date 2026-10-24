@@ -311,8 +311,6 @@ export class WebSocketAgent implements Agent {
     let streamError: Error | null = null;
 
     // Setup handler for this stream
-    const originalHandler = this.ws.listeners('message')[0];
-
     const streamHandler = (data: WebSocket.Data) => {
       try {
         const msg = JSON.parse(data.toString()) as Message & {
@@ -390,7 +388,7 @@ export class WebSocketAgent implements Agent {
     }
 
     // Reject all pending requests
-    for (const [requestId, pending] of this.pendingRequests) {
+    for (const pending of this.pendingRequests.values()) {
       pending.reject(new WebSocketTransportError(
         'Connection closed',
         'CONNECTION_CLOSED'

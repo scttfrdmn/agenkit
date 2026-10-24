@@ -51,18 +51,6 @@ import { Agent, Message, createMessage } from '../core/interfaces';
 export type AggregatorFunc = (messages: Message[]) => Message;
 
 /**
- * Result from an individual agent execution.
- */
-interface AgentResult {
-  /** Agent name */
-  agentName: string;
-  /** Response message (if successful) */
-  message?: Message;
-  /** Error (if failed) */
-  error?: string;
-}
-
-/**
  * Parallel agent that executes multiple agents concurrently and aggregates results.
  *
  * All agents receive the same input message and execute concurrently using

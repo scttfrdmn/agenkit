@@ -328,6 +328,7 @@ export class RecoveryAgent implements Agent {
           recoveryError instanceof Error ? recoveryError.message : String(recoveryError);
         throw new Error(
           `primary agent failed: ${primaryError.message}; recovery failed: ${recoveryMsg}`,
+          { cause: recoveryError },
         );
       }
     }

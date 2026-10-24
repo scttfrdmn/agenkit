@@ -17,11 +17,11 @@ class MockAgentWithStats implements AgentWithContextStats {
   capabilities = [];
   private contextLength = 1000;
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', 'Response');
   }
 
-  async getContextStats(sessionId: string): Promise<Record<string, number>> {
+  async getContextStats(_sessionId: string): Promise<Record<string, number>> {
     return {
       context_length: this.contextLength,
       session_count: 1,
@@ -38,7 +38,7 @@ class MockAgent implements Agent {
   name = 'mock-agent';
   capabilities = [];
 
-  async process(message: Message): Promise<Message> {
+  async process(_message: Message): Promise<Message> {
     return createMessage('assistant', 'Response');
   }
 }

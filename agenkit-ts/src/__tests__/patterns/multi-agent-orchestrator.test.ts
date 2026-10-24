@@ -13,7 +13,6 @@ import { describe, it, expect } from 'vitest';
 import {
   MultiAgentOrchestrator,
   ConsensusAgent,
-  type OrchestrationStrategy,
 } from '../../patterns/multiagent';
 import { createMessage } from '../../core/interfaces';
 import { createMockAgent, createErrorAgent, validateMessage } from './test-helpers';

@@ -7,8 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.92.1] - 2026-10-24
+
+Maintenance release: Anthropic API 2026-10-21 compatibility (Python
+`AnthropicLLM` was broken on fresh installs), the TypeScript ESLint
+revival, OpenTelemetry upgrades in TypeScript and Rust, and security
+updates. No milestone work; v0.93.0 remains the Graph/Framework-Builder
+milestone.
+
 ### Changed
 
+- **TypeScript: OpenTelemetry JS 2 → 3** (#1065). `initTracing()` now
+  builds an `@opentelemetry/sdk-trace` `TracerProvider` and registers the
+  AsyncLocalStorage context manager and W3C propagators explicitly; it
+  returns `TracerProvider` (was the `NodeTracerProvider` subclass). New
+  runtime deps `@opentelemetry/context-async-hooks` and
+  `@opentelemetry/core`. vitest 4 → 5.
+- **Rust: OpenTelemetry 0.32 → 0.33** (`opentelemetry`, `opentelemetry_sdk`,
+  `-otlp`, `-stdout`; `tracing-opentelemetry` 0.34), `lru` 0.19,
+  `parking_lot` 0.13 (#1060). Code using the `opentelemetry` feature must
+  match OTel 0.33 types.
+- **TypeScript: ESLint flat config** (#1067). `npm run lint` works again
+  (it had no config under ESLint 10) and runs in CI. `tsconfig` `lib` is now
+  ES2022 so re-thrown errors can carry `{ cause }`; `target` is unchanged.
+- **Protocol adapters tracked as a sixth parity category** (#1002).
 - **TypeScript: `@anthropic-ai/sdk` 0.133 → 1.3** (#1066). SDK 1.x sends
   `anthropic-version: 2026-10-21`, which returns 400 for any request
   carrying `temperature`, `top_p` or `top_k`, on every model. Neither TS
@@ -36,6 +58,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `complete()`/`stream()` always sent `temperature=1.0`. They no longer send
   sampling parameters. The mocked adapter tests now run in CI: `anthropic`
   was missing from the `test` extra, so they had always been skipped.
+- **TypeScript: AG-UI HTTP transport dropped `message_id`** (#1069). The
+  documented request field was read and discarded; it now reaches the
+  adapter via a new `AGUISSEStream` `messageId` option, matching Go.
+
+### Security
+
+- Go toolchain 1.25.12 → 1.26.10 and `golang.org/x/net` v0.60.0, clearing
+  the govulncheck stdlib/x-net findings (#984, #992, #1045).
+- `uv.lock` refresh clearing all 14 Trivy alerts (#1048).
+
+### Dependencies
+
+- Routine dependabot updates across all eight languages and GitHub Actions;
+  ruff 0.17.2 with all `ruff check` findings fixed and `ruff check` gated in
+  CI (#1056).
 
 ## [v0.92.0] - 2026-08-12
 

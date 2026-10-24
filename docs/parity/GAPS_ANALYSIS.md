@@ -1,5 +1,5 @@
 # Feature Gap Analysis
-Generated: 2026-08-09 00:09:38 UTC
+Generated: 2026-09-05 01:13:43 UTC
 
 This report shows features present in Python (baseline) but missing in other languages.
 
@@ -24,6 +24,10 @@ This report shows features present in Python (baseline) but missing in other lan
 - ActorCriticVariation
 - ExplorationStrategy
 - PlanAndSolve
+
+### Missing Protocols
+
+- a2a
 
 ## Cpp Gaps
 
@@ -75,6 +79,11 @@ This report shows features present in Python (baseline) but missing in other lan
 - PlanAndSolve
 - SelfConsistency
 - TreeOfThought
+
+### Missing Protocols
+
+- a2a
+- agui
 
 ## Rust Gaps
 
@@ -128,6 +137,10 @@ This report shows features present in Python (baseline) but missing in other lan
 - SelfConsistency
 - TreeOfThought
 
+### Missing Protocols
+
+- a2a
+
 ## Typescript Gaps
 
 ### Missing Patterns
@@ -166,6 +179,10 @@ This report shows features present in Python (baseline) but missing in other lan
 - ActorCriticVariation
 - ExplorationStrategy
 - SelfConsistency
+
+### Missing Protocols
+
+- a2a
 
 ## Zig Gaps
 
@@ -208,6 +225,11 @@ This report shows features present in Python (baseline) but missing in other lan
 - PlanAndSolve
 - SelfConsistency
 - TreeOfThought
+
+### Missing Protocols
+
+- a2a
+- agui
 
 ## Csharp Gaps
 
@@ -263,6 +285,11 @@ This report shows features present in Python (baseline) but missing in other lan
 - SelfConsistency
 - TreeOfThought
 
+### Missing Protocols
+
+- a2a
+- agui
+
 ## Java Gaps
 
 ### Missing Patterns
@@ -317,6 +344,11 @@ This report shows features present in Python (baseline) but missing in other lan
 - SelfConsistency
 - TreeOfThought
 
+### Missing Protocols
+
+- a2a
+- agui
+
 ## Scala Gaps
 
 ### Missing Patterns
@@ -370,4 +402,9 @@ This report shows features present in Python (baseline) but missing in other lan
 - ReasoningTree
 - SelfConsistency
 - TreeOfThought
+
+### Missing Protocols
+
+- a2a
+- agui
 

@@ -179,3 +179,72 @@ def scan_techniques_by_filename(
             techniques.append(sorted(set(matches), key=len)[0])
 
     return sorted(set(techniques))
+
+
+# A protocol integration is named by the immediate child of a protocols/ root: a
+# subdirectory (mcp/, agui/, a2a/) in most languages, or a single source file
+# (mcp.hpp, mcp.zig) in C++/Zig. The name is the unit of "does this language
+# implement protocol X?", mirroring scan_techniques_by_filename's file-as-unit
+# approach. Protocols were previously unmeasured (#654) and deliberately kept
+# out of techniques/ to avoid inflating Python's count -- see the note above.
+# Promoted to their own parity category in #1002.
+
+# Aggregator / plumbing stems that are not a protocol implementation. Matters
+# only where protocols are files (C++/Zig) or where a dir-based root also holds
+# a top-level module file (Rust's protocols/mod.rs).
+_NON_PROTOCOL_STEMS = frozenset(
+    {"mod", "index", "init", "base", "types", "common", "lib", "protocol", "protocols"}
+)
+
+# Variant implementations of one protocol collapse to a single name, so a
+# language is not reported as "missing" a protocol it ships in another form:
+# Python's agui_simple is a simplified AG-UI, not a distinct protocol.
+_PROTOCOL_ALIASES = {"agui_simple": "agui"}
+
+
+def detect_protocols(*roots: Path, required: bool = True) -> list[str]:
+    """Detect agent-interop protocols under one or more ``protocols/`` roots.
+
+    A protocol is named by the immediate child of a root -- a subdirectory in
+    most languages, or a source file (``mcp.hpp``, ``mcp.zig``) in C++/Zig.
+    Names are lowercased and aliased (``agui_simple`` -> ``agui``) so a variant
+    implementation of one protocol is not miscounted as a gap.
+
+    Args:
+        roots: One or more protocols directories. Python passes two: the modern
+            ``protocols/`` and the legacy ``techniques/protocols/``.
+        required: If True (default), raise when a root is absent, so a drifted
+            path fails loudly instead of silently reporting zero protocols.
+
+    Returns:
+        Sorted unique protocol names, e.g. ``["a2a", "agui", "mcp"]``.
+
+    Raises:
+        MissingScanPathError: If ``required`` and a root does not exist.
+    """
+    protocols: set[str] = set()
+
+    for root in roots:
+        if not root.exists():
+            if required:
+                raise MissingScanPathError(
+                    f"configured protocols path does not exist: {root} -- an empty "
+                    f"result would silently understate protocol parity."
+                )
+            continue
+
+        for child in sorted(root.iterdir()):
+            if child.name.startswith((".", "_")):
+                continue
+            if child.is_dir():
+                if child.name in _EXCLUDED_DIRS:
+                    continue
+                name = child.name.lower()
+            else:
+                stem = child.stem.lower()
+                if stem in _NON_PROTOCOL_STEMS:
+                    continue
+                name = stem
+            protocols.add(_PROTOCOL_ALIASES.get(name, name))
+
+    return sorted(protocols)

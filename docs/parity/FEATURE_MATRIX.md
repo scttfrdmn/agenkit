@@ -1,6 +1,6 @@
 # Feature Parity Matrix
 
-**Generated**: 2026-08-09 00:09:38 UTC
+**Generated**: 2026-09-05 01:13:43 UTC
 
 This matrix shows feature implementation status across all 9 Agenkit language implementations.
 
@@ -14,15 +14,15 @@ This matrix shows feature implementation status across all 9 Agenkit language im
 
 | Language | Total Features | Parity % | Test Coverage |
 |----------|----------------|----------|---------------|
-| python     | 55 | 100.0% | 2229 tests |
-| go         | 52 | 94.5% | 1341 tests |
-| cpp        | 48 | 87.3% | 1133 tests |
-| rust       | 47 | 85.5% | 1352 tests |
-| typescript | 45 | 81.8% | 976 tests |
-| zig        | 44 | 80.0% | 671 tests |
-| csharp     | 32 | 58.2% | 272 tests |
-| java       | 32 | 58.2% | 358 tests |
-| scala      | 32 | 58.2% | 363 tests |
+| python     | 58 | 100.0% | 2229 tests |
+| go         | 54 | 93.1% | 1341 tests |
+| cpp        | 49 | 84.5% | 1133 tests |
+| rust       | 49 | 84.5% | 1352 tests |
+| typescript | 47 | 81.0% | 976 tests |
+| zig        | 45 | 77.6% | 671 tests |
+| csharp     | 33 | 56.9% | 272 tests |
+| java       | 33 | 56.9% | 358 tests |
+| scala      | 33 | 56.9% | 363 tests |
 
 ---
 
@@ -195,6 +195,24 @@ Python: 10, Go: 8, Cpp: 8, Rust: 8, Typescript: 8, Zig: 8, Csharp: 0, Java: 0, S
 ---
 
 
+### Protocols
+
+
+
+| Feature | Python | Go | Cpp | Rust | Typescript | Zig | Csharp | Java | Scala | 
+|---------|------|------|------|------|------|------|------|------|------|
+| a2a | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 
+| agui | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | 
+| mcp | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 
+
+
+**Totals**:
+Python: 3, Go: 2, Cpp: 1, Rust: 2, Typescript: 2, Zig: 1, Csharp: 1, Java: 1, Scala: 1
+
+
+---
+
+
 
 ## Category Breakdown
 
@@ -205,6 +223,7 @@ Python: 10, Go: 8, Cpp: 8, Rust: 8, Typescript: 8, Zig: 8, Csharp: 0, Java: 0, S
 | Llm Adapters | 7 | 7 | 5 | 6 | 7 | 6 | 3 | 3 | 3 | 
 | Memory | 5 | 5 | 2 | 3 | 5 | 3 | 3 | 3 | 3 | 
 | Techniques | 10 | 8 | 8 | 8 | 8 | 8 | 0 | 0 | 0 | 
+| Protocols | 3 | 2 | 1 | 2 | 2 | 1 | 1 | 1 | 1 | 
 
 
 ---

@@ -32,7 +32,7 @@ except ImportError:
 # C#/Java/Scala were invisible in the generated docs even after a clean
 # regenerate -- see #918/#913.
 LANGUAGES = list(MIN_FEATURE_COUNTS.keys())
-CATEGORIES = ["patterns", "middleware", "llm_adapters", "memory", "techniques"]
+CATEGORIES = ["patterns", "middleware", "llm_adapters", "memory", "techniques", "protocols"]
 
 
 def load_feature_manifest() -> dict[str, Any]:

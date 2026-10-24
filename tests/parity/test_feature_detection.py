@@ -104,6 +104,19 @@ class TestPythonScanner:
         # Should find at least 4 memory backends
         assert len(memory) >= 4, f"Expected at least 4 memory backends, got {len(memory)}"
 
+    def test_scan_protocols(self):
+        """Verify Python scanner detects protocols across both trees.
+
+        Python files protocols in agenkit/protocols/ (mcp, agui, agui_simple)
+        and agenkit/techniques/protocols/ (a2a, mcp). agui_simple is a variant
+        of AG-UI and must fold into `agui`, not appear as a distinct protocol.
+        """
+        result = python_scanner.scan()
+        protocols = result["protocols"]
+
+        assert protocols == ["a2a", "agui", "mcp"], f"unexpected protocols: {protocols}"
+        assert "agui_simple" not in protocols, "agui_simple must normalize to agui"
+
     def test_no_false_positives(self):
         """Verify Python scanner doesn't detect non-existent features."""
         result = python_scanner.scan()
@@ -156,6 +169,18 @@ class TestGoScanner:
 
         # Should find at least 10 middleware types (Config + Decorator for each)
         assert len(middleware) >= 10, f"Expected at least 10 middleware, got {len(middleware)}"
+
+    def test_scan_protocols(self):
+        """Verify Go scanner detects protocols and surfaces the a2a gap.
+
+        Go ships mcp and agui under agenkit-go/protocols/ but has no a2a -- a
+        real cross-language gap the parity category is meant to make visible.
+        """
+        result = go_scanner.scan()
+        protocols = result["protocols"]
+
+        assert protocols == ["agui", "mcp"], f"unexpected protocols: {protocols}"
+        assert "a2a" not in protocols, "Go has no a2a implementation"
 
     def test_no_mock_types(self):
         """Verify Go scanner excludes mock types."""
@@ -259,6 +284,7 @@ class TestFeatureManifest:
             assert "llm_adapters" in features
             assert "memory" in features
             assert "techniques" in features
+            assert "protocols" in features
 
             # Each category should be a list
             assert isinstance(features["patterns"], list)
@@ -266,6 +292,7 @@ class TestFeatureManifest:
             assert isinstance(features["llm_adapters"], list)
             assert isinstance(features["memory"], list)
             assert isinstance(features["techniques"], list)
+            assert isinstance(features["protocols"], list)
 
     def test_summary_completeness(self, feature_manifest):
         """Verify summary has all categories."""
@@ -281,6 +308,7 @@ class TestFeatureManifest:
             "llm_adapters",
             "memory",
             "techniques",
+            "protocols",
             "total",
         ]
 
@@ -432,3 +460,36 @@ class TestCompositionScanning:
         assert "AgentResult" not in patterns, (
             f"{language} miscounted AgentResult as a pattern: {patterns}"
         )
+
+
+class TestProtocolScanning:
+    """Protocols are a parity category (#1002) -- the one adapter family that
+    was unmeasured (#654). A protocol is named by the immediate child of a
+    protocols/ root: a directory in most languages, or a source file
+    (mcp.hpp, mcp.zig) in C++/Zig.
+    """
+
+    @pytest.mark.parametrize(
+        "language",
+        ["python", "go", "typescript", "rust", "cpp", "zig", "csharp", "java", "scala"],
+    )
+    def test_every_language_implements_mcp(self, language):
+        """MCP is the one protocol every language ships -- detected whether it
+        lives in a directory or a single file."""
+        scanner = feature_scanner.load_scanner(language)
+        protocols = scanner.scan()["protocols"]
+
+        assert "mcp" in protocols, f"{language} did not detect mcp: {protocols}"
+
+    @pytest.mark.parametrize(
+        "language",
+        ["go", "typescript", "rust", "cpp", "zig", "csharp", "java", "scala"],
+    )
+    def test_a2a_is_python_only(self, language):
+        """a2a exists only in Python today; the category must surface that gap
+        rather than hide it (the manufactured-gap failure mode of counting
+        protocols under techniques -- see scanners/_paths.py)."""
+        scanner = feature_scanner.load_scanner(language)
+        protocols = scanner.scan()["protocols"]
+
+        assert "a2a" not in protocols, f"{language} unexpectedly reports a2a: {protocols}"

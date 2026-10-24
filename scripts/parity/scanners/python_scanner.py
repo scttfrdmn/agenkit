@@ -8,7 +8,7 @@ import ast
 from pathlib import Path
 from typing import Any
 
-from ._paths import COMPOSITION_AGENT_NAMES, scan_techniques_by_filename
+from ._paths import COMPOSITION_AGENT_NAMES, detect_protocols, scan_techniques_by_filename
 
 
 def scan() -> dict[str, Any]:
@@ -25,6 +25,7 @@ def scan() -> dict[str, Any]:
         "llm_adapters": scan_llm_adapters(root),
         "memory": scan_memory(root),
         "techniques": scan_techniques(root),
+        "protocols": scan_protocols(root),
     }
 
 
@@ -223,6 +224,23 @@ def scan_techniques(root: Path) -> list[str]:
     """
     techniques_dir = root / "techniques"
     return scan_techniques_by_filename(techniques_dir, "*.py")
+
+
+def scan_protocols(root: Path) -> list[str]:
+    """Scan for agent-interop protocols in agenkit/.
+
+    Python files protocols in two trees: the modern agenkit/protocols/ (mcp,
+    agui, agui_simple) and the legacy agenkit/techniques/protocols/ (a2a, mcp).
+
+    Args:
+        root: Root directory of Python package
+
+    Returns:
+        Sorted list of protocol names (e.g., ["a2a", "agui", "mcp"])
+    """
+    protocols_dir = root / "protocols"
+    legacy_protocols_dir = root / "techniques" / "protocols"
+    return detect_protocols(protocols_dir, legacy_protocols_dir)
 
 
 if __name__ == "__main__":

@@ -28,16 +28,77 @@ async def test_complete_success(mock_anthropic_client, simple_test_message):
 
 @pytest.mark.asyncio
 async def test_complete_with_options(mock_anthropic_client, simple_test_message):
-    """Test completion with temperature and max_tokens."""
+    """Test completion with max_tokens."""
     llm = AnthropicLLM(api_key="test-key")
     llm._client = mock_anthropic_client
 
-    await llm.complete(simple_test_message, temperature=0.5, max_tokens=100)
+    await llm.complete(simple_test_message, max_tokens=100)
 
-    # Verify the mock was called with correct parameters
     call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
-    assert call_kwargs["temperature"] == 0.5
     assert call_kwargs["max_tokens"] == 100
+
+
+# API version 2026-10-21 (anthropic>=2.0 default) returns 400 for any of these,
+# on every model (#1071).
+SAMPLING_PARAMS = ("temperature", "top_p", "top_k")
+
+
+@pytest.mark.asyncio
+async def test_complete_sends_no_sampling_params_by_default(
+    mock_anthropic_client, simple_test_message
+):
+    """A plain call must not send sampling params, and must not warn."""
+    import warnings
+
+    llm = AnthropicLLM(api_key="test-key")
+    llm._client = mock_anthropic_client
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        await llm.complete(simple_test_message)
+
+    call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
+    for key in SAMPLING_PARAMS:
+        assert key not in call_kwargs
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("option", SAMPLING_PARAMS)
+async def test_complete_warns_and_drops_sampling_params(
+    mock_anthropic_client, simple_test_message, option
+):
+    """Each sampling param is deprecated: warned about and never sent."""
+    llm = AnthropicLLM(api_key="test-key")
+    llm._client = mock_anthropic_client
+
+    with pytest.warns(UserWarning, match=f"does not support '{option}'"):
+        await llm.complete(simple_test_message, **{option: 0.5})
+
+    call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
+    for key in SAMPLING_PARAMS:
+        assert key not in call_kwargs
+
+
+@pytest.mark.asyncio
+async def test_complete_via_call_options_drops_temperature(
+    mock_anthropic_client, simple_test_message
+):
+    """CallOptions.temperature/top_p take the same path and are dropped (#1071)."""
+    from agenkit._llm_protocol import complete_messages
+    from agenkit.interfaces import CallOptions
+
+    llm = AnthropicLLM(api_key="test-key")
+    llm._client = mock_anthropic_client
+
+    with pytest.warns(UserWarning, match="does not support 'temperature'"):
+        await complete_messages(
+            llm, simple_test_message, CallOptions(temperature=0.2, top_p=0.9, max_tokens=50)
+        )
+
+    call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
+    for key in SAMPLING_PARAMS:
+        assert key not in call_kwargs
+    assert call_kwargs["max_tokens"] == 50
 
 
 @pytest.mark.asyncio

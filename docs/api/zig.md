@@ -101,7 +101,8 @@ pub const Config = struct {
     model:       []const u8 = "claude-sonnet-4-6",
     api_key:     []const u8,          // or ANTHROPIC_API_KEY env var
     max_tokens:  u32        = 4096,
-    temperature: f32        = 1.0,
+    // No temperature/top_p: not sent to Anthropic (rejected by API
+    // 2026-10-21); set on CallOptions they are ignored with a warning (#1071).
 };
 
 pub const Client = struct {

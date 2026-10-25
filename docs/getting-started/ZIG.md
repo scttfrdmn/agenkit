@@ -301,9 +301,13 @@ var llm_impl = try agenkit.adapters.AnthropicLLM.init(
 defer llm_impl.deinit();
 
 var options = agenkit.CallOptions.init(allocator);
-try options.withTemperature(1.0);
 try options.withMaxTokens(4096);
 ```
+
+**Note:** `AnthropicLLM` does not send `temperature` or `top_p` (#1071) — Anthropic
+API version 2026-10-21 rejects them, even at their defaults. Setting them is
+still accepted (so existing code compiles) but they are ignored, with a one-time
+`std.log.warn` per adapter instance; the model default (temperature 1.0) applies.
 
 **Parameter Validation** (v0.50.0):
 - `temperature`: 0.0 - 2.0 (validated via `withTemperature()`)

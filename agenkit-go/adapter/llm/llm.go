@@ -44,7 +44,7 @@ import (
 //
 //	// Same code, different provider
 //	llm := NewAnthropicLLM("sk-ant-...")
-//	response, err := llm.Complete(ctx, messages, WithTemperature(0.7))
+//	response, err := llm.Complete(ctx, messages, WithTemperature(0.7)) // temperature ignored by Anthropic (#1071)
 //
 // Streaming:
 //
@@ -176,6 +176,8 @@ type CallOption = agenkit.CallOption
 
 // WithTemperature sets the sampling temperature (0.0-2.0).
 // Panics if temperature is outside the valid range.
+// Ignored by the Anthropic adapter, which logs a one-time warning instead:
+// the Anthropic API rejects sampling parameters (#1071).
 var WithTemperature = agenkit.WithTemperature
 
 // WithMaxTokens sets the maximum number of tokens to generate.
@@ -184,6 +186,8 @@ var WithMaxTokens = agenkit.WithMaxTokens
 
 // WithTopP sets the nucleus sampling parameter (0.0-1.0).
 // Panics if topP is outside the valid range.
+// Ignored by the Anthropic adapter, which logs a one-time warning instead:
+// the Anthropic API rejects sampling parameters (#1071).
 var WithTopP = agenkit.WithTopP
 
 // WithFrequencyPenalty sets the frequency penalty (-2.0 to 2.0).

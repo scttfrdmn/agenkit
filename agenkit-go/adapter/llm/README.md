@@ -154,6 +154,12 @@ llm.WithMaxTokens(1024)     // Maximum tokens to generate
 llm.WithTopP(0.9)           // Nucleus sampling parameter
 ```
 
+**Anthropic:** the Anthropic API rejects `temperature`, `top_p` and `top_k`
+(HTTP 400 on API version 2026-10-21), so `AnthropicLLM` never sends them.
+`WithTemperature` / `WithTopP` are still accepted so provider-agnostic code
+compiles, but they are ignored and a single `slog` warning is logged per
+adapter instance. Claude uses its default sampling (temperature 1.0).
+
 ### Provider-Specific Options
 
 Use `WithExtra()` for provider-specific parameters:

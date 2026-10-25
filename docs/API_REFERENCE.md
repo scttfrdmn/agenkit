@@ -639,11 +639,9 @@ llm = AnthropicLLM(
 
 **Go:**
 ```go
-llm, err := llm.NewAnthropic(
-    llm.WithAPIKey(os.Getenv("ANTHROPIC_API_KEY")),
-    llm.WithModel("claude-3-5-sonnet-20241022"),
-    llm.WithTemperature(1.0),
-)
+// Sampling params (temperature, top_p) are not sent to Anthropic (#1071);
+// pass call options such as llm.WithMaxTokens to Complete/Stream instead.
+anthropicLLM := llm.NewAnthropicLLM(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-5-sonnet-20241022")
 ```
 
 **TypeScript:**

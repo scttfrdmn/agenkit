@@ -228,20 +228,19 @@ int main() {
 ### Anthropic Example
 
 ```cpp
-#include <agenkit/adapters/anthropic_llm.hpp>
+#include <agenkit/adapters/claude_agent.hpp>
 
-auto llm = agenkit::AnthropicLLM(
-    std::getenv("ANTHROPIC_API_KEY"),
-    "claude-3-5-sonnet-20241022"
-);
-llm.set_temperature(1.0);
-llm.set_max_tokens(4096);
+agenkit::adapters::ClaudeConfig config;
+config.api_key = std::getenv("ANTHROPIC_API_KEY");
+config.max_tokens = 4096;
+agenkit::adapters::ClaudeAgent llm(config);
 ```
 
-**Parameter Validation** (v0.50.0):
-- `temperature`: 0.0 - 2.0 (validated at construction/setter)
-- `max_tokens`: > 0 (validated at construction/setter)
-- `top_p`: 0.0 - 1.0 (validated at construction/setter)
+**Parameter Validation**:
+- `max_tokens`: > 0 (validated at construction and in `set_config`)
+- `temperature` / `top_p`: deprecated for Claude and never sent — the
+  Anthropic API rejects sampling parameters, so they are ignored with a
+  one-time warning (#1071)
 
 Invalid values throw `std::invalid_argument` immediately.
 

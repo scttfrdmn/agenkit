@@ -36,7 +36,6 @@ int main() {
     config.api_key = api_key_env;
     config.model = "claude-3-5-sonnet-20241022";
     config.max_tokens = 1024;
-    config.temperature = 1.0;
 
     ClaudeAgent claude(config);
 

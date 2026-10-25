@@ -177,8 +177,9 @@ TEST(ClaudeAgentTest, RequestBodyNeverIncludesSeed) {
     EXPECT_FALSE(body.contains("seed"));
 }
 
-// A per-call temperature/max_tokens must override the config default for
-// that one call.
+// A per-call max_tokens must override the config default for that one call.
+// A per-call temperature must NOT be sent: Anthropic API version 2026-10-21
+// rejects temperature/top_p/top_k with HTTP 400 (#1071).
 TEST(ClaudeAgentTest, RequestBodyPerCallOptionsOverrideConfigDefaults) {
     ClaudeConfig config;
     config.api_key = "test-key";
@@ -190,8 +191,96 @@ TEST(ClaudeAgentTest, RequestBodyPerCallOptionsOverrideConfigDefaults) {
     auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
     auto body = agent.build_request_body(messages, options);
 
-    EXPECT_DOUBLE_EQ(body["temperature"].get<double>(), 0.3);
+    EXPECT_FALSE(body.contains("temperature"));
     EXPECT_EQ(body["max_tokens"].get<int>(), 256);
+}
+
+// Sampling params are never sent, whether they come from config or from
+// per-call options, and whatever their value (#1071).
+TEST(ClaudeAgentTest, RequestBodyNeverIncludesSamplingParams) {
+    std::ostringstream captured;
+    std::streambuf* old_cerr = std::cerr.rdbuf(captured.rdbuf());
+
+    ClaudeConfig config;
+    config.api_key = "test-key";
+    config.temperature = 0.2;
+    ClaudeAgent agent(config);
+
+    std::cerr.rdbuf(old_cerr);
+
+    auto messages = json::array({{{"role", "user"}, {"content", "hi"}}});
+    for (const auto& options : {CallOptions{},
+                                CallOptions{}.with_temperature(0.0),
+                                CallOptions{}.with_temperature(1.0),
+                                CallOptions{}.with_top_p(0.9)}) {
+        auto body = agent.build_request_body(messages, options);
+        EXPECT_FALSE(body.contains("temperature"));
+        EXPECT_FALSE(body.contains("top_p"));
+        EXPECT_FALSE(body.contains("top_k"));
+    }
+}
+
+// temperature is deprecated and no longer validated: an out-of-range value
+// must not throw (it is never sent), and the default 1.0 must not warn.
+TEST(ClaudeAgentTest, ConfigTemperatureWarnsOnlyWhenNonDefault) {
+    std::ostringstream captured;
+    std::streambuf* old_cerr = std::cerr.rdbuf(captured.rdbuf());
+
+    ClaudeConfig config;
+    config.api_key = "test-key";
+    { ClaudeAgent agent(config); }
+    const bool warned_on_default = !captured.str().empty();
+
+    config.temperature = 2.5;
+    EXPECT_NO_THROW({ ClaudeAgent agent(config); });
+
+    std::cerr.rdbuf(old_cerr);
+
+    EXPECT_FALSE(warned_on_default);
+    EXPECT_NE(captured.str().find("temperature"), std::string::npos);
+    EXPECT_NE(captured.str().find("#1071"), std::string::npos);
+}
+
+// set_config() with a non-default temperature warns too, without throwing.
+TEST(ClaudeAgentTest, SetConfigWithTemperatureWarns) {
+    ClaudeConfig config;
+    config.api_key = "test-key";
+    ClaudeAgent agent(config);
+
+    std::ostringstream captured;
+    std::streambuf* old_cerr = std::cerr.rdbuf(captured.rdbuf());
+
+    config.temperature = 0.4;
+    EXPECT_NO_THROW(agent.set_config(config));
+
+    std::cerr.rdbuf(old_cerr);
+
+    EXPECT_NE(captured.str().find("temperature"), std::string::npos);
+}
+
+// Per-call temperature/top_p warn once per instance, not on every call, and
+// the call still goes through (fails here only on the unroutable endpoint).
+TEST(ClaudeAgentTest, ProcessWithWarnsOnceOnSamplingParams) {
+    ClaudeConfig config;
+    config.api_key = "test-key";
+    config.api_base = "http://127.0.0.1:1";  // unroutable: fails fast, no network
+    ClaudeAgent agent(config);
+
+    std::ostringstream captured;
+    std::streambuf* old_cerr = std::cerr.rdbuf(captured.rdbuf());
+
+    auto options = CallOptions{}.with_temperature(0.5).with_top_p(0.9);
+    auto first = agent.process_with(Message::with_text("user", "hi"), options).get();
+    const std::string after_first = captured.str();
+    auto second = agent.process_with(Message::with_text("user", "hi"), options).get();
+    const std::string after_second = captured.str();
+
+    std::cerr.rdbuf(old_cerr);
+
+    EXPECT_TRUE(first.is_err());
+    EXPECT_TRUE(second.is_err());
+    EXPECT_NE(after_first.find("deprecated"), std::string::npos);
+    EXPECT_EQ(after_first, after_second);
 }
 
 // process_with() must warn (not silently drop) when the caller sets a seed

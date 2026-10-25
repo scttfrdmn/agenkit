@@ -58,8 +58,9 @@ int main() {
         ClaudeConfig config;
         config.api_key = api_key;
         config.model = "claude-3-5-sonnet-20241022";
-        config.temperature = 0.7;
         config.max_tokens = 1024;
+        // No temperature: the Anthropic API no longer accepts sampling
+        // parameters, so ClaudeAgent never sends them (#1071).
 
         ClaudeAgent claude(config);
 
@@ -192,32 +193,22 @@ int main() {
         std::cerr << "Exception: " << e.what() << "\n";
     }
 
-    // Example 4: Temperature comparison
-    print_separator("Example 4: Temperature Comparison");
+    // Example 4: Response length via max_tokens
+    print_separator("Example 4: max_tokens Comparison");
 
     try {
-        std::string prompt = "Write a creative tagline for an AI agent framework.";
+        std::string prompt = "Describe what an AI agent toolkit is for.";
         std::cout << "Prompt: " << prompt << "\n\n";
 
-        std::vector<double> temperatures = {0.0, 0.5, 1.0};
+        std::vector<int> token_limits = {25, 75, 200};
 
-        for (double temp : temperatures) {
-            std::cout << "Temperature: " << temp << "\n";
-            std::cout << "  (";
-            if (temp == 0.0) {
-                std::cout << "deterministic, focused";
-            } else if (temp == 0.5) {
-                std::cout << "balanced";
-            } else {
-                std::cout << "creative, varied";
-            }
-            std::cout << ")\n";
+        for (int limit : token_limits) {
+            std::cout << "max_tokens: " << limit << "\n";
 
             ClaudeConfig config;
             config.api_key = api_key;
             config.model = "claude-3-5-sonnet-20241022";
-            config.temperature = temp;
-            config.max_tokens = 50;
+            config.max_tokens = limit;
 
             ClaudeAgent claude(config);
 

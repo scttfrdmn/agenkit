@@ -147,7 +147,7 @@ struct ClaudeConfig {
     std::string model       = "claude-sonnet-4-6";
     std::string api_key;              // or ANTHROPIC_API_KEY env var
     int         max_tokens  = 4096;
-    double      temperature = 1.0;
+    double      temperature = 1.0;    // deprecated: ignored, never sent (#1071)
 };
 
 class ClaudeAgent : public core::Agent {

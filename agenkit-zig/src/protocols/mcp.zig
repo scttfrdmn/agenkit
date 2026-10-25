@@ -42,7 +42,7 @@ const Allocator = std.mem.Allocator;
 // stateless core this module does not implement, so advertising that
 // literal would claim a handshake the wire no longer has).
 pub const PROTOCOL_VERSION = "2025-11-25";
-pub const CLIENT_VERSION = "0.92.1";
+pub const CLIENT_VERSION = "0.92.2";
 
 // ── Test-observable version-mismatch hook (agenkit#781) ────────────────────────
 //

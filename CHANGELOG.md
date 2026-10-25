@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.92.2] - 2026-10-25
+
+Patch release: the Go, Rust, Zig, and C++ Anthropic adapters stop sending
+sampling parameters, which Anthropic API version 2026-10-21 rejects. With this,
+all six core languages behave the same way that Python and TypeScript have
+since v0.92.1 (#1071).
+
+### Fixed
+
+- **Anthropic adapters (Go, Rust, Zig, C++) no longer send `temperature`,
+  `top_p` or `top_k`** (#1071). API version 2026-10-21 rejects these with HTTP
+  400, even at their defaults; omitting them gives the provider defaults
+  (temperature 1.0), the same as under 2023-06-01. The adapters still pin
+  `anthropic-version: 2023-06-01`; moving to 2026-10-21 by default is tracked
+  for v0.93.0 (#1075).
+  - Go (#1076): `WithTemperature`/`WithTopP` are ignored by `AnthropicLLM`,
+    with one `slog.Warn` per instance. These are the first Go Anthropic
+    adapter tests.
+  - Rust (#1079): `AnthropicConfig.temperature`/`top_p`/`top_k` are
+    `#[deprecated]` and no longer validated (no more panics). They and
+    per-call `CallOptions` sampling options log a `tracing::warn!`.
+  - Zig (#1078): `CallOptions.temperature`/`top_p` are ignored, with one
+    `std.log.warn` per instance. The `anthropic_streaming` example compiles
+    again.
+  - C++ (#1077): `ClaudeConfig::temperature` is deprecated and no longer
+    validated. It and per-call `temperature`/`top_p` log one `std::cerr`
+    warning per instance.
+- Go, C++ getting-started and API-reference snippets used Anthropic
+  constructors that don't exist; they now show the real API.
+
 ## [v0.92.1] - 2026-10-24
 
 Maintenance release: Anthropic API 2026-10-21 compatibility (Python

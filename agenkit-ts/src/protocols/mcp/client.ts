@@ -26,7 +26,7 @@ import {
   type McpToolResult,
 } from './types.js';
 
-const CLIENT_VERSION = '0.92.1';
+const CLIENT_VERSION = '0.92.2';
 
 /**
  * Parse an initialize result into an {@link McpServerInfo}, capturing the

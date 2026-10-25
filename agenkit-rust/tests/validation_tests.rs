@@ -168,56 +168,20 @@ fn test_openai_invalid_presence_penalty_too_high() {
 
 // Anthropic tests
 
+// #1071: Anthropic temperature/top_p/top_k are deprecated and ignored (never
+// sent to the API), so they are no longer validated: values the old checks
+// rejected now construct fine and log a warning instead of panicking.
 #[test]
-fn test_anthropic_valid_temperature_0() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        temperature: 0.0,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
-}
-
-#[test]
-fn test_anthropic_valid_temperature_1() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        temperature: 1.0,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
-}
-
-#[test]
-fn test_anthropic_valid_temperature_2() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        temperature: 2.0,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
-}
-
-#[test]
-#[should_panic(expected = "temperature must be between 0 and 2")]
-fn test_anthropic_invalid_temperature_negative() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        temperature: -0.5,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
-}
-
-#[test]
-#[should_panic(expected = "temperature must be between 0 and 2")]
-fn test_anthropic_invalid_temperature_too_high() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        temperature: 3.0,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
+#[allow(deprecated)]
+fn test_anthropic_temperature_ignored_not_validated() {
+    for temperature in [0.0, 1.0, 2.0, -0.5, 3.0] {
+        let config = AnthropicConfig {
+            api_key: "sk-ant-test".to_string(),
+            temperature,
+            ..Default::default()
+        };
+        let _agent = AnthropicAgent::new(config);
+    }
 }
 
 #[test]
@@ -253,46 +217,17 @@ fn test_anthropic_invalid_max_tokens_negative() {
 }
 
 #[test]
-fn test_anthropic_valid_top_p() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        top_p: 0.9,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
-}
-
-#[test]
-#[should_panic(expected = "top_p must be between 0 and 1")]
-fn test_anthropic_invalid_top_p_negative() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        top_p: -0.1,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
-}
-
-#[test]
-#[should_panic(expected = "top_p must be between 0 and 1")]
-fn test_anthropic_invalid_top_p_too_high() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        top_p: 1.5,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
-}
-
-#[test]
-#[should_panic(expected = "top_k must be positive")]
-fn test_anthropic_invalid_top_k() {
-    let config = AnthropicConfig {
-        api_key: "sk-ant-test".to_string(),
-        top_k: 0,
-        ..Default::default()
-    };
-    let _agent = AnthropicAgent::new(config);
+#[allow(deprecated)]
+fn test_anthropic_top_p_top_k_ignored_not_validated() {
+    for (top_p, top_k) in [(0.9, 5), (-0.1, 5), (1.5, 5), (1.0, 0)] {
+        let config = AnthropicConfig {
+            api_key: "sk-ant-test".to_string(),
+            top_p,
+            top_k,
+            ..Default::default()
+        };
+        let _agent = AnthropicAgent::new(config);
+    }
 }
 
 // Boundary value tests

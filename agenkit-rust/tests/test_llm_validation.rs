@@ -268,32 +268,19 @@ mod openai_compatible_validation {
 mod anthropic_validation {
     use super::*;
 
+    // #1071: temperature/top_p/top_k are deprecated and ignored (never sent),
+    // so out-of-range values no longer panic — they log a warning instead.
     #[test]
-    fn test_valid_temperature() {
-        let config = AnthropicConfig {
-            api_key: "test-key".to_string(),
-            temperature: 0.0,
-            ..Default::default()
-        };
-        assert!(std::panic::catch_unwind(|| AnthropicAgent::new(config)).is_ok());
-
-        let config = AnthropicConfig {
-            api_key: "test-key".to_string(),
-            temperature: 2.0,
-            ..Default::default()
-        };
-        assert!(std::panic::catch_unwind(|| AnthropicAgent::new(config)).is_ok());
-    }
-
-    #[test]
-    #[should_panic(expected = "temperature must be between 0 and 2")]
-    fn test_invalid_temperature() {
-        let config = AnthropicConfig {
-            api_key: "test-key".to_string(),
-            temperature: 2.5,
-            ..Default::default()
-        };
-        AnthropicAgent::new(config);
+    #[allow(deprecated)]
+    fn test_sampling_params_ignored_without_panic() {
+        for temperature in [0.0, 2.0, 2.5] {
+            let config = AnthropicConfig {
+                api_key: "test-key".to_string(),
+                temperature,
+                ..Default::default()
+            };
+            assert!(std::panic::catch_unwind(|| AnthropicAgent::new(config)).is_ok());
+        }
     }
 
     #[test]
@@ -308,13 +295,13 @@ mod anthropic_validation {
     }
 
     #[test]
-    #[should_panic(expected = "top_p must be between 0 and 1")]
-    fn test_invalid_top_p() {
+    #[allow(deprecated)]
+    fn test_top_p_ignored_without_panic() {
         let config = AnthropicConfig {
             api_key: "test-key".to_string(),
             top_p: 1.1,
             ..Default::default()
         };
-        AnthropicAgent::new(config);
+        assert!(std::panic::catch_unwind(|| AnthropicAgent::new(config)).is_ok());
     }
 }

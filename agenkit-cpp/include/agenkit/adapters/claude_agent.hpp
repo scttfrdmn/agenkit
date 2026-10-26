@@ -14,6 +14,7 @@
 #include "agenkit/core/agent.hpp"
 #include "agenkit/core/call_options.hpp"
 #include "agenkit/core/message.hpp"
+#include <atomic>
 #include <string>
 #include <memory>
 #include <functional>
@@ -34,7 +35,14 @@ struct ClaudeConfig {
     /// Maximum tokens to generate (default: 4096)
     int max_tokens{4096};
 
-    /// Temperature 0-1 (default: 1.0)
+    /**
+     * @deprecated Ignored and never sent (#1071). Anthropic API version
+     * 2026-10-21 rejects `temperature`, `top_p` and `top_k` with HTTP 400,
+     * even at their defaults; omitting them yields the provider default
+     * (1.0). Setting a value other than 1.0 logs a one-time warning to
+     * std::cerr. Kept so existing code still compiles; it will be removed
+     * in a future release.
+     */
     double temperature{1.0};
 
     /// API endpoint (default: Anthropic production)
@@ -56,7 +64,8 @@ struct ClaudeConfig {
  * Features:
  * - Supports all Claude 3 models (Opus, Sonnet, Haiku)
  * - Async message processing
- * - Configurable temperature and max tokens
+ * - Configurable max tokens (sampling parameters are not sent; see
+ *   ClaudeConfig::temperature)
  * - Error handling with typed errors
  *
  * @par Example
@@ -106,9 +115,13 @@ public:
     /**
      * @brief Process a message, forwarding per-call options to the Claude API
      *
-     * Same as process(), except that `options.temperature`/`max_tokens` override
-     * the config default when set, and `options.stop` is translated to
+     * Same as process(), except that `options.max_tokens` overrides the
+     * config default when set, and `options.stop` is translated to
      * Anthropic's `stop_sequences` (the Messages API has no `stop` field).
+     * `options.temperature` and `options.top_p` are deprecated for this
+     * adapter and never sent: Anthropic API version 2026-10-21 rejects them
+     * with HTTP 400 (#1071). Setting either logs a warning to std::cerr once
+     * per ClaudeAgent instance.
      * `options.seed` has no Anthropic equivalent — the Messages API exposes no
      * sampling-seed parameter — so a caller who sets one is warned rather than
      * left to discover, via non-reproducible output, that it had no effect.
@@ -142,8 +155,9 @@ public:
      * @brief Build the outgoing Messages API request body
      *
      * Exposed publicly so tests can assert on the exact JSON sent to Claude
-     * without a live HTTP call. `options.seed`, if set, is never added to the
-     * returned body (proving the drop rather than merely the absence of a crash);
+     * without a live HTTP call. Sampling parameters (`temperature`, `top_p`,
+     * from config or options) are never added (#1071). `options.seed`, if
+     * set, is never added to the returned body (proving the drop rather than merely the absence of a crash);
      * a caller should check for that via process_with()'s warning side effect,
      * not via this method, which builds the request only.
      *
@@ -177,7 +191,24 @@ public:
     stream(core::Message message, std::function<bool(const std::string&)> callback);
 
 private:
+    /// Copyable one-shot flag so ClaudeAgent stays copyable (a copy re-arms it).
+    struct WarnOnceFlag {
+        std::atomic<bool> fired{false};
+        WarnOnceFlag() = default;
+        WarnOnceFlag(const WarnOnceFlag& /*other*/) noexcept {}
+        WarnOnceFlag& operator=(const WarnOnceFlag& /*other*/) noexcept { return *this; }
+        /// True only on the first call for this instance.
+        bool first() noexcept { return !fired.exchange(true); }
+    };
+
     ClaudeConfig config_;
+    WarnOnceFlag sampling_warning_;
+
+    /**
+     * @brief Warn (once per instance) that a deprecated sampling param was ignored
+     * @param param Parameter name, e.g. "temperature"
+     */
+    void warn_sampling_param_ignored(const char* param);
 
     /**
      * @brief Make HTTP request to Claude API

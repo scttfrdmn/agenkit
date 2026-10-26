@@ -24,10 +24,13 @@ ClaudeAgent::ClaudeAgent(ClaudeConfig config)
         throw std::invalid_argument("Claude API key cannot be empty");
     }
 
-    // Validate LLM parameters
-    LLMParameterValidator::validate_temperature(config_.temperature);
+    // Validate LLM parameters. temperature is deliberately not validated:
+    // it is deprecated and never sent (#1071), so its value cannot fail.
     LLMParameterValidator::validate_max_tokens(config_.max_tokens);
-    // Note: Claude uses temperature 0-1, but we validate 0-2 for consistency with other adapters
+
+    if (config_.temperature != 1.0) {
+        warn_sampling_param_ignored("temperature");
+    }
 }
 
 std::string ClaudeAgent::name() const {
@@ -47,6 +50,16 @@ ClaudeAgent::process_with(core::Message message, const core::CallOptions& option
     if (options.seed.has_value()) {
         std::cerr << "ClaudeAgent: 'seed' is not supported by the Anthropic Messages API "
                   << "and was not sent to the provider." << std::endl;
+    }
+
+    // Sampling parameters are rejected by Anthropic API version 2026-10-21
+    // (HTTP 400, even at their default values), so build_request_body()
+    // never sends them (#1071). Warn once per instance instead of per call.
+    if (options.temperature.has_value()) {
+        warn_sampling_param_ignored("temperature");
+    }
+    if (options.top_p.has_value()) {
+        warn_sampling_param_ignored("top_p");
     }
 
     // Convert message to Claude API format
@@ -84,11 +97,24 @@ void ClaudeAgent::set_config(const ClaudeConfig& config) {
         throw std::invalid_argument("Claude API key cannot be empty");
     }
 
-    // Validate LLM parameters
-    LLMParameterValidator::validate_temperature(config.temperature);
+    // Validate LLM parameters (temperature is deprecated and not validated, #1071)
     LLMParameterValidator::validate_max_tokens(config.max_tokens);
 
     config_ = config;
+
+    if (config_.temperature != 1.0) {
+        warn_sampling_param_ignored("temperature");
+    }
+}
+
+void ClaudeAgent::warn_sampling_param_ignored(const char* param) {
+    if (!sampling_warning_.first()) {
+        return;
+    }
+    std::cerr << "ClaudeAgent: '" << param << "' is deprecated and was not sent to the "
+              << "Anthropic Messages API (API version 2026-10-21 rejects temperature, "
+              << "top_p and top_k); the provider default applies. This warning is shown "
+              << "once per ClaudeAgent instance. See #1071." << std::endl;
 }
 
 json ClaudeAgent::build_request_body(const json& messages, const core::CallOptions& options) const {
@@ -99,10 +125,10 @@ json ClaudeAgent::build_request_body(const json& messages, const core::CallOptio
         {"messages", messages}
     };
 
-    double temperature = options.temperature.value_or(config_.temperature);
-    if (temperature != 1.0) {
-        request_body["temperature"] = temperature;
-    }
+    // temperature/top_p (config or per-call) are intentionally never added:
+    // Anthropic API version 2026-10-21 rejects them with HTTP 400 even at
+    // their defaults, and omitting them yields the same defaults under
+    // 2023-06-01 (#1071). process_with() and the constructor warn instead.
 
     // stop -> stop_sequences: the Messages API has no field named `stop`.
     // seed is intentionally never added here: the Messages API has no
@@ -239,10 +265,7 @@ ClaudeAgent::stream(core::Message message, std::function<bool(const std::string&
             {"messages", messages},
             {"stream", true}
         };
-
-        if (config_.temperature != 1.0) {
-            request_body["temperature"] = config_.temperature;
-        }
+        // temperature is never sent (#1071); see build_request_body().
 
         // Set headers
         httplib::Headers headers = {

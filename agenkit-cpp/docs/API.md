@@ -593,9 +593,8 @@ struct ClaudeModels {
 struct ClaudeConfig {
     std::string api_key;
     std::string model       = ClaudeModels::SONNET_4;
-    double      temperature = 1.0;   // 0.0 – 1.0, validated
+    double      temperature = 1.0;   // deprecated: ignored, never sent; warns if != 1.0 (#1071)
     int         max_tokens  = 4096;  // > 0, validated
-    double      top_p       = 1.0;   // 0.0 – 1.0, validated
     std::string base_url    = "https://api.anthropic.com";
     int         timeout_ms  = 30000;
 };

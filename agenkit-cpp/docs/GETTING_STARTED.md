@@ -640,12 +640,14 @@ LLM adapters validate parameters at construction time:
 adapters::ClaudeConfig config;
 config.api_key    = std::getenv("ANTHROPIC_API_KEY");
 config.model      = adapters::ClaudeModels::SONNET_4;
-config.temperature = 0.7;   // Valid: 0.0–1.0
 config.max_tokens  = 4096;  // Valid: > 0
 
 // Invalid values throw std::invalid_argument immediately:
-// config.temperature = 2.5;  // throws: must be 0.0-1.0
 // config.max_tokens  = 0;    // throws: must be > 0
+
+// ClaudeConfig::temperature is deprecated and never sent: the Anthropic API
+// rejects sampling parameters (temperature/top_p/top_k), so ClaudeAgent
+// ignores them and logs a one-time warning if you set them (#1071).
 ```
 
 ---

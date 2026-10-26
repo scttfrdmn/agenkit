@@ -157,12 +157,22 @@ fn streamDeinit(ptr: *anyopaque) void {
 }
 
 /// Anthropic LLM adapter
+///
+/// Sampling parameters: `CallOptions.temperature` and `CallOptions.top_p` are
+/// accepted but NOT sent to the Messages API. Anthropic API version 2026-10-21
+/// rejects `temperature`, `top_p` and `top_k` with HTTP 400, even at their
+/// default values (#1071). Omitting them gives the model defaults (temperature
+/// 1.0), exactly as under 2023-06-01. Setting either logs a `std.log.warn`
+/// once per adapter instance; the fields remain so caller code still compiles.
 pub const AnthropicLLM = struct {
     allocator: Allocator,
     api_key: []const u8,
     model_name: []const u8,
     base_url: []const u8,
     api_version: []const u8,
+    /// Set once the ignored-sampling-params warning has been logged, so a
+    /// caller that sets temperature on every call is warned once, not per call.
+    sampling_warning_emitted: std.atomic.Value(bool) = std.atomic.Value(bool).init(false),
 
     /// Initialize Anthropic adapter
     ///
@@ -296,6 +306,20 @@ pub const AnthropicLLM = struct {
         self.deinit();
     }
 
+    /// Log (once per instance) that temperature / top_p were set and ignored.
+    ///
+    /// The Anthropic adapter no longer forwards sampling parameters (#1071);
+    /// this keeps a caller who relied on them from losing them silently.
+    fn warnIgnoredSamplingParams(self: *AnthropicLLM, options: *const llm.CallOptions) void {
+        if (options.temperature == null and options.top_p == null) return;
+        if (self.sampling_warning_emitted.swap(true, .monotonic)) return;
+        std.log.warn(
+            "AnthropicLLM: temperature/top_p are deprecated and ignored; the Anthropic API " ++
+                "(version 2026-10-21) rejects them, so they are not sent (agenkit#1071)",
+            .{},
+        );
+    }
+
     /// Build Anthropic API streaming request body
     fn buildStreamRequestBody(
         self: *AnthropicLLM,
@@ -394,17 +418,9 @@ pub const AnthropicLLM = struct {
         defer allocator.free(max_tokens_str);
         try json.appendSlice(allocator, max_tokens_str);
 
-        if (options.temperature) |temp| {
-            const temp_str = try std.fmt.allocPrint(allocator, ",\"temperature\":{d}", .{temp});
-            defer allocator.free(temp_str);
-            try json.appendSlice(allocator, temp_str);
-        }
-
-        if (options.top_p) |top_p_val| {
-            const top_p_str = try std.fmt.allocPrint(allocator, ",\"top_p\":{d}", .{top_p_val});
-            defer allocator.free(top_p_str);
-            try json.appendSlice(allocator, top_p_str);
-        }
+        // temperature / top_p are intentionally not sent (#1071): see
+        // warnIgnoredSamplingParams.
+        self.warnIgnoredSamplingParams(options);
 
         try json.append(allocator, '}');
 
@@ -517,18 +533,9 @@ pub const AnthropicLLM = struct {
         defer allocator.free(max_tokens_str);
         try json.appendSlice(allocator, max_tokens_str);
 
-        // Optional parameters
-        if (options.temperature) |temp| {
-            const temp_str = try std.fmt.allocPrint(allocator, ",\"temperature\":{d}", .{temp});
-            defer allocator.free(temp_str);
-            try json.appendSlice(allocator, temp_str);
-        }
-
-        if (options.top_p) |top_p_val| {
-            const top_p_str = try std.fmt.allocPrint(allocator, ",\"top_p\":{d}", .{top_p_val});
-            defer allocator.free(top_p_str);
-            try json.appendSlice(allocator, top_p_str);
-        }
+        // temperature / top_p are intentionally not sent (#1071): see
+        // warnIgnoredSamplingParams.
+        self.warnIgnoredSamplingParams(options);
 
         try json.append(allocator, '}');
 
@@ -651,8 +658,61 @@ test "AnthropicLLM buildRequestBody" {
     try std.testing.expect(std.mem.indexOf(u8, body, "\"model\":\"claude-3-opus-20240229\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, body, "\"system\":\"You are helpful.\"") != null);
     try std.testing.expect(std.mem.indexOf(u8, body, "\"max_tokens\":512") != null);
-    try std.testing.expect(std.mem.indexOf(u8, body, "\"temperature\":0.7") != null);
+    // temperature is set above but must not reach the wire (#1071).
+    try std.testing.expect(std.mem.indexOf(u8, body, "\"temperature\"") == null);
     try std.testing.expect(std.mem.indexOf(u8, body, "\"role\":\"user\"") != null);
+}
+
+test "AnthropicLLM omits sampling params even when set, and warns once" {
+    const allocator = std.testing.allocator;
+
+    var llm_impl = try AnthropicLLM.init(allocator, "test-key", "claude-sonnet-4-6");
+    defer llm_impl.deinit();
+
+    var user = try Message.withText(allocator, .user, "Hello");
+    defer user.deinit();
+    const messages = [_]*Message{&user};
+
+    var options = llm.CallOptions.init(allocator);
+    defer options.deinit();
+    options.temperature = 1.0; // even the default is rejected by 2026-10-21
+    options.top_p = 0.9;
+
+    try std.testing.expect(!llm_impl.sampling_warning_emitted.load(.monotonic));
+
+    const body = try llm_impl.buildRequestBody(allocator, &messages, &options);
+    defer allocator.free(body);
+    try std.testing.expect(std.mem.indexOf(u8, body, "\"temperature\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, body, "\"top_p\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, body, "\"top_k\"") == null);
+    try std.testing.expect(llm_impl.sampling_warning_emitted.load(.monotonic));
+
+    // Streaming path omits them too; the warning is not re-emitted (flag stays set).
+    const stream_body = try llm_impl.buildStreamRequestBody(allocator, &messages, &options);
+    defer allocator.free(stream_body);
+    try std.testing.expect(std.mem.indexOf(u8, stream_body, "\"stream\":true") != null);
+    try std.testing.expect(std.mem.indexOf(u8, stream_body, "\"temperature\"") == null);
+    try std.testing.expect(std.mem.indexOf(u8, stream_body, "\"top_p\"") == null);
+    try std.testing.expect(llm_impl.sampling_warning_emitted.load(.monotonic));
+}
+
+test "AnthropicLLM does not warn when sampling params are unset" {
+    const allocator = std.testing.allocator;
+
+    var llm_impl = try AnthropicLLM.init(allocator, "test-key", "claude-sonnet-4-6");
+    defer llm_impl.deinit();
+
+    var user = try Message.withText(allocator, .user, "Hello");
+    defer user.deinit();
+    const messages = [_]*Message{&user};
+
+    var options = llm.CallOptions.init(allocator);
+    defer options.deinit();
+    options.max_tokens = 64;
+
+    const body = try llm_impl.buildRequestBody(allocator, &messages, &options);
+    defer allocator.free(body);
+    try std.testing.expect(!llm_impl.sampling_warning_emitted.load(.monotonic));
 }
 
 test "AnthropicLLM buildRequestBody without system" {

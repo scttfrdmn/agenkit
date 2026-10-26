@@ -6,12 +6,11 @@
 /// Run:
 ///   export ANTHROPIC_API_KEY="your-key-here"
 ///   zig build run-anthropic-streaming
-
 const std = @import("std");
 const agenkit = @import("agenkit");
-const AnthropicLLM = agenkit.adapter.anthropic.AnthropicLLM;
+const AnthropicLLM = agenkit.adapter.AnthropicLLM;
 const Message = agenkit.Message;
-const CallOptions = agenkit.adapter.llm.CallOptions;
+const CallOptions = agenkit.adapter.CallOptions;
 
 pub fn main() !void {
     var gpa = std.heap.DebugAllocator(.{}){};
@@ -42,12 +41,12 @@ pub fn main() !void {
     // Set up options
     var options = CallOptions.init(allocator);
     defer options.deinit();
-    try options.withTemperature(1.0);
+    // temperature/top_p are not sent by the Anthropic adapter (agenkit#1071).
     try options.withMaxTokens(1024);
 
     // Stream response
     var full_response = std.ArrayList(u8).empty;
-    defer full_response.deinit();
+    defer full_response.deinit(allocator);
 
     var stream_iter = try llm.stream(allocator, &messages, &options);
     defer stream_iter.deinit();
@@ -61,7 +60,7 @@ pub fn main() !void {
         };
 
         std.debug.print("{s}", .{text});
-        try full_response.appendSlice(text);
+        try full_response.appendSlice(allocator, text);
     }
 
     std.debug.print("\n{s}\n", .{"-" ** 60});
@@ -96,7 +95,7 @@ pub fn main() !void {
         };
 
         std.debug.print("{s}", .{text});
-        try full_response.appendSlice(text);
+        try full_response.appendSlice(allocator, text);
     }
 
     std.debug.print("\n{s}\n", .{"-" ** 60});
@@ -132,7 +131,7 @@ pub fn main() !void {
         };
 
         std.debug.print("{s}", .{text});
-        try full_response.appendSlice(text);
+        try full_response.appendSlice(allocator, text);
 
         // Stop after 50 characters
         if (full_response.items.len >= 50) {

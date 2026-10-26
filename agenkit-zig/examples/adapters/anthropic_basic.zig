@@ -10,7 +10,6 @@
 ///
 /// Usage:
 ///   zig build run-anthropic-basic
-
 const std = @import("std");
 const agenkit = @import("agenkit");
 const AnthropicLLM = agenkit.adapter.AnthropicLLM;
@@ -109,8 +108,9 @@ fn systemMessageExample(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
+    // The system prompt (not temperature) steers tone and precision: the Anthropic
+    // adapter does not send temperature/top_p (agenkit#1071).
     try options.withMaxTokens(500);
-    try options.withTemperature(0.3); // Lower temp for technical accuracy
 
     std.debug.print("System: {s}\n", .{system.content.text});
     std.debug.print("Request: {s}\n", .{user.content.text});
@@ -125,7 +125,7 @@ fn systemMessageExample(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
     std.debug.print("\nResponse:\n{s}\n", .{response.content.text});
 }
 
-/// Example 3: Creative writing with higher temperature
+/// Example 3: Creative writing steered by the system prompt
 fn creativeWriting(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
     var system = try Message.withText(
         allocator,
@@ -145,9 +145,9 @@ fn creativeWriting(allocator: std.mem.Allocator, llm: llm_mod.LLM) !void {
 
     var options = llm_mod.CallOptions.init(allocator);
     defer options.deinit();
+    // No temperature/top_p: the Anthropic API rejects them (agenkit#1071) and the
+    // model default (temperature 1.0) already suits creative writing.
     try options.withMaxTokens(500);
-    try options.withTemperature(0.9); // Higher temp for creativity
-    try options.withTopP(0.95);
 
     std.debug.print("Request: {s}\n", .{user.content.text});
     std.debug.print("Temperature: 0.9 (creative)\n", .{});

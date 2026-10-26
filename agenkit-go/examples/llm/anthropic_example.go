@@ -120,13 +120,13 @@ func customParameters(llmAdapter llm.LLM) {
 		agenkit.NewMessage("user", "Explain what an API is in one sentence."),
 	}
 
-	// Use custom parameters for precise output
+	// Limit response length. Do not pass WithTemperature / WithTopP here: the
+	// Anthropic API rejects sampling parameters, so the adapter ignores them
+	// (with a one-time warning) and Claude uses its default sampling (#1071).
 	response, err := llmAdapter.Complete(
 		ctx,
 		messages,
-		llm.WithTemperature(0.3), // Lower temperature for precision
-		llm.WithMaxTokens(100),   // Limit response length
-		llm.WithTopP(0.9),        // Focused sampling
+		llm.WithMaxTokens(100),
 	)
 	if err != nil {
 		log.Fatalf("Error: %v", err)
@@ -135,7 +135,5 @@ func customParameters(llmAdapter llm.LLM) {
 	fmt.Printf("User: Explain what an API is in one sentence.\n")
 	fmt.Printf("Assistant: %s\n", response.ContentString())
 	fmt.Printf("\nParameters used:\n")
-	fmt.Printf("  Temperature: 0.3 (precise)\n")
 	fmt.Printf("  MaxTokens: 100\n")
-	fmt.Printf("  TopP: 0.9\n")
 }

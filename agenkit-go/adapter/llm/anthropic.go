@@ -7,8 +7,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/scttfrdmn/agenkit/agenkit-go/agenkit"
 )
@@ -45,16 +47,24 @@ import (
 //	response, err := llm.Complete(
 //	    ctx,
 //	    messages,
-//	    WithTemperature(0.7),
 //	    WithMaxTokens(1024),
-//	    WithTopP(0.9),
-//	    WithExtra("stop_sequences", []string{"Human:", "Assistant:"}),
 //	)
+//
+// Sampling parameters: the Anthropic API (version 2026-10-21 and later) rejects
+// temperature, top_p and top_k with HTTP 400, so this adapter never sends them
+// (#1071). WithTemperature and WithTopP are accepted for source compatibility
+// with other providers but are ignored here; the first call that sets either
+// logs a single slog.Warn per adapter instance. Omitting them yields the API
+// defaults (temperature 1.0).
 type AnthropicLLM struct {
 	apiKey     string
 	model      string
 	baseURL    string
 	httpClient *http.Client
+
+	// samplingWarnOnce ensures the ignored-sampling-params warning is logged
+	// at most once per adapter instance.
+	samplingWarnOnce sync.Once
 }
 
 // AnthropicOption is a functional option for configuring AnthropicLLM.
@@ -107,15 +117,16 @@ func (a *AnthropicLLM) Model() string {
 }
 
 // anthropicRequest is the request structure for Anthropic's Messages API.
+//
+// temperature, top_p and top_k are intentionally absent: the Anthropic API
+// rejects them (#1071), so they can never be serialized into a request.
 type anthropicRequest struct {
-	Model       string                 `json:"model"`
-	Messages    []anthropicMessage     `json:"messages"`
-	MaxTokens   int                    `json:"max_tokens"`
-	Temperature *float64               `json:"temperature,omitempty"`
-	TopP        *float64               `json:"top_p,omitempty"`
-	System      string                 `json:"system,omitempty"`
-	Stream      bool                   `json:"stream,omitempty"`
-	Extra       map[string]interface{} `json:"-"` // Not serialized directly
+	Model     string                 `json:"model"`
+	Messages  []anthropicMessage     `json:"messages"`
+	MaxTokens int                    `json:"max_tokens"`
+	System    string                 `json:"system,omitempty"`
+	Stream    bool                   `json:"stream,omitempty"`
+	Extra     map[string]interface{} `json:"-"` // Not serialized directly
 }
 
 // anthropicMessage is a message in Anthropic's format.
@@ -170,7 +181,8 @@ type anthropicDelta struct {
 // Parameters:
 //   - ctx: Context for cancellation and deadlines
 //   - messages: Conversation history as Agenkit Messages
-//   - opts: Options like temperature, max_tokens, etc.
+//   - opts: Options like max_tokens. Temperature and top_p are ignored (with a
+//     one-time warning) because the Anthropic API rejects them; see AnthropicLLM.
 //
 // Returns:
 //   - Response as Agenkit Message with metadata including:
@@ -184,7 +196,7 @@ type anthropicDelta struct {
 //	    agenkit.NewMessage("system", "You are a helpful assistant."),
 //	    agenkit.NewMessage("user", "What is 2+2?"),
 //	}
-//	response, err := llm.Complete(ctx, messages, WithTemperature(0.2))
+//	response, err := llm.Complete(ctx, messages, WithMaxTokens(256))
 //	if err != nil {
 //	    log.Fatal(err)
 //	}
@@ -205,15 +217,10 @@ func (a *AnthropicLLM) Complete(ctx context.Context, messages []*agenkit.Message
 		System:    systemMessage,
 	}
 
-	// Apply options
-	if options.Temperature != nil {
-		req.Temperature = options.Temperature
-	}
+	// Apply options. Temperature and TopP are deliberately not forwarded (#1071).
+	a.warnIgnoredSampling(options)
 	if options.MaxTokens != nil {
 		req.MaxTokens = *options.MaxTokens
-	}
-	if options.TopP != nil {
-		req.TopP = options.TopP
 	}
 
 	// Make HTTP request
@@ -283,7 +290,8 @@ func (a *AnthropicLLM) Complete(ctx context.Context, messages []*agenkit.Message
 // Parameters:
 //   - ctx: Context for cancellation and deadlines
 //   - messages: Conversation history as Agenkit Messages
-//   - opts: Options like temperature, max_tokens, etc.
+//   - opts: Options like max_tokens. Temperature and top_p are ignored (with a
+//     one-time warning) because the Anthropic API rejects them; see AnthropicLLM.
 //
 // Returns:
 //   - Channel of Message chunks as they arrive from Claude
@@ -317,15 +325,10 @@ func (a *AnthropicLLM) Stream(ctx context.Context, messages []*agenkit.Message, 
 		Stream:    true,
 	}
 
-	// Apply options
-	if options.Temperature != nil {
-		req.Temperature = options.Temperature
-	}
+	// Apply options. Temperature and TopP are deliberately not forwarded (#1071).
+	a.warnIgnoredSampling(options)
 	if options.MaxTokens != nil {
 		req.MaxTokens = *options.MaxTokens
-	}
-	if options.TopP != nil {
-		req.TopP = options.TopP
 	}
 
 	// Make HTTP request
@@ -379,6 +382,22 @@ func (a *AnthropicLLM) Stream(ctx context.Context, messages []*agenkit.Message, 
 	}()
 
 	return messageChan, nil
+}
+
+// warnIgnoredSampling logs a one-time warning when the caller set sampling
+// parameters that the Anthropic API no longer accepts. The values are dropped
+// from the request; the API applies its defaults instead.
+func (a *AnthropicLLM) warnIgnoredSampling(options *CallOptions) {
+	if options.Temperature == nil && options.TopP == nil {
+		return
+	}
+	a.samplingWarnOnce.Do(func() {
+		slog.Warn(
+			"anthropic: temperature and top_p are not supported by the Anthropic API and are ignored; "+
+				"the API default sampling is used instead (see #1071)",
+			"model", a.model,
+		)
+	})
 }
 
 // convertMessages converts Agenkit Messages to Anthropic format.

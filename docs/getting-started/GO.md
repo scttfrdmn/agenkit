@@ -219,13 +219,14 @@ func main() {
 ### Anthropic Example
 
 ```go
-anthropic, err := llm.NewAnthropic(
-    llm.WithAPIKey(os.Getenv("ANTHROPIC_API_KEY")),
-    llm.WithModel("claude-3-5-sonnet-20241022"),
-    llm.WithTemperature(1.0),
-    llm.WithMaxTokens(4096),
-)
+anthropic := llm.NewAnthropicLLM(os.Getenv("ANTHROPIC_API_KEY"), "claude-3-5-sonnet-20241022")
+response, err := anthropic.Complete(ctx, messages, llm.WithMaxTokens(4096))
 ```
+
+The Anthropic API rejects `temperature`, `top_p` and `top_k`, so the Go
+Anthropic adapter never sends them: `llm.WithTemperature` / `llm.WithTopP` are
+ignored with a one-time `slog` warning, and Claude uses its default sampling
+(#1071).
 
 **Parameter Validation** (v0.50.0):
 - `temperature`: 0.0 - 2.0 (validated via functional options)

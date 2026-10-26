@@ -106,7 +106,7 @@ func runExamples(llmAdapter llm.LLM) {
 	response, err = llmAdapter.Complete(
 		ctx,
 		messages,
-		llm.WithTemperature(0.5),
+		llm.WithTemperature(0.5), // Honored by OpenAI etc.; Anthropic ignores it with a warning (#1071)
 		llm.WithMaxTokens(100),
 	)
 	if err != nil {

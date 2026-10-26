@@ -14,7 +14,7 @@ import upickle.default.*
 // stateless core this package does not implement, so advertising that
 // literal would claim a handshake the wire no longer has).
 val ProtocolVersion = "2025-11-25"
-val ClientVersion   = "0.92.1"
+val ClientVersion   = "0.92.2"
 
 // Wire types (private to package)
 private[mcp] case class JsonRpcRequest(

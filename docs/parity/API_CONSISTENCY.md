@@ -13,9 +13,15 @@ All LLM adapters across all 6 languages accept the same logical parameters:
 | `api_key` | string | (env var) | Provider API key |
 | `model` | string | see below | Model identifier |
 | `max_tokens` | int | 4096 | Maximum tokens to generate |
-| `temperature` | float | 1.0 (Anthropic) / 0.7 (OpenAI) | Sampling temperature |
+| `temperature` | float | provider default (Anthropic) / 0.7 (OpenAI) | Sampling temperature — **not sent by any Anthropic adapter** (see note) |
 
 Constructor patterns are idiomatic per language (structs, keyword args, etc.) — this is acceptable.
+
+**Anthropic sampling parameters:** Anthropic API version 2026-10-21 rejects
+`temperature`, `top_p` and `top_k` with HTTP 400, even at their defaults. Every
+Anthropic adapter therefore omits them, which gives the provider defaults
+(temperature 1.0). Setting them still compiles, but the adapter ignores them and
+logs a deprecation warning (#1071).
 
 ---
 
@@ -48,7 +54,7 @@ All adapters default to the same models:
 | Anthropic model | `claude-sonnet-4-6` | `claude-sonnet-4-6` | `claude-sonnet-4-6` | `claude-sonnet-4-6` | `claude-sonnet-4-6` | `claude-sonnet-4-6` |
 | OpenAI model | `gpt-4o` | `gpt-4o` | `gpt-4o` | `gpt-4o` | `gpt-4o` | N/A |
 | max_tokens | 4096 | 4096 | 4096 | 4096 | 4096 | 4096 |
-| temperature (Anthropic) | 1.0 | — | 1.0 | 1.0 | 1.0 | — |
+| temperature (Anthropic) | not sent | not sent | not sent | not sent | not sent | not sent |
 | temperature (OpenAI) | 1.0 | — | 0.7 | 0.7 | 0.7 | — |
 
 ---

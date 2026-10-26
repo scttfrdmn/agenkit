@@ -1793,12 +1793,18 @@ Track progress on our [GitHub Milestones](https://github.com/scttfrdmn/agenkit/m
 
 High-level only — issue lists live on the milestones.
 
+**v0.92.2 — Anthropic API 2026-10-21 compatibility (patch)**
+- Go, Rust, Zig, and C++ Anthropic adapters stop sending `temperature`/`top_p`/`top_k`
+  (rejected by API version 2026-10-21) and warn instead; Python and TS already did
+  this in v0.92.1 (#1071)
+
 **v0.93.0 — Graph/Framework-Builder Support** ([milestone #98](https://github.com/scttfrdmn/agenkit/milestone/98))
 - Durable interrupt/resume contract in `agenkit.checkpointing`, wired to
   `HumanInLoopAgent` and `minilanggraph` (#934, #932); HITL gating/escalation (#935)
 - Graph-shaped memory backend (#930); graph-frameworks guide for builders (#933)
 - Protocol adapters as a tracked 6th parity category (#1002)
 - Python `ruff check` gated in CI (#1054)
+- Anthropic adapters: configurable API version, default to 2026-10-21 (#1075)
 
 **v0.94.0 — Spec Conformance Rung 3 & Parity** ([milestone #104](https://github.com/scttfrdmn/agenkit/milestone/104))
 - Continues the v0.92.0 theme, whose release shipped only its first tranche

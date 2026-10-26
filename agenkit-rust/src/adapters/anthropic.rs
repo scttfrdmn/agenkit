@@ -8,11 +8,17 @@ use futures::stream::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[cfg(feature = "native")]
 use reqwest::Client;
 
 /// Configuration for Anthropic Claude API calls.
+///
+/// The `temperature`, `top_p` and `top_k` fields are deprecated and ignored:
+/// newer Anthropic API versions reject them with HTTP 400 even at their
+/// defaults, so the adapter never sends them (#1071). Setting one to a
+/// non-default value logs a `tracing` warning once, when the agent is built.
 #[derive(Debug, Clone)]
 pub struct AnthropicConfig {
     /// API key (required) - get from https://console.anthropic.com/
@@ -24,13 +30,22 @@ pub struct AnthropicConfig {
     /// Maximum tokens to generate (default: 4096)
     pub max_tokens: i32,
 
-    /// Temperature 0-1 (default: 1.0)
+    /// Deprecated and ignored (default: 1.0). Never sent to the API (#1071).
+    #[deprecated(
+        note = "ignored: the Anthropic API rejects `temperature`; it is no longer sent (#1071)"
+    )]
     pub temperature: f64,
 
-    /// Top P sampling (default: 1.0)
+    /// Deprecated and ignored (default: 1.0). Never sent to the API (#1071).
+    #[deprecated(
+        note = "ignored: the Anthropic API rejects `top_p`; it is no longer sent (#1071)"
+    )]
     pub top_p: f64,
 
-    /// Top K sampling (default: 5)
+    /// Deprecated and ignored (default: 5). Never sent to the API (#1071).
+    #[deprecated(
+        note = "ignored: the Anthropic API rejects `top_k`; it is no longer sent (#1071)"
+    )]
     pub top_k: i32,
 
     /// API endpoint (default: Anthropic production)
@@ -43,6 +58,8 @@ pub struct AnthropicConfig {
     pub timeout_seconds: u64,
 }
 
+// The deprecated sampling fields still need default values (#1071).
+#[allow(deprecated)]
 impl Default for AnthropicConfig {
     fn default() -> Self {
         Self {
@@ -75,16 +92,12 @@ struct MessagesRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     system: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    temperature: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    top_p: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    top_k: Option<i32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     stream: Option<bool>,
     /// Anthropic's Messages API has no `seed` parameter at all — see
     /// `process_with`, which warns and drops `CallOptions.seed` rather than
-    /// putting it here (#818).
+    /// putting it here (#818). There are deliberately no `temperature`,
+    /// `top_p` or `top_k` fields either: newer API versions reject them with
+    /// HTTP 400 even at their defaults (#1071).
     #[serde(skip_serializing_if = "Option::is_none")]
     stop_sequences: Option<Vec<String>>,
 }
@@ -192,7 +205,7 @@ struct MessageDeltaData {
 /// # Features
 /// - Supports all Claude 3 models (Opus, Sonnet, Haiku)
 /// - Async message processing
-/// - Configurable temperature and tokens
+/// - Configurable model and max tokens (sampling parameters are not sent; #1071)
 /// - Error handling with typed errors
 ///
 /// # Example
@@ -218,6 +231,9 @@ struct MessageDeltaData {
 /// ```
 pub struct AnthropicAgent {
     config: AnthropicConfig,
+    /// Whether the `CallOptions` temperature/top_p warning has been emitted,
+    /// so it is logged once per agent rather than on every call (#1071).
+    warned_call_sampling: AtomicBool,
     #[cfg(feature = "native")]
     client: Client,
 }
@@ -229,19 +245,14 @@ impl AnthropicAgent {
     /// * `config` - Configuration including API key and model
     ///
     /// # Panics
-    /// Panics if API key is empty or if parameters are out of valid range
+    /// Panics if API key is empty or `max_tokens` is not positive.
+    ///
+    /// The deprecated `temperature`, `top_p` and `top_k` fields are not
+    /// validated; a non-default value logs a warning and is ignored (#1071).
     pub fn new(config: AnthropicConfig) -> Self {
         // Validate API key
         if config.api_key.is_empty() {
             panic!("Anthropic API key cannot be empty");
-        }
-
-        // Validate temperature (0-2, standardized across all adapters)
-        if !(0.0..=2.0).contains(&config.temperature) {
-            panic!(
-                "temperature must be between 0 and 2, got {}",
-                config.temperature
-            );
         }
 
         // Validate max_tokens (must be positive)
@@ -249,15 +260,7 @@ impl AnthropicAgent {
             panic!("max_tokens must be positive, got {}", config.max_tokens);
         }
 
-        // Validate top_p (0-1)
-        if !(0.0..=1.0).contains(&config.top_p) {
-            panic!("top_p must be between 0 and 1, got {}", config.top_p);
-        }
-
-        // Validate top_k (must be positive)
-        if config.top_k <= 0 {
-            panic!("top_k must be positive, got {}", config.top_k);
-        }
+        Self::warn_config_sampling_ignored(&config);
 
         #[cfg(feature = "native")]
         let client = Client::builder()
@@ -267,6 +270,7 @@ impl AnthropicAgent {
 
         Self {
             config,
+            warned_call_sampling: AtomicBool::new(false),
             #[cfg(feature = "native")]
             client,
         }
@@ -348,6 +352,48 @@ impl AnthropicAgent {
         }
     }
 
+    /// Warn, once at construction, about deprecated config sampling fields.
+    ///
+    /// Newer Anthropic API versions reject `temperature`, `top_p` and `top_k`
+    /// with HTTP 400 even at their defaults, so the adapter never sends them
+    /// (#1071). A caller who set one to a non-default value would otherwise
+    /// get default sampling with nothing telling them why.
+    #[allow(deprecated)]
+    fn warn_config_sampling_ignored(config: &AnthropicConfig) {
+        let mut ignored = Vec::new();
+        if (config.temperature - 1.0).abs() > f64::EPSILON {
+            ignored.push("temperature");
+        }
+        if (config.top_p - 1.0).abs() > f64::EPSILON {
+            ignored.push("top_p");
+        }
+        if config.top_k != 5 {
+            ignored.push("top_k");
+        }
+        if !ignored.is_empty() {
+            tracing::warn!(
+                "AnthropicConfig {} is deprecated and ignored: the Anthropic API rejects \
+                 sampling parameters, so they are not sent (#1071)",
+                ignored.join(", ")
+            );
+        }
+    }
+
+    /// Warn, once per agent, that `CallOptions` temperature/top_p are ignored.
+    ///
+    /// Same reason as [`Self::warn_config_sampling_ignored`] (#1071). These
+    /// were previously dropped silently, which is the #818 defect.
+    fn warn_call_sampling_ignored(&self, options: &CallOptions) {
+        if (options.temperature.is_some() || options.top_p.is_some())
+            && !self.warned_call_sampling.swap(true, Ordering::Relaxed)
+        {
+            tracing::warn!(
+                "CallOptions.temperature/top_p are not supported by the Anthropic adapter \
+                 and were not sent: the Anthropic API rejects sampling parameters (#1071)"
+            );
+        }
+    }
+
     /// Call Anthropic API with messages.
     #[cfg(feature = "native")]
     async fn call_api(
@@ -357,29 +403,16 @@ impl AnthropicAgent {
         options: &CallOptions,
     ) -> Result<MessagesResponse, AgentError> {
         Self::warn_seed_unsupported(options);
+        self.warn_call_sampling_ignored(options);
 
-        let mut request = MessagesRequest {
+        let request = MessagesRequest {
             model: self.config.model.clone(),
             max_tokens: self.config.max_tokens,
             messages,
             system,
-            temperature: None,
-            top_p: None,
-            top_k: None,
             stream: None,
             stop_sequences: options.stop.clone(),
         };
-
-        // Only include optional parameters if not default
-        if (self.config.temperature - 1.0).abs() > f64::EPSILON {
-            request.temperature = Some(self.config.temperature);
-        }
-        if (self.config.top_p - 1.0).abs() > f64::EPSILON {
-            request.top_p = Some(self.config.top_p);
-        }
-        if self.config.top_k != 5 {
-            request.top_k = Some(self.config.top_k);
-        }
 
         let url = format!("{}/v1/messages", self.config.api_base);
 
@@ -430,30 +463,16 @@ impl AnthropicAgent {
         messages: Vec<ClaudeMessage>,
         system: Option<String>,
     ) -> Result<Vec<Message>, AgentError> {
-        let mut request = MessagesRequest {
+        let request = MessagesRequest {
             model: self.config.model.clone(),
             max_tokens: self.config.max_tokens,
             messages,
             system,
-            temperature: None,
-            top_p: None,
-            top_k: None,
             stream: Some(true),
             // Streaming is not part of the OptionsAgent contract this issue is
             // about (#818); see the equivalent decision in openai.rs.
             stop_sequences: None,
         };
-
-        // Only include optional parameters if not default
-        if (self.config.temperature - 1.0).abs() > f64::EPSILON {
-            request.temperature = Some(self.config.temperature);
-        }
-        if (self.config.top_p - 1.0).abs() > f64::EPSILON {
-            request.top_p = Some(self.config.top_p);
-        }
-        if self.config.top_k != 5 {
-            request.top_k = Some(self.config.top_k);
-        }
 
         let url = format!("{}/v1/messages", self.config.api_base);
 
@@ -661,6 +680,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(deprecated)]
     fn test_default_config_values() {
         let config = AnthropicConfig::default();
         assert_eq!(config.model, "claude-sonnet-5");
@@ -924,6 +944,63 @@ mod tests {
             .unwrap();
 
         assert_eq!(response.content_as_str(), Some("ok"));
+        mock.assert_async().await;
+    }
+
+    #[tokio::test]
+    #[allow(deprecated)]
+    async fn test_sampling_params_never_sent_even_when_set() {
+        // #1071: newer Anthropic API versions reject temperature/top_p/top_k with
+        // HTTP 400 even at their defaults. Non-default config values and
+        // CallOptions sampling values must be ignored (with a warning), never
+        // sent, and must not panic — including values the old validation
+        // rejected.
+        let mut server = mockito::Server::new_async().await;
+
+        let mock = server
+            .mock("POST", "/v1/messages")
+            .match_request(|request| {
+                let body = request.utf8_lossy_body().unwrap_or_default();
+                !body.contains("\"temperature\"")
+                    && !body.contains("\"top_p\"")
+                    && !body.contains("\"top_k\"")
+            })
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(
+                r#"{
+                "id": "msg_nosampling",
+                "type": "message",
+                "role": "assistant",
+                "content": [{"type": "text", "text": "ok"}],
+                "model": "claude-sonnet-5",
+                "stop_reason": "end_turn",
+                "usage": {"input_tokens": 1, "output_tokens": 1}
+            }"#,
+            )
+            .expect(3)
+            .create_async()
+            .await;
+
+        let config = AnthropicConfig {
+            api_key: "test-key".to_string(),
+            api_base: server.url(),
+            temperature: 3.0,
+            top_p: 0.5,
+            top_k: 0,
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let options = CallOptions::new().with_temperature(0.2).with_top_p(0.9);
+
+        // Twice with options (the second exercises the warn-once path), once without.
+        for opts in [&options, &options, &CallOptions::new()] {
+            let response = agent
+                .process_with(Message::with_text("user", "hello"), opts)
+                .await
+                .unwrap();
+            assert_eq!(response.content_as_str(), Some("ok"));
+        }
         mock.assert_async().await;
     }
 }

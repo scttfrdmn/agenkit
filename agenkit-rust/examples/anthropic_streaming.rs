@@ -23,7 +23,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         api_key,
         model: "claude-3-5-sonnet-20241022".to_string(),
         max_tokens: 1024,
-        temperature: 1.0,
         ..Default::default()
     };
 

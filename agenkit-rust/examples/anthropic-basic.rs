@@ -31,7 +31,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         api_key: api_key.clone(),
         model: "claude-sonnet-4-20250514".to_string(),
         max_tokens: 150,
-        temperature: 1.0,
         ..Default::default()
     };
 
@@ -156,47 +155,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(e) => eprintln!("Error: {}", e),
     }
 
-    // Example 4: Temperature effects
-    print_separator("Example 4: Temperature Effects");
+    // Example 4: Response length via max_tokens
+    //
+    // Sampling parameters (temperature/top_p/top_k) are not sent to the
+    // Anthropic API — it rejects them (#1071) — so this example varies the
+    // output budget instead.
+    print_separator("Example 4: Controlling Response Length");
 
-    let creative_prompt =
-        "Generate a creative variable name for a function that calculates fibonacci numbers.";
-    println!("Prompt: {}\n", creative_prompt);
+    let length_prompt = "Explain what a Rust lifetime is.";
+    println!("Prompt: {}\n", length_prompt);
 
-    // Temperature 0.5 (balanced)
-    println!("Temperature 0.5 (Balanced):");
-    let balanced_config = AnthropicConfig {
-        api_key: api_key.clone(),
-        model: "claude-3-5-sonnet-20241022".to_string(),
-        max_tokens: 100,
-        temperature: 0.5,
-        ..Default::default()
-    };
-    let balanced = AnthropicAgent::new(balanced_config);
-    let msg = Message::with_text("user", creative_prompt);
+    for (label, max_tokens) in [("Short (40 tokens)", 40), ("Longer (200 tokens)", 200)] {
+        println!("{}:", label);
+        let config = AnthropicConfig {
+            api_key: api_key.clone(),
+            model: "claude-3-5-sonnet-20241022".to_string(),
+            max_tokens,
+            ..Default::default()
+        };
+        let agent = AnthropicAgent::new(config);
+        let msg = Message::with_text("user", length_prompt);
 
-    match balanced.process(msg).await {
-        Ok(response) => println!("{}", response.content_as_str().unwrap_or("")),
-        Err(e) => eprintln!("Error: {}", e),
-    }
+        match agent.process(msg).await {
+            Ok(response) => println!("{}", response.content_as_str().unwrap_or("")),
+            Err(e) => eprintln!("Error: {}", e),
+        }
 
-    println!("\n{}\n", "-".repeat(60));
-
-    // Temperature 1.0 (more creative)
-    println!("Temperature 1.0 (Creative):");
-    let creative_config = AnthropicConfig {
-        api_key: api_key.clone(),
-        model: "claude-3-5-sonnet-20241022".to_string(),
-        max_tokens: 100,
-        temperature: 1.0,
-        ..Default::default()
-    };
-    let creative = AnthropicAgent::new(creative_config);
-    let msg = Message::with_text("user", creative_prompt);
-
-    match creative.process(msg).await {
-        Ok(response) => println!("{}", response.content_as_str().unwrap_or("")),
-        Err(e) => eprintln!("Error: {}", e),
+        println!("\n{}\n", "-".repeat(60));
     }
 
     print_separator("✓ All Anthropic examples completed!");
@@ -205,7 +190,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("  • Claude Sonnet 4 is the most capable model (Nov 2025)");
     println!("  • Claude Haiku is faster and more cost-effective");
     println!("  • System prompts help set the assistant's role");
-    println!("  • Temperature controls response variability (0-1 range)");
+    println!("  • max_tokens bounds response length");
     println!("  • Claude provides detailed token usage in metadata");
     println!("{}", "-".repeat(60));
 

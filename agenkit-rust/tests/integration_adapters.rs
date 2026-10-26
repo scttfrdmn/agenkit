@@ -71,12 +71,11 @@ mod adapter_tests {
             api_key,
             model: "claude-3-5-sonnet-20241022".to_string(),
             max_tokens: 1024,
-            temperature: 1.0,
-            top_p: 1.0,
-            top_k: 5,
             api_base: "https://api.anthropic.com".to_string(),
             api_version: "2023-06-01".to_string(),
             timeout_seconds: 60,
+            // temperature/top_p/top_k are deprecated and ignored (#1071).
+            ..Default::default()
         };
 
         let agent = AnthropicAgent::new(config);
@@ -102,12 +101,11 @@ mod adapter_tests {
             api_key: "test-key".to_string(),
             model: "claude-3-5-sonnet-20241022".to_string(),
             max_tokens: 1024,
-            temperature: 1.0,
-            top_p: 1.0,
-            top_k: 5,
             api_base: "https://api.anthropic.com".to_string(),
             api_version: "2023-06-01".to_string(),
             timeout_seconds: 60,
+            // temperature/top_p/top_k are deprecated and ignored (#1071).
+            ..Default::default()
         };
 
         let agent = AnthropicAgent::new(config);
@@ -140,12 +138,11 @@ mod adapter_tests {
             api_key: "test-key".to_string(),
             model: "claude-3-5-sonnet-20241022".to_string(),
             max_tokens: 1024,
-            temperature: 1.0,
-            top_p: 1.0,
-            top_k: 5,
             api_base: "https://api.anthropic.com".to_string(),
             api_version: "2023-06-01".to_string(),
             timeout_seconds: 60,
+            // temperature/top_p/top_k are deprecated and ignored (#1071).
+            ..Default::default()
         };
 
         let agent = AnthropicAgent::new(config);

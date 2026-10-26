@@ -65,7 +65,8 @@ pub struct AnthropicConfig {
     pub model: String,          // default: "claude-sonnet-4-6"
     pub api_key: String,        // or ANTHROPIC_API_KEY env var
     pub max_tokens: u32,        // default: 4096
-    pub temperature: f64,       // default: 1.0
+    // Deprecated and ignored (never sent; the API rejects them, #1071):
+    // temperature (1.0), top_p (1.0), top_k (5).
 }
 
 pub struct AnthropicClient { /* opaque */ }

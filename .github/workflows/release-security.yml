@@ -61,7 +61,7 @@ jobs:
         uses: anchore/sbom-action/download-syft@v0.24.3
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v4.1.2
+        uses: sigstore/cosign-installer@v4.1.3
         with:
           # Pin the cosign BINARY, not just the action. The action was already
           # pinned, but it installs "latest" by default — so cosign v3's flag

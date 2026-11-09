@@ -388,7 +388,7 @@ jobs:
       # --- Java ---
       - name: Set up JDK
         if: matrix.lang == 'java'
-        uses: actions/setup-java@v6.1.0
+        uses: actions/setup-java@v6.2.0
         with:
           distribution: temurin
           java-version: '17'
@@ -405,7 +405,7 @@ jobs:
       # --- Scala ---
       - name: Set up JDK (Scala)
         if: matrix.lang == 'scala'
-        uses: actions/setup-java@v6.1.0
+        uses: actions/setup-java@v6.2.0
         with:
           distribution: temurin
           java-version: '17'
